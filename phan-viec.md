@@ -1,0 +1,8 @@
+# Bảng phân công bài tập lớn: Hệ thống đấu giá trực tuyến
+
+| Thành viên | Trọng tâm công việc | Chi tiết các module đảm nhận | Yêu cầu kỹ thuật & Design Pattern |
+| :--- | :--- | :--- | :--- |
+| **Thành viên 1**<br>*(Core Data)* | Thiết kế CSDL và xử lý nghiệp vụ cốt lõi. | - Định nghĩa lớp Entity: `Item` và `User`.<br>- Chức năng đăng ký, đăng nhập.<br>- Seller: Thêm, sửa, xóa sản phẩm.<br>- Xử lý lỗi dữ liệu phía Server. | - **Inheritance & Polymorphism**.<br>- **Singleton** (quản lý CSDL).<br>- Viết JUnit test. |
+| **Thành viên 2**<br>*(Client UI)* | Xây dựng giao diện JavaFX và luồng MVC Client. | - Dựng UI (JavaFX + FXML): Danh sách, Chi tiết, Quản lý.<br>- Đảm bảo kiến trúc MVC Client.<br>- Bắt lỗi nhập liệu giao diện. | - **Factory Method**.<br>- Tổ chức cấu trúc code MVC sạch sẽ. |
+| **Thành viên 3**<br>*(Bidding Engine)* | Xử lý luồng đấu giá, concurrency và realtime. | - Màn hình đấu giá trực tiếp.<br>- Logic kiểm tra giá hợp lệ.<br>- Xử lý đấu giá đồng thời (chống lost update).<br>- Cập nhật người dẫn đầu realtime. | - **Observer Pattern / Sockets**.<br>- Lập trình đa luồng (Thread-safe). |
+| **Thành viên 4**<br>*(Advanced)* | Quản lý vòng đời phiên, tính năng nâng cao và DevOps. | - Quản lý trạng thái phiên (OPEN -> FINISHED).<br>- **Nâng cao 1:** Đấu giá tự động (Auto-Bidding).<br>- **Nâng cao 2:** Thuật toán Anti-sniping.<br>- Cài đặt Build tool & quản lý Git. | - Maven/Gradle & Git workflow.<br>- (Tùy chọn) CI/CD GitHub Actions. |
