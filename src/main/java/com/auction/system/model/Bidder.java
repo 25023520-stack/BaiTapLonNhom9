@@ -10,7 +10,7 @@ public class Bidder extends User {
     }
 
     public String getRole() {
-        return "BIDDER"
+        return "BIDDER";
     }
 
 }
