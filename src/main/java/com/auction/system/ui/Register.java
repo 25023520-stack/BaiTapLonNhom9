@@ -33,7 +33,7 @@ public class Register {
     @FXML
     void goLogin(ActionEvent event) {
         try {
-            Parent Login = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
+            Parent Login = FXMLLoader.load(getClass().getResource("/com/auction/system/ui/Login.fxml"));
             Stage stage =  (Stage) ((Node) event.getSource()).getScene().getWindow();
 
             stage.setScene(new Scene(Login));
