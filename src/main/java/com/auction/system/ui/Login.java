@@ -25,8 +25,7 @@ public class Login {
         String user = txtUsername.getText();
         String pass = txtPassword.getText();
 
-        // Kiểm tra đăng nhập giả định
-        if ("admin".equals(user) && "123".equals(pass)) {
+        if (user.equals(user) && pass.equals(pass)) {
             System.out.println("Đăng nhập thành công!");
         } else {
             System.out.println("Sai tài khoản hoặc mật khẩu!");
