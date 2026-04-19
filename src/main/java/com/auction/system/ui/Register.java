@@ -11,6 +11,10 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 public class Register {
+    @FXML
+    private TextField username = new TextField();
+    @FXML
+    private PasswordField password = new PasswordField();
 
     @FXML
     private TextField txtUsername;
