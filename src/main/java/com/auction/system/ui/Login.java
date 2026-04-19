@@ -14,7 +14,6 @@ import java.io.IOException;
 
 public class Login {
 
-
     @FXML
     private TextField txtUsername;
 
@@ -26,10 +25,12 @@ public class Login {
         String user = txtUsername.getText();
         String pass = txtPassword.getText();
 
-        if (user.isEmpty() || pass.isEmpty()) {
-            System.out.println("Username or password is empty");
+        // Kiểm tra đăng nhập giả định
+        if ("admin".equals(user) && "123".equals(pass)) {
+            System.out.println("Đăng nhập thành công!");
+        } else {
+            System.out.println("Sai tài khoản hoặc mật khẩu!");
         }
-
     }
 
     @FXML
