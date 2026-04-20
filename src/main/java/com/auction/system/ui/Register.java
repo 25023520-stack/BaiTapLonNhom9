@@ -11,6 +11,10 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 public class Register {
+    @FXML
+    private TextField username = new TextField();
+    @FXML
+    private PasswordField password = new PasswordField();
 
     @FXML
     private TextField txtUsername;
@@ -33,7 +37,7 @@ public class Register {
     @FXML
     void goLogin(ActionEvent event) {
         try {
-            Parent Login = FXMLLoader.load(getClass().getResource("/fxml/login.fxml"));
+            Parent Login = FXMLLoader.load(getClass().getResource("/com/auction/system/ui/Login.fxml"));
             Stage stage =  (Stage) ((Node) event.getSource()).getScene().getWindow();
 
             stage.setScene(new Scene(Login));
