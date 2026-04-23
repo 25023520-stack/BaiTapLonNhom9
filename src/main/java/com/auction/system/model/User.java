@@ -3,10 +3,11 @@ package com.auction.system.model;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.io.Serializable;
 import java.util.HexFormat;
 import java.util.Objects;
 
-public abstract class User {
+public abstract class User implements Serializable {
     private String id;
     private String fullName;
     private String userName;
