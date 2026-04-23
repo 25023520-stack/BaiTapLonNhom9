@@ -1,11 +1,12 @@
 package com.auction.system.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Item {
+public class Item implements Serializable {
     private int id;
     private String name, description;
     private double startPrice, currentPrice;
