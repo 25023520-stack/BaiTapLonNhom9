@@ -1,27 +1,45 @@
-package com.auction.system.model;
+package com.auction.system.model.auction;
 
 import java.time.LocalDateTime;
 
+import com.auction.system.model.user.Bidder;
+
 public class Bid {
-    private final String bidderId;
+    private final String bidId;
+    private final Bidder bidder;
     private final double amount;
-    private final LocalDateTime createdAt;
+    private final Auction auction;
+    private final LocalDateTime timestamp;
 
-    public Bid(String bidderId, double amount, LocalDateTime createdAt) {
-        this.bidderId = bidderId;
+
+    public Bid(String bidId, Bidder bidder, double amount, Auction auction) {
+        this.bidId = bidId;
+        this.bidder = bidder;
         this.amount = amount;
-        this.createdAt = createdAt;
+        this.auction = auction;
+        this.timestamp = LocalDateTime.now();
     }
-
-    public String getBidderId() {
-        return bidderId;
+    public String getBidId() {
+        return bidId;
     }
-
+    public Bidder getBidder() {
+        return bidder;
+    }
     public double getAmount() {
         return amount;
     }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public Auction getAuction() {
+        return auction;
     }
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+    public String toString() {
+        return "Bid" + "BidId: " + bidId + ", Bidder: " + bidder.getFullName() + ", Amount: " + amount + ", Timestamp: " + timestamp;
+    }
+
+
+    
+
+  
 }

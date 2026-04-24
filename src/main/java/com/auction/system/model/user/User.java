@@ -1,16 +1,10 @@
-package com.auction.system.model;
-
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.util.Objects;
+package com.auction.system.model.user;
 
 public abstract class User {
     private String id;
     private String fullName;
     private String userName;
-    private String passwordHash;
+    private String passWord;
 
     public User() {}
 
@@ -18,7 +12,7 @@ public abstract class User {
         this.id = id;
         this.fullName = fullName;
         this.userName = userName;
-        setPassWord(passWord);
+        this.passWord = passWord;
     }
 
     public String getFullName() {
@@ -33,8 +27,8 @@ public abstract class User {
         return userName;
     }
 
-    public boolean checkPassword(String rawPassword) {
-        return passwordHash != null && passwordHash.equals(hashPassword(rawPassword));
+    public String getPassWord() {
+        return passWord;
     }
 
     public void setUserName(String userName) {
@@ -42,24 +36,12 @@ public abstract class User {
     }
 
     public void setPassWord(String passWord) {
-        this.passwordHash = hashPassword(passWord);
+        this.passWord = passWord;
     }
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
 
-    public abstract String getRole();
-
-    private String hashPassword(String rawPassword) {
-        Objects.requireNonNull(rawPassword, "Password must not be null");
-
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashed = digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hashed);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is not available", exception);
-        }
-    }
+    public abstract String getRole(); // xác định vai trò của người dùng (Seller, Bidder, Admin)
 }
