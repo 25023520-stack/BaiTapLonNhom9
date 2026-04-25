@@ -7,7 +7,15 @@ public class BidPayload extends Payload {
 
     public BidPayload(int itemId, double amount) {
         this();
+        setItemId(itemId);
+        setAmount(amount);
+    }
+
+    public void setItemId(int itemId) {
         put("itemId", itemId);
+    }
+
+    public void setAmount(double amount) {
         put("amount", amount);
     }
 
