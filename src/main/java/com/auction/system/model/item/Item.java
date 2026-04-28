@@ -1,12 +1,17 @@
-package com.auction.system.model;
+package com.auction.system.model.item;
 
+import com.auction.system.model.auction.Bid;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Item {
-    private int id;
+import com.auction.system.model.auction.AuctionStatus;
+
+public class Item implements Serializable {
+    private String id;
     private String name, description;
     private double startPrice, currentPrice;
     private AuctionStatus status;
@@ -18,7 +23,15 @@ public class Item {
 
     public Item() {}
 
-    public Item(int id, String name, String description, double startPrice, double currentPrice, AuctionStatus status)  {
+    public Item(String id, String name, String description, double startingPrice,String sellerId) {
+        this.id = id;
+        this.name = name; 
+        this.description = description;
+        this.startPrice = startingPrice;
+        this.sellerId = sellerId;
+    }
+
+    public Item(String id, String name, String description, double startPrice, double currentPrice, AuctionStatus status)  {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -67,7 +80,7 @@ public class Item {
         this.name = name;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
