@@ -3,13 +3,14 @@ package com.auction.system.model.auction;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Auction {
+public class Auction implements Serializable {
     private String id;
     private Item item;
-   private double currentPrice;
+    private double currentPrice;
     private AuctionStatus status;
     private List<Bid> bids;
 
@@ -70,7 +71,7 @@ public class Auction {
             throw new IllegalArgumentException("Giá đặt phải cao hơn giá hiện tại");
          }
          String bidId = "Bid" + (bids.size() + 1 );
-         Bid bid = new Bid(bidId, bidder, amount, this) ;
+         Bid bid = new Bid(bidId, bidder, amount) ;
 
          bids.add(bid);
          currentPrice = amount;

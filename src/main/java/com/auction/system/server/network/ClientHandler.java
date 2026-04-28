@@ -5,9 +5,9 @@ import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.manager.AuctionManager;
-import com.auction.system.model.Bid;
-import com.auction.system.model.Bidder;
-import com.auction.system.model.User;
+import com.auction.system.model.auction.Bid;
+import com.auction.system.model.user.Bidder;
+import com.auction.system.model.user.User;
 
 import java.io.Closeable;
 import java.io.EOFException;
@@ -118,13 +118,13 @@ public class ClientHandler implements Runnable, Closeable {
             return;
         }
 
-        int itemId;
+        String itemId;
         double amount;
         if (payload instanceof BidPayload bidPayload) {
             itemId = bidPayload.getItemId();
             amount = bidPayload.getAmount();
         } else {
-            Integer parsedItemId = payload.getInt("itemId");
+            String parsedItemId = payload.getString("itemId");
             Double parsedAmount = payload.getDouble("amount");
             if (parsedItemId == null || parsedAmount == null) {
                 send(ResponsePayload.error("Bid payload must contain itemId and amount"));

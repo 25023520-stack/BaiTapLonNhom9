@@ -5,13 +5,13 @@ public class BidPayload extends Payload {
         super(PayloadType.BID);
     }
 
-    public BidPayload(int itemId, double amount) {
+    public BidPayload(String itemId, double amount) {
         this();
         setItemId(itemId);
         setAmount(amount);
     }
 
-    public void setItemId(int itemId) {
+    public void setItemId(String itemId) {
         put("itemId", itemId);
     }
 
@@ -19,9 +19,9 @@ public class BidPayload extends Payload {
         put("amount", amount);
     }
 
-    public int getItemId() {
-        Integer itemId = getInt("itemId");
-        return itemId != null ? itemId : 0;
+    public String getItemId() {
+        String itemId = getString("itemId");
+        return itemId != null ? itemId : "0";
     }
 
     public double getAmount() {
