@@ -1,9 +1,9 @@
 package com.auction.system.manager;
 
-import com.auction.system.model.Admin;
-import com.auction.system.model.Bidder;
-import com.auction.system.model.Seller;
-import com.auction.system.model.User;
+import com.auction.system.model.user.Admin;
+import com.auction.system.model.user.Bidder;
+import com.auction.system.model.user.Seller;
+import com.auction.system.model.user.User;
 
 import java.util.Collection;
 import java.util.HashMap;

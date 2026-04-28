@@ -1,7 +1,7 @@
 package com.auction.system.ui;
 
 import com.auction.system.manager.AuthManager;
-import com.auction.system.model.User;
+import com.auction.system.model.user.User;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
