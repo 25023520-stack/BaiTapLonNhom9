@@ -1,23 +1,18 @@
+
 package com.auction.system.ui;
 
-import com.auction.system.manager.AuthManager;
-import com.auction.system.model.user.User;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
-
 import java.io.IOException;
-import java.util.Optional;
 
 public class Login {
-    private final AuthManager authManager = AppContext.getAuthManager();
 
     @FXML
     private TextField txtUsername;
@@ -27,51 +22,27 @@ public class Login {
 
     @FXML
     void handleLogin(ActionEvent event) {
-        String username = txtUsername.getText();
-        String password = txtPassword.getText();
+        String user = txtUsername.getText();
+        String pass = txtPassword.getText();
 
-        Optional<User> user = authManager.login(username, password);
-        if (user.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Sai tai khoan hoac mat khau.");
-            return;
+        // Kiểm tra đăng nhập giả định
+        if ("admin".equals(user) && "123".equals(pass)) {
+            System.out.println("Đăng nhập thành công!");
+        } else {
+            System.out.println("Sai tài khoản hoặc mật khẩu!");
         }
-
-        showAlert(Alert.AlertType.INFORMATION, "Dang nhap thanh cong: " + user.get().getRole());
-        openAuctionScreen(event);
     }
 
     @FXML
     void goToRegister(ActionEvent event) {
-        switchScene(event, "/com/auction/system/ui/Register.fxml", "Dang ky tai khoan");
-    }
-
-    private void openAuctionScreen(ActionEvent event) {
         try {
+            Parent registerView = FXMLLoader.load(getClass().getResource("Register.fxml"));
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            new AuctionApplication().start(stage);
-        } catch (Exception exception) {
-            showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh dau gia.");
-            exception.printStackTrace();
-        }
-    }
-
-    private void switchScene(ActionEvent event, String fxmlPath, String title) {
-        try {
-            Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            stage.setScene(new Scene(view));
-            stage.setTitle(title);
+            stage.setScene(new Scene(registerView));
+            stage.setTitle("Đăng ký tài khoản");
             stage.show();
-        } catch (IOException exception) {
-            showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh: " + fxmlPath);
-            exception.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-    }
-
-    private void showAlert(Alert.AlertType alertType, String message) {
-        Alert alert = new Alert(alertType);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 }
