@@ -130,7 +130,7 @@ public class AuctionManager {
     public synchronized List<Item> getAllItems() {
         return itemsById.values()
                 .stream()
-                .sorted(Comparator.comparingInt(Item::getId))
+                .sorted(Comparator.comparingDouble(Item::getCurrentPrice))
                 .toList();
     }
 
