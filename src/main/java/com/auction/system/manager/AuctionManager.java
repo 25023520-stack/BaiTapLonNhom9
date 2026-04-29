@@ -1,11 +1,11 @@
 package com.auction.system.manager;
 
-import com.auction.system.model.AuctionStatus;
-import com.auction.system.model.Bid;
-import com.auction.system.model.Bidder;
-import com.auction.system.model.Item;
-import com.auction.system.model.Seller;
-import com.auction.system.model.User;
+import com.auction.system.model.auction.AuctionStatus;
+import com.auction.system.model.auction.Bid;
+import com.auction.system.model.user.Bidder;
+import com.auction.system.model.item.Item;
+import com.auction.system.model.user.Seller;
+import com.auction.system.model.user.User;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ import java.util.Optional;
 public class AuctionManager {
     private final Map<String, User> usersById = new HashMap<>();
     private final Map<String, User> usersByUsername = new HashMap<>();
-    private final Map<Integer, Item> itemsById = new HashMap<>();
+    private final Map<String, Item> itemsById = new HashMap<>();
 
     public synchronized void registerUser(User user) {
         if (user == null) {
@@ -74,7 +74,7 @@ public class AuctionManager {
         existingItem.setCurrentPrice(Math.max(existingItem.getCurrentPrice(), item.getStartPrice()));
     }
 
-    public synchronized void removeItem(int itemId, Seller seller) {
+    public synchronized void removeItem(String itemId, Seller seller) {
         validateSeller(seller);
         Item existingItem = requireItem(itemId);
         if (!seller.getId().equals(existingItem.getSellerId())) {
@@ -87,7 +87,7 @@ public class AuctionManager {
         itemsById.remove(itemId);
     }
 
-    public synchronized void startAuction(int itemId, LocalDateTime startTime, LocalDateTime endTime) {
+    public synchronized void startAuction(String itemId, LocalDateTime startTime, LocalDateTime endTime) {
         Item item = requireItem(itemId);
         if (endTime == null || startTime == null || !endTime.isAfter(startTime)) {
             throw new IllegalArgumentException("Auction end time must be after start time");
@@ -98,12 +98,12 @@ public class AuctionManager {
         item.setStatus(AuctionStatus.RUNNING);
     }
 
-    public synchronized void finishAuction(int itemId) {
+    public synchronized void finishAuction(String itemId) {
         Item item = requireItem(itemId);
         item.setStatus(AuctionStatus.FINISHED);
     }
 
-    public synchronized Bid placeBid(int itemId, Bidder bidder, double bidAmount) {
+    public synchronized Bid placeBid(String itemId, Bidder bidder, double bidAmount) {
         if (bidder == null) {
             throw new IllegalArgumentException("Bidder must not be null");
         }
@@ -120,7 +120,7 @@ public class AuctionManager {
             throw new IllegalArgumentException("Bid amount must be greater than current price");
         }
 
-        Bid bid = new Bid(bidder.getId(), bidAmount, LocalDateTime.now());
+        Bid bid = new Bid(bidder.getId(), bidder, bidAmount);
         item.setCurrentPrice(bidAmount);
         item.setHighestBidderId(bidder.getId());
         item.addBid(bid);
@@ -134,7 +134,7 @@ public class AuctionManager {
                 .toList();
     }
 
-    public synchronized Optional<Item> findItemById(int itemId) {
+    public synchronized Optional<Item> findItemById(String itemId) {
         return Optional.ofNullable(itemsById.get(itemId));
     }
 
@@ -148,7 +148,7 @@ public class AuctionManager {
         }
     }
 
-    private Item requireItem(int itemId) {
+    private Item requireItem(String itemId) {
         Item item = itemsById.get(itemId);
         if (item == null) {
             throw new IllegalArgumentException("Item does not exist");
