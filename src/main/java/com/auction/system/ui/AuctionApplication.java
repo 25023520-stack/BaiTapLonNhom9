@@ -1,11 +1,12 @@
 package com.auction.system.ui;
 
 import com.auction.system.manager.AuctionManager;
-import com.auction.system.model.AuctionStatus;
-import com.auction.system.model.Bid;
-import com.auction.system.model.Bidder;
-import com.auction.system.model.Item;
-import com.auction.system.model.Seller;
+import com.auction.system.model.item.Item;
+import com.auction.system.model.user.Bidder;
+import com.auction.system.model.user.Seller;
+import com.auction.system.model.auction.AuctionStatus;
+import com.auction.system.model.auction.Bid;
+
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -30,7 +31,7 @@ import javafx.stage.Stage;
 import java.time.LocalDateTime;
 
 public class AuctionApplication extends Application {
-    private final AuctionManager auctionManager = new AuctionManager();
+    private final AuctionManager auctionManager = AuctionManager.getInstance();
     private final ObservableList<Item> items = FXCollections.observableArrayList();
     private final ObservableList<Bidder> bidders = FXCollections.observableArrayList();
 
@@ -145,7 +146,7 @@ public class AuctionApplication extends Application {
                 new Label("Gia moi"),
                 bidAmountField,
                 bidButton,
-                new Label("Lich su dat gia"),
+                new Label("Lich su dau gia"),
                 bidHistoryArea
         );
 
@@ -204,9 +205,9 @@ public class AuctionApplication extends Application {
 
         StringBuilder builder = new StringBuilder();
         for (Bid bid : item.getBidHistory()) {
-            builder.append(bid.getCreatedAt())
+            builder.append(bid.getTimestamp())
                     .append(" | ")
-                    .append(bid.getBidderId())
+                    .append(bid.getBidder().getId())
                     .append(" | ")
                     .append(bid.getAmount())
                     .append(" VND")
@@ -260,8 +261,8 @@ public class AuctionApplication extends Application {
         Bidder bidder2 = new Bidder("B2", "Le Thu Ha", "bidder2", "123456");
         Bidder bidder3 = new Bidder("B3", "Do Quang Huy", "bidder3", "123456");
 
-        auctionManager.registerUser(seller1);
-        auctionManager.registerUser(seller2);
+        auctionManager.register(seller1);
+        auctionManager.register(seller2);
         auctionManager.registerUser(bidder1);
         auctionManager.registerUser(bidder2);
         auctionManager.registerUser(bidder3);
