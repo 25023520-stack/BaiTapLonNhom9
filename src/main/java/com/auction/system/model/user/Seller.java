@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class Seller extends User {
-    private List<Item> itemForSale = new ArrayList<>();
+    private final giList<Item> itemForSale = new ArrayList<>();
 
     public Seller() {
         super();
