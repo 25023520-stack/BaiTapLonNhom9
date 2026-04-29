@@ -1,11 +1,11 @@
 package com.auction.system.ui;
 
 import com.auction.system.manager.AuctionManager;
-import com.auction.system.model.item.Item;
-import com.auction.system.model.user.Bidder;
-import com.auction.system.model.user.Seller;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.Bid;
+import com.auction.system.model.user.Bidder;
+import com.auction.system.model.item.Item;
+import com.auction.system.model.user.Seller;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
@@ -267,22 +267,22 @@ public class AuctionApplication extends Application {
         auctionManager.registerUser(bidder2);
         auctionManager.registerUser(bidder3);
 
-        Item laptop = new Item(1, "Laptop Gaming", "Laptop RTX 4060, RAM 16GB, SSD 1TB.", 15000000, 0, AuctionStatus.OPEN);
-        Item phone = new Item(2, "IPhone 14", "May cu 99%, pin 90%, phu kien day du.", 11000000, 0, AuctionStatus.OPEN);
-        Item camera = new Item(3, "May anh Sony", "Sony A6400 kem lens kit, hoat dong tot.", 13000000, 0, AuctionStatus.OPEN);
+        Item laptop = new Item("1", "Laptop Gaming", "Laptop RTX 4060, RAM 16GB, SSD 1TB.", 15000000, 0, AuctionStatus.OPEN);
+        Item phone = new Item("2", "IPhone 14", "May cu 99%, pin 90%, phu kien day du.", 11000000, 0, AuctionStatus.OPEN);
+        Item camera = new Item("3", "May anh Sony", "Sony A6400 kem lens kit, hoat dong tot.", 13000000, 0, AuctionStatus.OPEN);
 
         auctionManager.addItem(laptop, seller1);
         auctionManager.addItem(phone, seller1);
         auctionManager.addItem(camera, seller2);
 
         LocalDateTime now = LocalDateTime.now();
-        auctionManager.startAuction(1, now.minusHours(1), now.plusHours(6));
-        auctionManager.startAuction(2, now.minusMinutes(30), now.plusHours(4));
-        auctionManager.startAuction(3, now.minusMinutes(15), now.plusHours(2));
+        auctionManager.startAuction("1", now.minusHours(1), now.plusHours(6));
+        auctionManager.startAuction("2", now.minusMinutes(30), now.plusHours(4));
+        auctionManager.startAuction("3", now.minusMinutes(15), now.plusHours(2));
 
-        auctionManager.placeBid(1, bidder1, 16000000);
-        auctionManager.placeBid(1, bidder2, 16800000);
-        auctionManager.placeBid(2, bidder3, 11800000);
+        auctionManager.placeBid("1", bidder1, 16000000);
+        auctionManager.placeBid("1", bidder2, 16800000);
+        auctionManager.placeBid("2", bidder3, 11800000);
 
         bidders.setAll(bidder1, bidder2, bidder3);
         items.setAll(auctionManager.getAllItems());

@@ -2,6 +2,7 @@ package com.auction.system.model.item;
 
 import com.auction.system.model.auction.Bid;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,7 +10,7 @@ import java.util.List;
 
 import com.auction.system.model.auction.AuctionStatus;
 
-public class Item {
+public class Item implements Serializable {
     private String id;
     private String name, description;
     private double startPrice, currentPrice;
