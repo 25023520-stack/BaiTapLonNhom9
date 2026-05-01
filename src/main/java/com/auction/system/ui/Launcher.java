@@ -5,16 +5,21 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
 import java.net.URL;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 public class Launcher extends Application {
+    private static  final Logger logger = LoggerFactory.getLogger(Launcher.class);
     @Override
     public void start(Stage primaryStage) throws Exception {
+
         URL resource = getClass().getResource("/com/auction/system/ui/Login.fxml");
 
         if (resource == null) {
-            System.out.printf("cannot load login fxml");
+            logger.info("Resource not found");
             System.exit(1);
         }
         Parent root = FXMLLoader.load(resource);

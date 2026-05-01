@@ -16,6 +16,13 @@ public abstract class User implements Serializable {
         this.userName = userName;
         this.passWord = passWord;
     }
+    public boolean checkPassword(String password) {
+        if (password == null) {
+            return false;
+        }
+        return true;
+
+    }
 
     public String getFullName() {
         return fullName;
@@ -46,4 +53,6 @@ public abstract class User implements Serializable {
     }
 
     public abstract String getRole(); // xác định vai trò của người dùng (Seller, Bidder, Admin)
+
+
 }
