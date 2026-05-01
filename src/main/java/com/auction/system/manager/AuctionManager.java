@@ -20,6 +20,10 @@ public class AuctionManager {
     private final Map<String, User> usersByUsername = new HashMap<>();
     private final Map<String, Item> itemsById = new HashMap<>();
 
+    public static AuctionManager getInstance() {
+        return null;
+    }
+
     public synchronized void registerUser(User user) {
         if (user == null) {
             throw new IllegalArgumentException("User must not be null");
