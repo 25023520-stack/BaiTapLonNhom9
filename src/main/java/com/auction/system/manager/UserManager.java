@@ -14,7 +14,7 @@ import java.util.Map;
 public class UserManager {
     private final Map<String, User> users = new HashMap<>();
 
-    public void register(User user) throws DuplicateUserException, InvalidDataException{
+    public void register(User user) throws DuplicateUserException, InvalidDataException {
         if (user == null) {
             throw new InvalidDataException("Thông tin người dùng không được để trống");
         }
@@ -35,7 +35,7 @@ public class UserManager {
         User user = users.get(userName);
 
         if (user == null || !user.getPassWord().equals(passWord)) {
-            throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu" );
+            throw new AuthenticationException("Sai tên đăng nhập hoặc mật khẩu");
         }
 
         return user;
@@ -44,7 +44,4 @@ public class UserManager {
     public Collection<User> getAllUsers() {
         return users.values();
     }
-
-
-    
 }

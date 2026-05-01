@@ -1,9 +1,10 @@
 package com.auction.system.manager;
 
-import com.auction.system.model.auction.AuctionStatus;
-import com.auction.system.model.user.Bidder;
 import com.auction.system.model.item.Item;
+import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
+import com.auction.system.model.auction.AuctionStatus;
+
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -25,7 +26,7 @@ class AuctionManagerTest {
 
     @Test
     void loginChecksHashedPasswordInsteadOfReturningRawPassword() {
-        AuctionManager manager = new AuctionManager();
+        AuctionManager manager = AuctionManager.getInstance();
         Seller seller = new Seller("S1", "Seller One", "seller1", "secret");
 
         manager.registerUser(seller);

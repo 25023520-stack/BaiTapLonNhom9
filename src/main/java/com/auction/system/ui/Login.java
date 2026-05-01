@@ -10,9 +10,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 public class Login {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Login.class);
 
     @FXML
     private TextField txtUsername;
@@ -24,14 +28,8 @@ public class Login {
     void handleLogin(ActionEvent event) {
         String user = txtUsername.getText();
         String pass = txtPassword.getText();
-
-        // Kiểm tra đăng nhập giả định
-        if ("admin".equals(user) && "123".equals(pass)) {
-            System.out.println("Đăng nhập thành công!");
-        } else {
-            System.out.println("Sai tài khoản hoặc mật khẩu!");
-        }
     }
+
 
     @FXML
     void goToRegister(ActionEvent event) {
