@@ -20,7 +20,7 @@ public abstract class User implements Serializable {
         if (password == null) {
             return false;
         }
-        return true;
+        return password.equals(passWord);
 
     }
 

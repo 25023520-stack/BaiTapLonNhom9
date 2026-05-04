@@ -16,12 +16,18 @@ import java.util.Map;
 import java.util.Optional;
 
 public class AuctionManager {
+    private static final AuctionManager INSTANCE = new AuctionManager();
+
     private final Map<String, User> usersById = new HashMap<>();
     private final Map<String, User> usersByUsername = new HashMap<>();
     private final Map<String, Item> itemsById = new HashMap<>();
 
     public static AuctionManager getInstance() {
-        return null;
+        return INSTANCE;
+    }
+
+    public synchronized void register(User user) {
+        registerUser(user);
     }
 
     public synchronized void registerUser(User user) {
