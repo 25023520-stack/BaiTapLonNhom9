@@ -12,19 +12,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class AuthManager {
+    private static final AuthManager INSTANCE = new AuthManager(false);
+
     private final Map<String, User> usersById = new HashMap<>();
     private final Map<String, User> usersByUsername = new HashMap<>();
 
-    // Khoi tao AuthManager va nap san 3 tai khoan demo mac dinh.
-    public AuthManager() {
-        this(true);
+    private AuthManager() {
+        this(false);
     }
 
-    // Cho phep tuy chon co nap du lieu mau hay khong, huu ich khi test.
-    public AuthManager(boolean seedDefaultUsers) {
+    AuthManager(boolean seedDefaultUsers) {
         if (seedDefaultUsers) {
             seedDefaultUsers();
         }
+    }
+
+    public static AuthManager getInstance() {
+        return INSTANCE;
     }
 
     // Dang ky tai khoan moi tu du lieu form, tu sinh userId va tao dung role.

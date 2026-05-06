@@ -9,7 +9,19 @@ import java.util.Map;
 import java.util.Collection;
 
 public class ItemManager {
+    private static final ItemManager INSTANCE = new ItemManager();
+
     private final Map<String, Item> items = new HashMap<>();
+
+    private ItemManager() {
+    }
+
+    ItemManager(boolean ignored) {
+    }
+
+    public static ItemManager getInstance() {
+        return INSTANCE;
+    }
 
     public void addItem(Item item) throws InvalidDataException {
         if (item == null) {
