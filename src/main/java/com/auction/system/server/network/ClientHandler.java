@@ -136,6 +136,13 @@ public class ClientHandler implements Runnable, Closeable {
 
         try {
             Bid bid = auctionManager.placeBid(itemId, bidder, amount);
+            ResponsePayload update = ResponsePayload.auctionUpdate("Auction updated");
+            update.put("itemId", itemId);
+            update.put("amount", bid.getAmount());
+            update.put("bidderId", bidder.getId());
+            auctionManager.findItemById(itemId).ifPresent(item -> update.put("item", item));
+            auctionServer.broadcast(update);
+
             ResponsePayload response = ResponsePayload.ok("Bid accepted");
             response.put("bid", bid);
             response.put("itemId", itemId);

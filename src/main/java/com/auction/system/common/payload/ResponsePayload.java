@@ -35,4 +35,10 @@ public class ResponsePayload extends Payload {
     public static ResponsePayload error(String message) {
         return new ResponsePayload(false, message);
     }
+
+    public static ResponsePayload auctionUpdate(String message) {
+        ResponsePayload payload = new ResponsePayload(true, message);
+        payload.setType(PayloadType.UPDATE_AUCTION);
+        return payload;
+    }
 }
