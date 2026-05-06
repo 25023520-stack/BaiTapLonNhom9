@@ -1,6 +1,7 @@
 package com.auction.system.server.network;
 
 import com.auction.system.manager.AuctionManager;
+import com.auction.system.common.payload.Payload;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -64,6 +65,15 @@ public class AuctionServer {
             serverSocket.close();
         }
         clientPool.shutdownNow();
+    }
+
+    public void broadcast(Payload payload) {
+        for (ClientHandler client : clients.toArray(new ClientHandler[0])) {
+            try {
+                client.send(payload);
+            } catch (IOException ignored) {
+            }
+        }
     }
 
     void removeClient(ClientHandler clientHandler) {
