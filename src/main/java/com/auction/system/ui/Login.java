@@ -32,16 +32,17 @@ public class Login {
     void handleLogin(ActionEvent event) {
         String username = txtUsername.getText();
         String password = txtPassword.getText();
-
-        Optional<User> user = authManager.login(username, password);
-        if (user.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Sai tai khoan hoac mat khau.");
-            return;
+        try {
+            Optional<?>authenticateUser = authManager.login(username, password);
+            if (authenticateUser.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Invalid username or password");
+                return;
+            }
+            showAlert(Alert.AlertType.INFORMATION, "Logged in successfully");
         }
-
-        LOGGER.info("Login success: username={}, role={}", user.get().getUserName(), user.get().getRole());
-        showAlert(Alert.AlertType.INFORMATION, "Dang nhap thanh cong voi vai tro: " + user.get().getRole());
-        openAuctionScreen(event);
+        catch (IllegalArgumentException e) {
+            showAlert(Alert.AlertType.ERROR, e.getMessage());
+        }
     }
 
     @FXML

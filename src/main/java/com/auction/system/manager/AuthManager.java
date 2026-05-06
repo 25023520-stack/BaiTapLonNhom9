@@ -66,6 +66,9 @@ public class AuthManager {
 
     // Kiem tra dang nhap bang username + password, tra ve User neu hop le.
     public synchronized Optional<User> login(String username, String password) {
+
+        validateloginInput(username, password);
+
         if (isBlank(username) || isBlank(password)) {
             return Optional.empty();
         }
@@ -76,6 +79,15 @@ public class AuthManager {
         }
 
         return Optional.of(user);
+    }
+    //report input error to user
+    public  synchronized void LoginUser(User user) {
+        if (isBlank(user.getUserName())) {
+            throw new IllegalArgumentException("Username must not be blank");
+        }
+        if (isBlank(user.getPassWord())) {
+            throw new IllegalArgumentException("Password must not be blank");
+        }
     }
 
     // Kiem tra nhanh username da ton tai trong he thong hay chua.
@@ -113,6 +125,18 @@ public class AuthManager {
         if (isBlank(role)) {
             throw new IllegalArgumentException("Role must not be blank");
         }
+    }
+    private void validateloginInput(String username, String password) {
+        if(isBlank(username) || isBlank(password)) {
+            throw new IllegalArgumentException("Username or password must not be blank");
+        }
+        if (isBlank(username)) {
+            throw new IllegalArgumentException("Username must not be blank");
+        }
+        if (isBlank(password)) {
+            throw new IllegalArgumentException("Password must not be blank");
+        }
+
     }
 
     // Factory nho: tao dung object User theo role duoc chon tren giao dien.
