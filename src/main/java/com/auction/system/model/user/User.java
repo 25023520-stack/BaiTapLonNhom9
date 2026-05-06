@@ -17,10 +17,7 @@ public abstract class User implements Serializable {
         this.passWord = passWord;
     }
     public boolean checkPassword(String password) {
-        if (password == null) {
-            return false;
-        }
-        return true;
+        return passWord != null && passWord.equals(password);
 
     }
 

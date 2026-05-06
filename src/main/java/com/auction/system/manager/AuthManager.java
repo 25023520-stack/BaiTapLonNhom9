@@ -15,10 +15,19 @@ public class AuthManager {
     private final Map<String, User> usersById = new HashMap<>();
     private final Map<String, User> usersByUsername = new HashMap<>();
 
+    // Khoi tao AuthManager va nap san 3 tai khoan demo mac dinh.
     public AuthManager() {
-        seedDefaultUsers();
+        this(true);
     }
 
+    // Cho phep tuy chon co nap du lieu mau hay khong, huu ich khi test.
+    public AuthManager(boolean seedDefaultUsers) {
+        if (seedDefaultUsers) {
+            seedDefaultUsers();
+        }
+    }
+
+    // Dang ky tai khoan moi tu du lieu form, tu sinh userId va tao dung role.
     public synchronized User register(String fullName, String username, String password, String confirmPassword, String role) {
         validateRegisterInput(fullName, username, password, confirmPassword, role);
 
@@ -29,6 +38,7 @@ public class AuthManager {
         return user;
     }
 
+    // Them truc tiep mot User da tao san vao he thong, thuong dung cho seed/test.
     public synchronized void registerUser(User user) {
         if (user == null) {
             throw new IllegalArgumentException("User must not be null");
@@ -50,6 +60,7 @@ public class AuthManager {
         usersByUsername.put(user.getUserName(), user);
     }
 
+    // Kiem tra dang nhap bang username + password, tra ve User neu hop le.
     public synchronized Optional<User> login(String username, String password) {
         if (isBlank(username) || isBlank(password)) {
             return Optional.empty();
@@ -63,18 +74,22 @@ public class AuthManager {
         return Optional.of(user);
     }
 
+    // Kiem tra nhanh username da ton tai trong he thong hay chua.
     public synchronized boolean existsByUsername(String username) {
         return !isBlank(username) && usersByUsername.containsKey(username.trim());
     }
 
+    // Tim user theo id, dung Optional de tranh tra ve null truc tiep.
     public synchronized Optional<User> findById(String id) {
         return Optional.ofNullable(usersById.get(id));
     }
 
+    // Tra ve toan bo user hien dang duoc luu trong bo nho.
     public synchronized Collection<User> getAllUsers() {
         return usersById.values();
     }
 
+    // Gom cac rule validate cho form dang ky truoc khi tao tai khoan moi.
     private void validateRegisterInput(String fullName, String username, String password, String confirmPassword, String role) {
         if (isBlank(fullName)) {
             throw new IllegalArgumentException("Full name must not be blank");
@@ -96,6 +111,7 @@ public class AuthManager {
         }
     }
 
+    // Factory nho: tao dung object User theo role duoc chon tren giao dien.
     private User createUserByRole(String id, String fullName, String username, String password, String role) {
         return switch (role.trim().toUpperCase()) {
             case "ADMIN" -> new Admin(id, fullName, username, password);
@@ -105,12 +121,14 @@ public class AuthManager {
         };
     }
 
+    // Tao san mot so tai khoan mau de login nhanh khi demo giao dien.
     private void seedDefaultUsers() {
         registerUser(new Admin("A1", "Admin", "admin", "123"));
         registerUser(new Seller("S1", "Seller Demo", "seller", "123"));
         registerUser(new Bidder("B1", "Bidder Demo", "bidder", "123"));
     }
 
+    // Ham ho tro kiem tra chuoi rong/null de dung lai o nhieu noi.
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
