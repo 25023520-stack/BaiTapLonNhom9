@@ -1,14 +1,17 @@
 package com.auction.system.manager;
 
+import com.auction.system.exception.InvalidDataException;
+import com.auction.system.exception.ItemNotFoundException;
+import com.auction.system.model.auction.Auction;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.Bid;
-import com.auction.system.model.user.Bidder;
 import com.auction.system.model.item.Item;
+import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -16,11 +19,21 @@ import java.util.Map;
 import java.util.Optional;
 
 public class AuctionManager {
-    private static final AuctionManager INSTANCE = new AuctionManager();
+    private static final AuctionManager INSTANCE =
+            new AuctionManager(AuthManager.getInstance(), ItemManager.getInstance());
 
-    private final Map<String, User> usersById = new HashMap<>();
-    private final Map<String, User> usersByUsername = new HashMap<>();
-    private final Map<String, Item> itemsById = new HashMap<>();
+    private final AuthManager authManager;
+    private final ItemManager itemManager;
+    private final Map<String, Auction> auctionsById = new HashMap<>();
+
+    AuctionManager() {
+        this(new AuthManager(false), new ItemManager(true));
+    }
+
+    AuctionManager(AuthManager authManager, ItemManager itemManager) {
+        this.authManager = authManager;
+        this.itemManager = itemManager;
+    }
 
     public static AuctionManager getInstance() {
         return INSTANCE;
@@ -31,26 +44,11 @@ public class AuctionManager {
     }
 
     public synchronized void registerUser(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException("User must not be null");
-        }
-        if (usersById.containsKey(user.getId())) {
-            throw new IllegalArgumentException("User id already exists");
-        }
-        if (usersByUsername.containsKey(user.getUserName())) {
-            throw new IllegalArgumentException("Username already exists");
-        }
-
-        usersById.put(user.getId(), user);
-        usersByUsername.put(user.getUserName(), user);
+        authManager.registerUser(user);
     }
 
     public synchronized Optional<User> login(String username, String password) {
-        User user = usersByUsername.get(username);
-        if (user == null || !user.checkPassword(password)) {
-            return Optional.empty();
-        }
-        return Optional.of(user);
+        return authManager.login(username, password);
     }
 
     public synchronized void addItem(Item item, Seller seller) {
@@ -58,18 +56,24 @@ public class AuctionManager {
         if (item == null) {
             throw new IllegalArgumentException("Item must not be null");
         }
-        if (itemsById.containsKey(item.getId())) {
-            throw new IllegalArgumentException("Item id already exists");
-        }
 
         item.setSellerId(seller.getId());
         item.setStatus(AuctionStatus.OPEN);
         item.setCurrentPrice(item.getStartPrice());
-        itemsById.put(item.getId(), item);
+
+        try {
+            itemManager.addItem(item);
+        } catch (InvalidDataException exception) {
+            throw new IllegalArgumentException(exception.getMessage(), exception);
+        }
     }
 
     public synchronized void updateItem(Item item, Seller seller) {
         validateSeller(seller);
+        if (item == null) {
+            throw new IllegalArgumentException("Item must not be null");
+        }
+
         Item existingItem = requireItem(item.getId());
         if (!seller.getId().equals(existingItem.getSellerId())) {
             throw new IllegalArgumentException("Seller can only update their own item");
@@ -78,10 +82,11 @@ public class AuctionManager {
             throw new IllegalStateException("Cannot edit an item while auction is running");
         }
 
-        existingItem.setName(item.getName());
-        existingItem.setDescription(item.getDescription());
-        existingItem.setStartPrice(item.getStartPrice());
-        existingItem.setCurrentPrice(Math.max(existingItem.getCurrentPrice(), item.getStartPrice()));
+        try {
+            itemManager.updateItem(item.getId(), item.getName(), item.getDescription(), item.getStartPrice());
+        } catch (ItemNotFoundException | InvalidDataException exception) {
+            throw new IllegalArgumentException(exception.getMessage(), exception);
+        }
     }
 
     public synchronized void removeItem(String itemId, Seller seller) {
@@ -94,7 +99,12 @@ public class AuctionManager {
             throw new IllegalStateException("Cannot remove item that already has bids");
         }
 
-        itemsById.remove(itemId);
+        try {
+            itemManager.deleteItem(itemId);
+            auctionsById.remove(itemId);
+        } catch (ItemNotFoundException exception) {
+            throw new IllegalArgumentException(exception.getMessage(), exception);
+        }
     }
 
     public synchronized void startAuction(String itemId, LocalDateTime startTime, LocalDateTime endTime) {
@@ -106,11 +116,17 @@ public class AuctionManager {
         item.setStartTime(startTime);
         item.setEndTime(endTime);
         item.setStatus(AuctionStatus.RUNNING);
+        auctionsById.put(itemId, new Auction(itemId, item));
     }
 
     public synchronized void finishAuction(String itemId) {
         Item item = requireItem(itemId);
         item.setStatus(AuctionStatus.FINISHED);
+
+        Auction auction = auctionsById.get(itemId);
+        if (auction != null) {
+            auction.finishAuction();
+        }
     }
 
     public synchronized Bid placeBid(String itemId, Bidder bidder, double bidAmount) {
@@ -130,7 +146,7 @@ public class AuctionManager {
             throw new IllegalArgumentException("Bid amount must be greater than current price");
         }
 
-        Bid bid = new Bid(bidder.getId(), bidder, bidAmount);
+        Bid bid = new Bid("Bid" + (item.getBidHistory().size() + 1), bidder, bidAmount);
         item.setCurrentPrice(bidAmount);
         item.setHighestBidderId(bidder.getId());
         item.addBid(bid);
@@ -138,31 +154,40 @@ public class AuctionManager {
     }
 
     public synchronized List<Item> getAllItems() {
-        return itemsById.values()
+        return itemManager.getAllItems()
                 .stream()
                 .sorted(Comparator.comparing(Item::getId))
                 .toList();
     }
 
+    public synchronized Collection<Auction> getAllAuctions() {
+        return auctionsById.values();
+    }
+
     public synchronized Optional<Item> findItemById(String itemId) {
-        return Optional.ofNullable(itemsById.get(itemId));
+        try {
+            return Optional.of(itemManager.findItemById(itemId));
+        } catch (ItemNotFoundException exception) {
+            return Optional.empty();
+        }
     }
 
     private void validateSeller(Seller seller) {
         if (seller == null) {
             throw new IllegalArgumentException("Seller must not be null");
         }
-        User existingSeller = usersById.get(seller.getId());
-        if (!(existingSeller instanceof Seller)) {
+
+        Optional<User> existingSeller = authManager.findById(seller.getId());
+        if (existingSeller.isEmpty() || !(existingSeller.get() instanceof Seller)) {
             throw new IllegalArgumentException("Seller account is not registered");
         }
     }
 
     private Item requireItem(String itemId) {
-        Item item = itemsById.get(itemId);
-        if (item == null) {
-            throw new IllegalArgumentException("Item does not exist");
+        try {
+            return itemManager.findItemById(itemId);
+        } catch (ItemNotFoundException exception) {
+            throw new IllegalArgumentException("Item does not exist", exception);
         }
-        return item;
     }
 }

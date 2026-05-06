@@ -26,7 +26,7 @@ class AuctionManagerTest {
 
     @Test
     void loginChecksHashedPasswordInsteadOfReturningRawPassword() {
-        AuctionManager manager = AuctionManager.getInstance();
+        AuctionManager manager = new AuctionManager();
         Seller seller = new Seller("S1", "Seller One", "seller1", "secret");
 
         manager.registerUser(seller);
