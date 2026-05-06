@@ -8,14 +8,21 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class Register {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Register.class);
     private final AuthManager authManager = AppContext.getAuthManager();
+
+    @FXML
+    private TextField txtFullName;
 
     @FXML
     private TextField txtUsername;
@@ -27,13 +34,24 @@ public class Register {
     private PasswordField txtConfirmPassword;
 
     @FXML
+    private ComboBox<String> cbRole;
+
+    @FXML
+    void initialize() {
+        cbRole.getItems().setAll("BIDDER", "SELLER");
+        cbRole.setValue("BIDDER");
+    }
+
+    @FXML
     void handleRegister(ActionEvent event) {
+        String fullName = txtFullName.getText();
         String username = txtUsername.getText();
         String password = txtPassword.getText();
         String confirmPassword = txtConfirmPassword.getText();
+        String role = cbRole.getValue();
 
         try {
-            authManager.register(username, username, password, confirmPassword, "BIDDER");
+            authManager.register(fullName, username, password, confirmPassword, role);
             showAlert(Alert.AlertType.INFORMATION, "Dang ky thanh cong. Hay dang nhap.");
             goLogin(event);
         } catch (IllegalArgumentException exception) {
@@ -51,7 +69,7 @@ public class Register {
             stage.show();
         } catch (IOException exception) {
             showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh dang nhap.");
-            exception.printStackTrace();
+            LOGGER.error("Cannot open login screen", exception);
         }
     }
 
