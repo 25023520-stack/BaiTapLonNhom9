@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="620.0" prefWidth="980.0" style="-fx-background-color: linear-gradient(to bottom, #f7efe5, #ead7c3);" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.AuctionController">
+    <left>
+        <VBox prefWidth="360.0" spacing="12.0" style="-fx-background-color: rgba(255,255,255,0.72);">
+            <padding>
+                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+            </padding>
+            <children>
+                <Label text="Danh sach phien dau gia">
+                    <font>
+                        <Font name="Arial" size="22.0" />
+                    </font>
+                </Label>
+                <Label text="Chon san pham de xem thong tin va dat gia." />
+                <ListView fx:id="itemListView" VBox.vgrow="ALWAYS" />
+            </children>
+        </VBox>
+    </left>
+    <center>
+        <VBox spacing="16.0" style="-fx-background-color: rgba(255,248,240,0.88);">
+            <padding>
+                <Insets bottom="24.0" left="24.0" right="24.0" top="24.0" />
+            </padding>
+            <children>
+                <Label text="Chi tiet phien">
+                    <font>
+                        <Font name="Arial" size="24.0" />
+                    </font>
+                </Label>
+                <VBox spacing="10.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label prefWidth="120.0" text="Ten san pham:" />
+                                <Label fx:id="nameValue" wrapText="true" text="-" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label prefWidth="120.0" text="Gia hien tai:" />
+                                <Label fx:id="priceValue" wrapText="true" text="-" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label prefWidth="120.0" text="Trang thai:" />
+                                <Label fx:id="statusValue" wrapText="true" text="-" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label prefWidth="120.0" text="Nguoi ban:" />
+                                <Label fx:id="sellerValue" wrapText="true" text="-" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label prefWidth="120.0" text="Nguoi dang dan:" />
+                                <Label fx:id="leaderValue" wrapText="true" text="-" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                            <children>
+                                <Label prefWidth="120.0" text="Thoi gian:" />
+                                <Label fx:id="scheduleValue" wrapText="true" text="-" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+                <VBox spacing="10.0">
+                    <children>
+                        <Label text="Mo ta" />
+                        <TextArea fx:id="descriptionArea" prefRowCount="4" wrapText="true" />
+                        <Label text="Nguoi dau gia" />
+                        <ComboBox fx:id="bidderSelector" maxWidth="1.7976931348623157E308" />
+                        <Label text="Gia moi" />
+                        <TextField fx:id="bidAmountField" promptText="Nhap gia ban muon dat" />
+                        <Button fx:id="bidButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#submitBid" text="Dat gia" />
+                        <Label text="Lich su dau gia" />
+                        <TextArea fx:id="bidHistoryArea" prefRowCount="10" wrapText="true" VBox.vgrow="ALWAYS" />
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+    </center>
+</BorderPane>
