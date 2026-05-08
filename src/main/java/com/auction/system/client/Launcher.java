@@ -38,6 +38,11 @@ public class Launcher extends Application {
     }
 
     public static void main(String[] args) {
-        launch(args);
+        try {
+            launch(args);
+        } catch (Exception e) {
+            LOGGER.error("Failed to launch application", e);
+            System.exit(1);
+        }
     }
 }

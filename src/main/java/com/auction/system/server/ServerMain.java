@@ -7,6 +7,8 @@ import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.server.network.AuctionServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -17,6 +19,7 @@ public class ServerMain {
     private static final AuctionManager AUCTION_MANAGER = AuctionManager.getInstance();
     private static Thread serverThread;
     private static boolean demoDataSeeded;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerMain.class);
 
     public static void main(String[] args) throws Exception {
         ensureDemoData();
@@ -55,12 +58,13 @@ public class ServerMain {
         if (demoDataSeeded) {
             return;
         }
+        LOGGER.info("Seeding demo data into the system...");
 
-        Seller seller1 = new Seller(1, "Nguyen Van Seller","seller1","nguyenvanseller@example.com", "123456");
-        Seller seller2 = new Seller(3, "Tran Thi Seller", "seller2","seller2@example.com", "123456");
-        Bidder bidder1 = new Bidder(2, "Pham Minh An", "bidder1","bidder1@example.com", "123456");
-        Bidder bidder2 = new Bidder(4, "Le Thu Ha", "bidder2","bidder2@example.com", "123456");
-        Bidder bidder3 = new Bidder(6, "Do Quang Huy", "bidder3","bidder3@exmaple.com", "123456");
+        Seller seller1 = new Seller(10, "Nguyen Van Seller","seller1","nguyenvanseller@example.com", "123456");
+        Seller seller2 = new Seller(11, "Tran Thi Seller", "seller2","seller2@example.com", "123456");
+        Bidder bidder1 = new Bidder(12, "Pham Minh An", "bidder1","bidder1@example.com", "123456");
+        Bidder bidder2 = new Bidder(13, "Le Thu Ha", "bidder2","bidder2@example.com", "123456");
+        Bidder bidder3 = new Bidder(14, "Do Quang Huy", "bidder3","bidder3@exmaple.com", "123456");
 
         registerIfAbsent(seller1);
         registerIfAbsent(seller2);
@@ -86,7 +90,8 @@ public class ServerMain {
             AUCTION_MANAGER.placeBid(1, bidder2, 16800000);
             AUCTION_MANAGER.placeBid(2, bidder3, 11800000);
         }
-
+        // ... (phần code tạo User/Item của bạn)
+        LOGGER.info("Demo data seeded successfully.");
         demoDataSeeded = true;
     }
 
