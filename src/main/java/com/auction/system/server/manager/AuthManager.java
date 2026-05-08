@@ -1,4 +1,4 @@
-package com.auction.system.manager;
+package com.auction.system.server.manager;
 
 import com.auction.system.model.user.Admin;
 import com.auction.system.model.user.Bidder;
@@ -10,9 +10,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 
 public class AuthManager {
-    private static final AuthManager INSTANCE = new AuthManager(false);
+    private static final AuthManager INSTANCE = new AuthManager(true    );
 
     private final Map<Integer, User> usersById = new HashMap<>();
     private final Map<String, User> usersByUsername = new HashMap<>();
@@ -34,8 +35,8 @@ public class AuthManager {
     }
 
     // Dang ky tai khoan moi tu du lieu form, tu sinh userId va tao dung role.
-    public synchronized User register(String fullName, String username, String password, String email, String confirmPassword, String role) {
-        validateRegisterInput(fullName, username, password, email, confirmPassword, role);
+    public synchronized User register(String fullName, String username, String email, String password, String confirmPassword, String role) {
+        validateRegisterInput(fullName, username, email, password, confirmPassword, role);
 
         int userId = nextUserId.getAndIncrement();
         User user = createUserByRole(userId, fullName.trim(), username.trim(), email.trim(), password, role);
@@ -70,19 +71,13 @@ public class AuthManager {
         }
 
         usersById.put(user.getId(), user);
-        nextUserId.updateAndGet(next -> Math.max(next, user.getId() + 1));
+            nextUserId.updateAndGet(next -> Math.max(next, user.getId() + 1));
         usersByUsername.put(user.getUserName(), user);
         usersByEmail.put(user.getEmail(), user);
     }
 
-    // Kiem tra dang nhap bang username + password, tra ve User neu hop le.
     public synchronized Optional<User> login(String username, String password) {
-
-        validateloginInput(username, password);
-
-        if (isBlank(username) || isBlank(password)) {
-            return Optional.empty();
-        }
+        validateLoginInput(username, password);
 
         User user = usersByUsername.get(username.trim());
         if (user == null || !user.checkPassword(password)) {
@@ -90,15 +85,6 @@ public class AuthManager {
         }
 
         return Optional.of(user);
-    }
-    //report input error to user
-    public  synchronized void LoginUser(User user) {
-        if (isBlank(user.getUserName())) {
-            throw new IllegalArgumentException("Username must not be blank");
-        }
-        if (isBlank(user.getPassWord())) {
-            throw new IllegalArgumentException("Password must not be blank");
-        }
     }
 
     // Kiem tra nhanh username da ton tai trong he thong hay chua.
@@ -117,11 +103,11 @@ public class AuthManager {
 
     // Tra ve toan bo user hien dang duoc luu trong bo nho.
     public synchronized Collection<User> getAllUsers() {
-        return usersById.values();
+        return List.copyOf(usersById.values()); // trả về bản sao, không thể sửa
     }
 
     // Gom cac rule validate cho form dang ky truoc khi tao tai khoan moi.
-    private void validateRegisterInput(String fullName, String username, String password, String email, String confirmPassword, String role) {
+    private void validateRegisterInput(String fullName, String username,String email, String password, String confirmPassword, String role) {
         if (isBlank(fullName)) {
             throw new IllegalArgumentException("Full name must not be blank");
         }
@@ -147,17 +133,10 @@ public class AuthManager {
             throw new IllegalArgumentException("Role must not be blank");
         }
     }
-    private void validateloginInput(String username, String password) {
+    private void validateLoginInput(String username, String password) {
         if(isBlank(username) || isBlank(password)) {
             throw new IllegalArgumentException("Username or password must not be blank");
         }
-        if (isBlank(username)) {
-            throw new IllegalArgumentException("Username must not be blank");
-        }
-        if (isBlank(password)) {
-            throw new IllegalArgumentException("Password must not be blank");
-        }
-
     }
 
     // Factory nho: tao dung object User theo role duoc chon tren giao dien.

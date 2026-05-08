@@ -4,10 +4,11 @@ import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
-import com.auction.system.manager.AuctionManager;
-import com.auction.system.model.auction.Bid;
-import com.auction.system.model.user.Bidder;
+import com.auction.system.server.manager.AuctionManager;
+import com.auction.system.server.controller.AuctionController;
 import com.auction.system.model.user.User;
+import com.auction.system.model.user.Bidder;
+
 
 import java.io.Closeable;
 import java.io.EOFException;
@@ -21,6 +22,7 @@ public class ClientHandler implements Runnable, Closeable {
     private final Socket socket;
     private final AuctionManager auctionManager;
     private final AuctionServer auctionServer;
+    private final AuctionController auctionController;
     private final ObjectOutputStream outputStream;
     private final ObjectInputStream inputStream;
 
@@ -32,6 +34,7 @@ public class ClientHandler implements Runnable, Closeable {
         this.socket = socket;
         this.auctionManager = auctionManager;
         this.auctionServer = auctionServer;
+        this.auctionController = new AuctionController();
         this.outputStream = new ObjectOutputStream(socket.getOutputStream());
         this.outputStream.flush();
         this.inputStream = new ObjectInputStream(socket.getInputStream());
@@ -133,23 +136,16 @@ public class ClientHandler implements Runnable, Closeable {
             itemId = parsedItemId;
             amount = parsedAmount;
         }
-
-        try {
-            Bid bid = auctionManager.placeBid(itemId, bidder, amount);
-            ResponsePayload update = ResponsePayload.auctionUpdate("Auction updated");
-            update.put("itemId", itemId);
-            update.put("amount", bid.getAmount());
-            update.put("bidderId", bidder.getId());
-            auctionManager.findItemById(itemId).ifPresent(item -> update.put("item", item));
+        ResponsePayload response = auctionController.placeBid(payload, authenticatedUser);
+        if (response.getBody().get("item") != null) {
+            ResponsePayload update = ResponsePayload.auctionUpdate("A...");
+            update.put("itemId", response.getInt("itemId"));
+            update.put("amount", response.getDouble("amount"));
+            update.put("item", response.getBody().get("item"));
+            if (authenticatedUser != null) {
+                update.put("bidderId", authenticatedUser.getId());
+            }
             auctionServer.broadcast(update);
-
-            ResponsePayload response = ResponsePayload.ok("Bid accepted");
-            response.put("bid", bid);
-            response.put("itemId", itemId);
-            response.put("amount", bid.getAmount());
-            send(response);
-        } catch (RuntimeException exception) {
-            send(ResponsePayload.error(exception.getMessage()));
         }
     }
 

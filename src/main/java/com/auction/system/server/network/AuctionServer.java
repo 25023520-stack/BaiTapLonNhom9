@@ -1,7 +1,7 @@
 package com.auction.system.server.network;
 
-import com.auction.system.manager.AuctionManager;
 import com.auction.system.common.payload.Payload;
+import com.auction.system.server.manager.AuctionManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -42,7 +42,7 @@ public class AuctionServer {
         while (running) {
             try {
                 Socket socket = serverSocket.accept();
-                ClientHandler clientHandler = new ClientHandler(socket, auctionManager, this);
+                ClientHandler clientHandler = new ClientHandler(socket,auctionManager, this);
                 clients.add(clientHandler);
                 clientPool.submit(clientHandler);
             } catch (IOException exception) {
