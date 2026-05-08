@@ -178,8 +178,8 @@ public class AuctionController {
         nameValue.setText(item.getName());
         priceValue.setText(item.getCurrentPrice() + " VND");
         statusValue.setText(item.getStatus().name());
-        sellerValue.setText(item.getSellerId() == null ? "-" : item.getSellerId());
-        leaderValue.setText(item.getHighestBidderId() == null ? "Chua co" : item.getHighestBidderId());
+        sellerValue.setText(item.getSellerId() <= 0 ? "-" : String.valueOf(item.getSellerId()));
+        leaderValue.setText(item.getHighestBidderId() <= 0 ? "Chua co" : String.valueOf(item.getHighestBidderId()));
         scheduleValue.setText(formatSchedule(item));
         descriptionArea.setText(item.getDescription());
         bidHistoryArea.setText(formatBidHistory(item));
@@ -254,9 +254,9 @@ public class AuctionController {
         throw new IOException("Unexpected payload received from server");
     }
 
-    private Item findItemById(String itemId) {
+    private Item findItemById(int itemId) {
         return items.stream()
-                .filter(item -> item.getId().equals(itemId))
+                .filter(item -> item.getId() == itemId)
                 .findFirst()
                 .orElse(null);
     }

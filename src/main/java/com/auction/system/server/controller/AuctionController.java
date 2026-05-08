@@ -22,13 +22,13 @@ public class AuctionController {
             return ResponsePayload.error("Please login with a bidder account before placing a bid");
         }
 
-        String itemId;
+        int itemId; // Đã sửa: String -> int
         double amount;
         if (payload instanceof BidPayload bidPayload) {
             itemId = bidPayload.getItemId();
             amount = bidPayload.getAmount();
         } else {
-            String parsedItemId = payload.getString("itemId");
+            Integer parsedItemId = payload.getInt("itemId"); // Đã sửa: getString -> getInt
             Double parsedAmount = payload.getDouble("amount");
             if (parsedItemId == null || parsedAmount == null) {
                 return ResponsePayload.error("Bid payload must contain itemId and amount");

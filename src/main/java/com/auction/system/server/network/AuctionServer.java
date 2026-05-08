@@ -42,7 +42,7 @@ public class AuctionServer {
         while (running) {
             try {
                 Socket socket = serverSocket.accept();
-                ClientHandler clientHandler = new ClientHandler(socket, this);
+                ClientHandler clientHandler = new ClientHandler(socket,auctionManager, this);
                 clients.add(clientHandler);
                 clientPool.submit(clientHandler);
             } catch (IOException exception) {
