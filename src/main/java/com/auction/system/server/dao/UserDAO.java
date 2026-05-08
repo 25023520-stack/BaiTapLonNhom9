@@ -1,13 +1,13 @@
-package com.auction.system.dao;
+package com.auction.system.server.dao;
 
-import com.auction.system.db.Database;
+import com.auction.system.server.database.Database;
 import com.auction.system.model.user.*;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class userDAO {
+public class UserDAO {
 
     //lấy kết nối từ Database singleton
     private Connection getConnection() throws SQLException {
