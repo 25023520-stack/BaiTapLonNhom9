@@ -1,0 +1,187 @@
+2026-05-07 18:55:11.116613+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Column "CURRENT_TIMETAMP" not found; SQL statement:
+CREATE TABLE IF NOT EXISTS users (
+id VARCHAR(100) PRIMARY KEY,
+full_name VARCHAR(255) NOT NULL,
+username VARCHAR(50) UNIQUE NOT NULL,
+email VARCHAR(100) UNIQUE NOT NULL,
+password VARCHAR(255) NOT NULL,
+role VARCHAR(20) DEFAULT 'BIDDER',
+create_at TIMESTAMP DEFAULT CURRENT_TIMETAMP )
+ [42122-232]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:514)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.expression.ExpressionColumn.getColumnException(ExpressionColumn.java:244)
+	at org.h2.expression.ExpressionColumn.optimizeOther(ExpressionColumn.java:226)
+	at org.h2.expression.ExpressionColumn.optimize(ExpressionColumn.java:213)
+	at org.h2.table.Column.setDefaultExpression(Column.java:286)
+	at org.h2.command.Parser.parseColumnForTable(Parser.java:5576)
+	at org.h2.command.Parser.parseTableColumnDefinition(Parser.java:8876)
+	at org.h2.command.Parser.parseCreateTable(Parser.java:8819)
+	at org.h2.command.Parser.parseCreate(Parser.java:6398)
+	at org.h2.command.Parser.parsePrepared(Parser.java:645)
+	at org.h2.command.Parser.parse(Parser.java:581)
+	at org.h2.command.Parser.parse(Parser.java:556)
+	at org.h2.command.Parser.prepareCommand(Parser.java:484)
+	at org.h2.engine.SessionLocal.prepareLocal(SessionLocal.java:645)
+	at org.h2.engine.SessionLocal.prepareCommand(SessionLocal.java:561)
+	at org.h2.jdbc.JdbcConnection.prepareCommand(JdbcConnection.java:1164)
+	at org.h2.jdbc.JdbcStatement.executeUpdateInternal(JdbcStatement.java:190)
+	at org.h2.jdbc.JdbcStatement.executeUpdate(JdbcStatement.java:147)
+	at com.auction.system.db.Database.initializeDatabase(Database.java:43)
+	at com.auction.system.db.TestDatabase.main(TestDatabase.java:7)
+2026-05-07 18:56:41.087386+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "CREATE TABLE IF NOT EXISTS items (\000aid VARCHAR(100) PRIMARY KEY,\000aname VARCHAR(255) NOT NULL,\000adescription CLOB,\000aimage_path VARCHAR(500),\000astart_price DOUBLE NOT NULL,\000acurrent_price DOUBLE NOT NULL,\000aSTATUS VARCHAR(30) NOT NULL,\000aseller_id INTEGER[*](100) NOT NULL,\000ahighest_bidder_id VARCHAR(100) NOT NULL,\000astart_time TIMESTAMP NOT NULL,\000aend_time  TIMESTAMP NOT NULL )\000a"; expected "ARRAY, INVISIBLE, VISIBLE, NOT NULL, DEFAULT, GENERATED, ON UPDATE, NOT NULL, DEFAULT ON NULL, SEQUENCE, SELECTIVITY, COMMENT, CONSTRAINT, COMMENT, PRIMARY KEY, UNIQUE, NOT NULL, CHECK, REFERENCES, ,, )"; SQL statement:
+CREATE TABLE IF NOT EXISTS items (
+id VARCHAR(100) PRIMARY KEY,
+name VARCHAR(255) NOT NULL,
+description CLOB,
+image_path VARCHAR(500),
+start_price DOUBLE NOT NULL,
+current_price DOUBLE NOT NULL,
+STATUS VARCHAR(30) NOT NULL,
+seller_id INTEGER(100) NOT NULL,
+highest_bidder_id VARCHAR(100) NOT NULL,
+start_time TIMESTAMP NOT NULL,
+end_time  TIMESTAMP NOT NULL )
+ [42001-232]
+2026-05-07 18:59:09.788600+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "CREATE TABLE IF NOT EXISTS items (\000aid VARCHAR(100) PRIMARY KEY,\000aname VARCHAR(255) NOT NULL,\000adescription CLOB,\000aimage_path VARCHAR(500),\000astart_price DOUBLE NOT NULL,\000acurrent_price DOUBLE NOT NULL,\000aSTATUS VARCHAR(30) NOT NULL,\000aseller_id INTEGER[*](100) NOT NULL,\000ahighest_bidder_id VARCHAR(100) NOT NULL,\000astart_time TIMESTAMP NOT NULL,\000aend_time  TIMESTAMP NOT NULL )\000a"; expected "ARRAY, INVISIBLE, VISIBLE, NOT NULL, DEFAULT, GENERATED, ON UPDATE, NOT NULL, DEFAULT ON NULL, SEQUENCE, SELECTIVITY, COMMENT, CONSTRAINT, COMMENT, PRIMARY KEY, UNIQUE, NOT NULL, CHECK, REFERENCES, ,, )"; SQL statement:
+CREATE TABLE IF NOT EXISTS items (
+id VARCHAR(100) PRIMARY KEY,
+name VARCHAR(255) NOT NULL,
+description CLOB,
+image_path VARCHAR(500),
+start_price DOUBLE NOT NULL,
+current_price DOUBLE NOT NULL,
+STATUS VARCHAR(30) NOT NULL,
+seller_id INTEGER(100) NOT NULL,
+highest_bidder_id VARCHAR(100) NOT NULL,
+start_time TIMESTAMP NOT NULL,
+end_time  TIMESTAMP NOT NULL )
+ [42001-232]
+2026-05-07 18:59:23.569510+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "CREATE TABLE IF NOT EXISTS items (\000aid VARCHAR(100) PRIMARY KEY,\000aname VARCHAR(255) NOT NULL,\000adescription CLOB,\000aimage_path VARCHAR(500),\000astart_price DOUBLE NOT NULL,\000acurrent_price DOUBLE NOT NULL,\000aSTATUS VARCHAR(30) NOT NULL,\000aseller_id INTEGER[*](100) NOT NULL,\000ahighest_bidder_id VARCHAR(100) NOT NULL,\000astart_time TIMESTAMP NOT NULL,\000aend_time  TIMESTAMP NOT NULL )\000a"; expected "ARRAY, INVISIBLE, VISIBLE, NOT NULL, DEFAULT, GENERATED, ON UPDATE, NOT NULL, DEFAULT ON NULL, SEQUENCE, SELECTIVITY, COMMENT, CONSTRAINT, COMMENT, PRIMARY KEY, UNIQUE, NOT NULL, CHECK, REFERENCES, ,, )"; SQL statement:
+CREATE TABLE IF NOT EXISTS items (
+id VARCHAR(100) PRIMARY KEY,
+name VARCHAR(255) NOT NULL,
+description CLOB,
+image_path VARCHAR(500),
+start_price DOUBLE NOT NULL,
+current_price DOUBLE NOT NULL,
+STATUS VARCHAR(30) NOT NULL,
+seller_id INTEGER(100) NOT NULL,
+highest_bidder_id VARCHAR(100) NOT NULL,
+start_time TIMESTAMP NOT NULL,
+end_time  TIMESTAMP NOT NULL )
+ [42001-232]
+2026-05-07 19:01:06.273794+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "CREATE TABLE IF NOT EXISTS bids (\000aid VARCHAR(100) [*]PRIMARY,\000aauction_id VARCHAR(100) NOT NULL,\000abidder_id VARCHAR(100) NOT NULL,\000aamount DOUBLE NOT NULL,\000abid_time TIMETAMP NOT NULL,\000aFOREIGN KEY (auction_id) REFERENCES auctions(id),\000aFOREIGN KEY (item_id) REFERENCES items(id),\000aFOREIGN KEY (bidder_id) REFERENCES users(id)\000a)\000a"; expected "ARRAY, INVISIBLE, VISIBLE, NOT NULL, DEFAULT, GENERATED, ON UPDATE, NOT NULL, DEFAULT ON NULL, SEQUENCE, SELECTIVITY, COMMENT, CONSTRAINT, COMMENT, PRIMARY KEY, UNIQUE, NOT NULL, CHECK, REFERENCES, ,, )"; SQL statement:
+CREATE TABLE IF NOT EXISTS bids (
+id VARCHAR(100) PRIMARY,
+auction_id VARCHAR(100) NOT NULL,
+bidder_id VARCHAR(100) NOT NULL,
+amount DOUBLE NOT NULL,
+bid_time TIMETAMP NOT NULL,
+FOREIGN KEY (auction_id) REFERENCES auctions(id),
+FOREIGN KEY (item_id) REFERENCES items(id),
+FOREIGN KEY (bidder_id) REFERENCES users(id)
+)
+ [42001-232]
+2026-05-07 19:01:48.996955+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLNonTransientException: Unknown data type: "TIMETAMP"; SQL statement:
+CREATE TABLE IF NOT EXISTS bids (
+id VARCHAR(100) PRIMARY KEY,
+auction_id VARCHAR(100) NOT NULL,
+bidder_id VARCHAR(100) NOT NULL,
+amount DOUBLE NOT NULL,
+bid_time TIMETAMP NOT NULL,
+FOREIGN KEY (auction_id) REFERENCES auctions(id),
+FOREIGN KEY (item_id) REFERENCES items(id),
+FOREIGN KEY (bidder_id) REFERENCES users(id)
+)
+ [50004-232]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:566)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.command.Parser.readIfDataType1(Parser.java:5860)
+	at org.h2.command.Parser.readIfDataType(Parser.java:5698)
+	at org.h2.command.Parser.parseColumnWithType(Parser.java:5680)
+	at org.h2.command.Parser.parseColumnForTable(Parser.java:5559)
+	at org.h2.command.Parser.parseTableColumnDefinition(Parser.java:8876)
+	at org.h2.command.Parser.parseCreateTable(Parser.java:8819)
+	at org.h2.command.Parser.parseCreate(Parser.java:6398)
+	at org.h2.command.Parser.parsePrepared(Parser.java:645)
+	at org.h2.command.Parser.parse(Parser.java:581)
+	at org.h2.command.Parser.parse(Parser.java:556)
+	at org.h2.command.Parser.prepareCommand(Parser.java:484)
+	at org.h2.engine.SessionLocal.prepareLocal(SessionLocal.java:645)
+	at org.h2.engine.SessionLocal.prepareCommand(SessionLocal.java:561)
+	at org.h2.jdbc.JdbcConnection.prepareCommand(JdbcConnection.java:1164)
+	at org.h2.jdbc.JdbcStatement.executeUpdateInternal(JdbcStatement.java:190)
+	at org.h2.jdbc.JdbcStatement.executeUpdate(JdbcStatement.java:147)
+	at com.auction.system.db.Database.initializeDatabase(Database.java:90)
+	at com.auction.system.db.TestDatabase.main(TestDatabase.java:7)
+2026-05-07 19:02:10.339865+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Column "ITEM_ID" not found; SQL statement:
+CREATE TABLE IF NOT EXISTS bids (
+id VARCHAR(100) PRIMARY KEY,
+auction_id VARCHAR(100) NOT NULL,
+bidder_id VARCHAR(100) NOT NULL,
+amount DOUBLE NOT NULL,
+bid_time TIMESTAMP NOT NULL,
+FOREIGN KEY (auction_id) REFERENCES auctions(id),
+FOREIGN KEY (item_id) REFERENCES items(id),
+FOREIGN KEY (bidder_id) REFERENCES users(id)
+) [42122-232]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:514)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.table.Table.getColumn(Table.java:786)
+	at org.h2.table.IndexColumn.mapColumns(IndexColumn.java:184)
+	at org.h2.command.ddl.AlterTableAddConstraint.tryUpdate(AlterTableAddConstraint.java:215)
+	at org.h2.command.ddl.AlterTableAddConstraint.update(AlterTableAddConstraint.java:74)
+	at org.h2.command.ddl.AlterTable.update(AlterTable.java:46)
+	at org.h2.command.ddl.CommandWithColumns.createConstraints(CommandWithColumns.java:83)
+	at org.h2.command.ddl.CreateTable.update(CreateTable.java:134)
+	at org.h2.command.CommandContainer.update(CommandContainer.java:139)
+	at org.h2.command.Command.executeUpdate(Command.java:304)
+	at org.h2.command.Command.executeUpdate(Command.java:248)
+	at org.h2.jdbc.JdbcStatement.executeUpdateInternal(JdbcStatement.java:196)
+	at org.h2.jdbc.JdbcStatement.executeUpdate(JdbcStatement.java:147)
+	at com.auction.system.db.Database.initializeDatabase(Database.java:90)
+	at com.auction.system.db.TestDatabase.main(TestDatabase.java:7)
+2026-05-07 19:04:53.521182+07:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Column "ITEM_ID" not found; SQL statement:
+CREATE TABLE IF NOT EXISTS bids (
+id VARCHAR(100) PRIMARY KEY,
+auction_id VARCHAR(100) NOT NULL,
+bidder_id VARCHAR(100) NOT NULL,
+amount DOUBLE NOT NULL,
+bid_time TIMESTAMP NOT NULL,
+FOREIGN KEY (auction_id) REFERENCES auctions(id),
+FOREIGN KEY (item_id) REFERENCES items(id),
+FOREIGN KEY (bidder_id) REFERENCES users(id)
+) [42122-232]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:514)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.table.Table.getColumn(Table.java:786)
+	at org.h2.table.IndexColumn.mapColumns(IndexColumn.java:184)
+	at org.h2.command.ddl.AlterTableAddConstraint.tryUpdate(AlterTableAddConstraint.java:215)
+	at org.h2.command.ddl.AlterTableAddConstraint.update(AlterTableAddConstraint.java:74)
+	at org.h2.command.ddl.AlterTable.update(AlterTable.java:46)
+	at org.h2.command.ddl.CommandWithColumns.createConstraints(CommandWithColumns.java:83)
+	at org.h2.command.ddl.CreateTable.update(CreateTable.java:134)
+	at org.h2.command.CommandContainer.update(CommandContainer.java:139)
+	at org.h2.command.Command.executeUpdate(Command.java:304)
+	at org.h2.command.Command.executeUpdate(Command.java:248)
+	at org.h2.jdbc.JdbcStatement.executeUpdateInternal(JdbcStatement.java:196)
+	at org.h2.jdbc.JdbcStatement.executeUpdate(JdbcStatement.java:147)
+	at com.auction.system.db.Database.initializeDatabase(Database.java:90)
+	at com.auction.system.db.TestDatabase.main(TestDatabase.java:7)

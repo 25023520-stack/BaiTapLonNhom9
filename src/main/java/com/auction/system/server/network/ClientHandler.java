@@ -118,13 +118,13 @@ public class ClientHandler implements Runnable, Closeable {
             return;
         }
 
-        String itemId;
+        int itemId;
         double amount;
         if (payload instanceof BidPayload bidPayload) {
             itemId = bidPayload.getItemId();
             amount = bidPayload.getAmount();
         } else {
-            String parsedItemId = payload.getString("itemId");
+            Integer parsedItemId = payload.getInt("itemId");
             Double parsedAmount = payload.getDouble("amount");
             if (parsedItemId == null || parsedAmount == null) {
                 send(ResponsePayload.error("Bid payload must contain itemId and amount"));

@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Auction implements Serializable {
-    private String id;
+    private int id;
     private Item item;
     private double currentPrice;
     private AuctionStatus status;
     private List<Bid> bids;
 
-    public Auction(String id, Item item) {
+    public Auction(int id, Item item) {
         if (item == null) {
             throw new IllegalArgumentException("Item không được để trống");
         }
@@ -44,7 +44,7 @@ public class Auction implements Serializable {
         status = AuctionStatus.FINISHED;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
     public Item getItem() {
@@ -70,7 +70,7 @@ public class Auction implements Serializable {
          if (amount <= currentPrice) {
             throw new IllegalArgumentException("Giá đặt phải cao hơn giá hiện tại");
          }
-         String bidId = "Bid" + (bids.size() + 1 );
+         int bidId = bids.size() + 1;
          Bid bid = new Bid(bidId, bidder, amount) ;
 
          bids.add(bid);
