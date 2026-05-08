@@ -1,4 +1,4 @@
-package com.auction.system.manager;
+package com.auction.system.server.manager;
 
 import com.auction.system.exception.InvalidDataException;
 import com.auction.system.exception.ItemNotFoundException;
@@ -27,7 +27,7 @@ public class AuctionManager {
     private final Map<Integer, Auction> auctionsById = new HashMap<>();
 
     AuctionManager() {
-        this(new AuthManager(false), new ItemManager(true));
+        this(new AuthManager(false), new ItemManager(false));
     }
 
     AuctionManager(AuthManager authManager, ItemManager itemManager) {

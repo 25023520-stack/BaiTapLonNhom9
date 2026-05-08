@@ -75,7 +75,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>com.auction.system.ui.Launcher</mainClass>
+                    <mainClass>com.auction.system.client.Launcher</mainClass>
                 </configuration>
             </plugin>
         </plugins>

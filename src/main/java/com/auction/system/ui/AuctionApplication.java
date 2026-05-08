@@ -1,6 +1,6 @@
 package com.auction.system.ui;
 
-import com.auction.system.manager.AuctionManager;
+import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.user.Bidder;

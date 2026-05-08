@@ -1,4 +1,4 @@
-package com.auction.system.manager;
+package com.auction.system.server.manager;
 
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
