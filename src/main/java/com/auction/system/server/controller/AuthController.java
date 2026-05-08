@@ -38,6 +38,7 @@ public class AuthController {
             User user = authManager.register(
                     payload.getString("fullName"),
                     payload.getString("username"),
+                    payload.getString("email"),
                     payload.getString("password"),
                     payload.getString("confirmPassword"),
                     payload.getString("role")

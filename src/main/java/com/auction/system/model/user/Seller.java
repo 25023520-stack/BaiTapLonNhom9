@@ -12,8 +12,9 @@ public class Seller extends User {
         super();
     }
 
-    public Seller(String id, String fullName, String userName, String passWord) {
-        super(id, fullName, userName, passWord);
+    public Seller(int id, String fullName, String userName,String email, String passWord) {
+        super(id, fullName, userName, email, passWord);
+
     }
 
     public String getRole() {
@@ -31,7 +32,7 @@ public class Seller extends User {
     public void addItemForSale(Item item) {
     if (item == null) {
         throw new IllegalArgumentException("Item không tồn tại");
-    } else if (!item.getSellerId().equals(this.getId())) {
+    } else if (item.getSellerId() != this.getId()) {
         throw new IllegalArgumentException("Item không thuộc về seller này");
     } else {
         itemForSale.add(item);
@@ -43,7 +44,7 @@ public class Seller extends User {
         if (item == null) {
             throw new IllegalArgumentException("Item không tồn tại");
         }
-        else if (!item.getSellerId().equals(this.getId())) {
+        else if (item.getSellerId() != this.getId()) {
             throw new IllegalArgumentException("Item không thuộc về Seller này");
         }
         else {
@@ -62,7 +63,7 @@ public class Seller extends User {
 
     public void updateItem(Item updatedItem) {
         for (int i = 0; i < itemForSale.size(); i++) {
-            if (itemForSale.get(i).getId().equals(updatedItem.getId())) {
+            if (itemForSale.get(i).getId() == updatedItem.getId()) {
                 itemForSale.set(i, updatedItem);
                 break;
             }

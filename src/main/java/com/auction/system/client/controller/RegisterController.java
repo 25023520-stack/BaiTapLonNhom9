@@ -5,9 +5,12 @@ import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+
 import javafx.event.ActionEvent;
+
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -15,7 +18,9 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+
 import javafx.stage.Stage;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +34,9 @@ public class RegisterController {
 
     @FXML
     private TextField txtUsername;
+
+    @FXML
+    private TextField txtEmail;
 
     @FXML
     private PasswordField txtPassword;
@@ -47,11 +55,19 @@ public class RegisterController {
 
     @FXML
     void handleRegister(ActionEvent event) {
+        String fullName = txtFullName.getText();
+        String username = txtUsername.getText();
+        String email = txtEmail.getText();
+        String password = txtPassword.getText();
+        String confirmPassword = txtConfirmPassword.getText();
+        String role = cbRole.getValue();
+
         try {
             AuctionClient client = AppContext.getAuctionClient();
             Payload payload = new Payload(PayloadType.REGISTER);
             payload.put("fullName", txtFullName.getText());
             payload.put("username", txtUsername.getText());
+            payload.put("email", txtEmail.getText());
             payload.put("password", txtPassword.getText());
             payload.put("confirmPassword", txtConfirmPassword.getText());
             payload.put("role", cbRole.getValue());
@@ -65,7 +81,7 @@ public class RegisterController {
 
             showAlert(Alert.AlertType.INFORMATION, response.getMessage());
             goLogin(event);
-        } catch (IOException | ClassNotFoundException exception) {
+        } catch (IOException | ClassNotFoundException    exception) {
             showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
             LOGGER.error("Register failed because the client cannot reach the server", exception);
         }
