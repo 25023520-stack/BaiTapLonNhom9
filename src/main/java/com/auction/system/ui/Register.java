@@ -28,6 +28,9 @@ public class Register {
     private TextField txtUsername;
 
     @FXML
+    private TextField txtEmail;
+
+    @FXML
     private PasswordField txtPassword;
 
     @FXML
@@ -46,12 +49,13 @@ public class Register {
     void handleRegister(ActionEvent event) {
         String fullName = txtFullName.getText();
         String username = txtUsername.getText();
+        String email = txtEmail.getText();
         String password = txtPassword.getText();
         String confirmPassword = txtConfirmPassword.getText();
         String role = cbRole.getValue();
 
         try {
-            authManager.register(fullName, username, password, confirmPassword, role);
+            authManager.register(fullName, username, password, email, confirmPassword, role);
             showAlert(Alert.AlertType.INFORMATION, "Dang ky thanh cong. Hay dang nhap.");
             goLogin(event);
         } catch (IllegalArgumentException exception) {

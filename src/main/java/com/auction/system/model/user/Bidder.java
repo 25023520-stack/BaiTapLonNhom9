@@ -5,8 +5,8 @@ public class Bidder extends User {
     public Bidder() {
     }
 
-    public Bidder(String id, String fullName, String userName, String passWord) {
-        super(id, fullName, userName, passWord);
+    public Bidder(int id, String fullName, String userName,String email, String passWord) {
+        super(id, fullName, userName,email, passWord);
     }
 
     public String getRole() {

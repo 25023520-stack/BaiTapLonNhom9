@@ -9,13 +9,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AuthManager {
     private static final AuthManager INSTANCE = new AuthManager(false);
 
-    private final Map<String, User> usersById = new HashMap<>();
+    private final Map<Integer, User> usersById = new HashMap<>();
     private final Map<String, User> usersByUsername = new HashMap<>();
+    private final Map<String, User> usersByEmail = new HashMap<>();
+    private final AtomicInteger nextUserId = new AtomicInteger(1);
 
     private AuthManager() {
         this(false);
@@ -32,13 +34,14 @@ public class AuthManager {
     }
 
     // Dang ky tai khoan moi tu du lieu form, tu sinh userId va tao dung role.
-    public synchronized User register(String fullName, String username, String password, String confirmPassword, String role) {
-        validateRegisterInput(fullName, username, password, confirmPassword, role);
+    public synchronized User register(String fullName, String username, String password, String email, String confirmPassword, String role) {
+        validateRegisterInput(fullName, username, password, email, confirmPassword, role);
 
-        String userId = UUID.randomUUID().toString();
-        User user = createUserByRole(userId, fullName.trim(), username.trim(), password, role);
+        int userId = nextUserId.getAndIncrement();
+        User user = createUserByRole(userId, fullName.trim(), username.trim(), email.trim(), password, role);
         usersById.put(user.getId(), user);
         usersByUsername.put(user.getUserName(), user);
+        usersByEmail.put(user.getEmail(), user);
         return user;
     }
 
@@ -47,8 +50,8 @@ public class AuthManager {
         if (user == null) {
             throw new IllegalArgumentException("User must not be null");
         }
-        if (isBlank(user.getId())) {
-            throw new IllegalArgumentException("User id must not be blank");
+        if (user.getId() <= 0) {
+            throw new IllegalArgumentException("User id must be greater than 0");
         }
         if (isBlank(user.getUserName())) {
             throw new IllegalArgumentException("Username must not be blank");
@@ -59,9 +62,17 @@ public class AuthManager {
         if (usersByUsername.containsKey(user.getUserName())) {
             throw new IllegalArgumentException("Username already exists");
         }
+        if (isBlank(user.getEmail())) {
+            throw new IllegalArgumentException("Email must not be blank");
+        }
+        if (usersByEmail.containsKey(user.getEmail())) {
+            throw new IllegalArgumentException("Email already exists");
+        }
 
         usersById.put(user.getId(), user);
+        nextUserId.updateAndGet(next -> Math.max(next, user.getId() + 1));
         usersByUsername.put(user.getUserName(), user);
+        usersByEmail.put(user.getEmail(), user);
     }
 
     // Kiem tra dang nhap bang username + password, tra ve User neu hop le.
@@ -95,8 +106,12 @@ public class AuthManager {
         return !isBlank(username) && usersByUsername.containsKey(username.trim());
     }
 
+    public synchronized boolean existsByEmail(String email) {
+        return !isBlank(email) && usersByEmail.containsKey(email.trim());
+    }
+
     // Tim user theo id, dung Optional de tranh tra ve null truc tiep.
-    public synchronized Optional<User> findById(String id) {
+    public synchronized Optional<User> findById(int id) {
         return Optional.ofNullable(usersById.get(id));
     }
 
@@ -106,12 +121,15 @@ public class AuthManager {
     }
 
     // Gom cac rule validate cho form dang ky truoc khi tao tai khoan moi.
-    private void validateRegisterInput(String fullName, String username, String password, String confirmPassword, String role) {
+    private void validateRegisterInput(String fullName, String username, String password, String email, String confirmPassword, String role) {
         if (isBlank(fullName)) {
             throw new IllegalArgumentException("Full name must not be blank");
         }
         if (isBlank(username)) {
             throw new IllegalArgumentException("Username must not be blank");
+        }
+        if (isBlank(email)) {
+            throw new IllegalArgumentException("Email must not be blank");
         }
         if (isBlank(password)) {
             throw new IllegalArgumentException("Password must not be blank");
@@ -121,6 +139,9 @@ public class AuthManager {
         }
         if (existsByUsername(username)) {
             throw new IllegalArgumentException("Username already exists");
+        }
+        if (existsByEmail(email)) {
+            throw new IllegalArgumentException("Email already exists");
         }
         if (isBlank(role)) {
             throw new IllegalArgumentException("Role must not be blank");
@@ -140,20 +161,20 @@ public class AuthManager {
     }
 
     // Factory nho: tao dung object User theo role duoc chon tren giao dien.
-    private User createUserByRole(String id, String fullName, String username, String password, String role) {
+    private User createUserByRole(int id, String fullName, String username, String email, String password, String role) {
         return switch (role.trim().toUpperCase()) {
-            case "ADMIN" -> new Admin(id, fullName, username, password);
-            case "SELLER" -> new Seller(id, fullName, username, password);
-            case "BIDDER" -> new Bidder(id, fullName, username, password);
+            case "ADMIN" -> new Admin(id, fullName, username, email, password);
+            case "SELLER" -> new Seller(id, fullName, username, email, password);
+            case "BIDDER" -> new Bidder(id, fullName, username, email, password);
             default -> throw new IllegalArgumentException("Role must be ADMIN, SELLER, or BIDDER");
         };
     }
 
     // Tao san mot so tai khoan mau de login nhanh khi demo giao dien.
     private void seedDefaultUsers() {
-        registerUser(new Admin("A1", "Admin", "admin", "123"));
-        registerUser(new Seller("S1", "Seller Demo", "seller", "123"));
-        registerUser(new Bidder("B1", "Bidder Demo", "bidder", "123"));
+        registerUser(new Admin(1, "Admin", "admin", "admin@example.com", "123"));
+        registerUser(new Seller(2, "Seller Demo", "seller", "seller@example.com", "123"));
+        registerUser(new Bidder(3, "Bidder Demo", "bidder", "bidder@example.com", "123"));
     }
 
     // Ham ho tro kiem tra chuoi rong/null de dung lai o nhieu noi.

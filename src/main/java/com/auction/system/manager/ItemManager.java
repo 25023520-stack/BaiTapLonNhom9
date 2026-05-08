@@ -11,7 +11,7 @@ import java.util.Collection;
 public class ItemManager {
     private static final ItemManager INSTANCE = new ItemManager();
 
-    private final Map<String, Item> items = new HashMap<>();
+    private final Map<Integer, Item> items = new HashMap<>();
 
     private ItemManager() {
     }
@@ -37,7 +37,7 @@ public class ItemManager {
         items.put(item.getId(), item);
     }
 
-    public Item findItemById(String itemId) throws ItemNotFoundException {
+    public Item findItemById(int itemId) throws ItemNotFoundException {
         Item item = items.get(itemId);
         if(item == null) {
             throw new ItemNotFoundException("Không tìm thấy sản phẩm");
@@ -46,7 +46,7 @@ public class ItemManager {
         return item;
     }
 
-    public void updateItem(String itemId, String newName, String newDescription, double newPrice) throws ItemNotFoundException, InvalidDataException  {
+    public void updateItem(int itemId, String newName, String newDescription, double newPrice) throws ItemNotFoundException, InvalidDataException  {
         if (newName == null || newName.isBlank()) {
             throw new InvalidDataException("Tên sản phẩm không được để trống");
         }
@@ -62,7 +62,7 @@ public class ItemManager {
         item.setDescription(newDescription);
     }
 
-    public void deleteItem(String itemId) throws ItemNotFoundException {
+    public void deleteItem(int itemId) throws ItemNotFoundException {
         findItemById(itemId);
         items.remove(itemId);
     }

@@ -184,8 +184,8 @@ public class AuctionApplication extends Application {
         nameValue.setText(item.getName());
         priceValue.setText(item.getCurrentPrice() + " VND");
         statusValue.setText(item.getStatus().name());
-        sellerValue.setText(item.getSellerId() == null ? "-" : item.getSellerId());
-        leaderValue.setText(item.getHighestBidderId() == null ? "Chua co" : item.getHighestBidderId());
+        sellerValue.setText(item.getSellerId() <= 0 ? "-" : String.valueOf(item.getSellerId()));
+        leaderValue.setText(item.getHighestBidderId() <= 0 ? "Chua co" : String.valueOf(item.getHighestBidderId()));
         scheduleValue.setText(formatSchedule(item));
         descriptionArea.setText(item.getDescription());
         bidHistoryArea.setText(formatBidHistory(item));
@@ -255,11 +255,11 @@ public class AuctionApplication extends Application {
     }
 
     private void seedDemoData() {
-        Seller seller1 = new Seller("S1", "Nguyen Van Seller", "seller1", "123456");
-        Seller seller2 = new Seller("S2", "Tran Thi Seller", "seller2", "123456");
-        Bidder bidder1 = new Bidder("B1", "Pham Minh An", "bidder1", "123456");
-        Bidder bidder2 = new Bidder("B2", "Le Thu Ha", "bidder2", "123456");
-        Bidder bidder3 = new Bidder("B3", "Do Quang Huy", "bidder3", "123456");
+        Seller seller1 = new Seller(1, "Nguyen Van Seller", "seller1", "seller1@example.com", "123456");
+        Seller seller2 = new Seller(2, "Tran Thi Seller", "seller2", "seller2@example.com", "123456");
+        Bidder bidder1 = new Bidder(3, "Pham Minh An", "bidder1", "bidder1@example.com", "123456");
+        Bidder bidder2 = new Bidder(4, "Le Thu Ha", "bidder2", "bidder2@example.com", "123456");
+        Bidder bidder3 = new Bidder(5, "Do Quang Huy", "bidder3", "bidder3@example.com", "123456");
 
         auctionManager.register(seller1);
         auctionManager.register(seller2);
@@ -267,22 +267,22 @@ public class AuctionApplication extends Application {
         auctionManager.registerUser(bidder2);
         auctionManager.registerUser(bidder3);
 
-        Item laptop = new Item("1", "Laptop Gaming", "Laptop RTX 4060, RAM 16GB, SSD 1TB.", 15000000, 0, AuctionStatus.OPEN);
-        Item phone = new Item("2", "IPhone 14", "May cu 99%, pin 90%, phu kien day du.", 11000000, 0, AuctionStatus.OPEN);
-        Item camera = new Item("3", "May anh Sony", "Sony A6400 kem lens kit, hoat dong tot.", 13000000, 0, AuctionStatus.OPEN);
+        Item laptop = new Item(1, "Laptop Gaming", "Laptop RTX 4060, RAM 16GB, SSD 1TB.", 15000000, 0, AuctionStatus.OPEN);
+        Item phone = new Item(2, "IPhone 14", "May cu 99%, pin 90%, phu kien day du.", 11000000, 0, AuctionStatus.OPEN);
+        Item camera = new Item(3, "May anh Sony", "Sony A6400 kem lens kit, hoat dong tot.", 13000000, 0, AuctionStatus.OPEN);
 
         auctionManager.addItem(laptop, seller1);
         auctionManager.addItem(phone, seller1);
         auctionManager.addItem(camera, seller2);
 
         LocalDateTime now = LocalDateTime.now();
-        auctionManager.startAuction("1", now.minusHours(1), now.plusHours(6));
-        auctionManager.startAuction("2", now.minusMinutes(30), now.plusHours(4));
-        auctionManager.startAuction("3", now.minusMinutes(15), now.plusHours(2));
+        auctionManager.startAuction(1, now.minusHours(1), now.plusHours(6));
+        auctionManager.startAuction(2, now.minusMinutes(30), now.plusHours(4));
+        auctionManager.startAuction(3, now.minusMinutes(15), now.plusHours(2));
 
-        auctionManager.placeBid("1", bidder1, 16000000);
-        auctionManager.placeBid("1", bidder2, 16800000);
-        auctionManager.placeBid("2", bidder3, 11800000);
+        auctionManager.placeBid(1, bidder1, 16000000);
+        auctionManager.placeBid(1, bidder2, 16800000);
+        auctionManager.placeBid(2, bidder3, 11800000);
 
         bidders.setAll(bidder1, bidder2, bidder3);
         items.setAll(auctionManager.getAllItems());
