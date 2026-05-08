@@ -1,6 +1,4 @@
-package com.auction.system.db;
-
-import com.auction.system.db.Database;
+package com.auction.system.server.database;
 
 public class TestDatabase {
     public static void main(String[] args) {
