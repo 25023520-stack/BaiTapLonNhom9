@@ -59,8 +59,6 @@ public class AuctionClient implements Closeable {
         }, "auction-client-listener");
         listenerThread.setDaemon(true);
         listenerThread.start();
-        listenerThread.setDaemon(true);
-        listenerThread.start();
     }
 
     public Payload read() throws IOException, ClassNotFoundException {
