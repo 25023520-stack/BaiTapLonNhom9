@@ -83,10 +83,7 @@ public class AuctionServer {
 
     public void broadcast(Payload payload) {
         for (ClientHandler client : clients.toArray(new ClientHandler[0])) {
-            try {
                 client.send(payload);
-            } catch (IOException ignored) {
-            }
         }
     }
 
