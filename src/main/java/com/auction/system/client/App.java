@@ -7,9 +7,8 @@ import java.io.IOException;
 
 public class App {
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
-    private static final int SERVER_PORT = 5050; // Cổng mặc định của dự án bạn
-    private static final String SERVER_HOST = "localhost";
-
+    private static final String SERVER_HOST = System.getProperty("auction.server.host", "127.0.0.1");
+    private static final int SERVER_PORT = Integer.parseInt(System.getProperty("auction.server.port", "5050"));
     public static void main(String[] args) {
         LOGGER.info("Starting Auction System Bootstrapper...");
 
