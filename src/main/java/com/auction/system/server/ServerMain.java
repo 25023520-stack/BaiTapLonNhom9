@@ -9,9 +9,10 @@ import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.server.network.AuctionServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 
 public class ServerMain {
@@ -23,6 +24,7 @@ public class ServerMain {
 
     public static void main(String[] args) throws Exception {
         ensureDemoData();
+        logServerAddress(DEFAULT_PORT);
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
         server.start();
     }
@@ -90,7 +92,6 @@ public class ServerMain {
             AUCTION_MANAGER.placeBid(1, bidder2, 16800000);
             AUCTION_MANAGER.placeBid(2, bidder3, 11800000);
         }
-        // ... (phần code tạo User/Item của bạn)
         LOGGER.info("Demo data seeded successfully.");
         demoDataSeeded = true;
     }
@@ -100,6 +101,20 @@ public class ServerMain {
             AUCTION_MANAGER.registerUser(user);
         } catch (IllegalArgumentException ignored) {
             // The singleton managers may already contain demo accounts if another local server already seeded them.
+        }
+    }
+    private static void logServerAddress(int port) {
+        try {
+            // lấy IP thật của máy trên mạng WiFi hiện tại
+            InetAddress localHost = InetAddress.getLocalHost();
+            String ip = localHost.getHostAddress();
+            LOGGER.info("=================================");
+            LOGGER.info("Server started!");
+            LOGGER.info("Local IP : {}", ip);
+            LOGGER.info("Port     : {}", port);
+            LOGGER.info("=================================");
+        } catch (UnknownHostException e) {
+            System.out.println("Server started on port " + port + " (could not determine IP)");
         }
     }
 }
