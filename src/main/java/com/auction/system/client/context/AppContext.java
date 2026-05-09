@@ -6,8 +6,8 @@ import com.auction.system.model.user.User;
 import java.io.IOException;
 
 public final class AppContext {
-    private static final String DEFAULT_HOST = "127.0.0.1";
-    private static final int DEFAULT_PORT = 5050;
+    private static final String DEFAULT_HOST = System.getProperty("auction.server.host", "127.0.0.1");
+    private static final int DEFAULT_PORT = Integer.parseInt(System.getProperty("auction.server.port", "5050"));
 
     private static final AuctionClient AUCTION_CLIENT = new AuctionClient();
     private static User currentUser;
