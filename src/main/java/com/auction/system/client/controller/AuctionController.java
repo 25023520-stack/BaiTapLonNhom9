@@ -21,6 +21,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.application.Platform;
 
 import java.io.IOException;
 import java.util.List;
@@ -104,6 +105,7 @@ public class AuctionController {
         bidButton.setMaxWidth(Double.MAX_VALUE);
         configureCurrentUser();
         loadItems();
+        startRealtimeListener();
     }
 
     private void configureCurrentUser() {
@@ -259,5 +261,45 @@ public class AuctionController {
                 .filter(item -> item.getId() == itemId)
                 .findFirst()
                 .orElse(null);
+    }
+    // Bắt đầu lắng nghe update realtime từ server
+    private void startRealtimeListener() {
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            client.startListening(
+                    payload -> {
+                        // Chạy trên listener thread, cần dùng Platform.runLater
+                        // để cập nhật UI trên JavaFX thread
+                        if (payload instanceof ResponsePayload rp
+                                && rp.getType() == PayloadType.UPDATE_AUCTION) {
+                            Platform.runLater(() -> handleAuctionUpdate(rp));
+                        }
+                    },
+                    error -> Platform.runLater(() ->
+                            showAlert(Alert.AlertType.ERROR, "Mất kết nối tới server"))
+            );
+        } catch (IOException e) {
+            showAlert(Alert.AlertType.ERROR, "Không thể bắt đầu lắng nghe server.");
+        }
+    }
+
+    // Xử lý khi nhận được update từ server
+    private void handleAuctionUpdate(ResponsePayload update) {
+        Object rawItem = update.getBody().get("item");
+        if (!(rawItem instanceof Item updatedItem)) return;
+
+        // Tìm item cũ trong danh sách, thay bằng item mới
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getId() == updatedItem.getId()) {
+                items.set(i, updatedItem);
+
+                // Nếu đang xem đúng item này thì cập nhật panel chi tiết luôn
+                Item selected = itemListView.getSelectionModel().getSelectedItem();
+                if (selected != null && selected.getId() == updatedItem.getId()) {
+                    showItemDetails(updatedItem);
+                }
+                break;
+            }
+        }
     }
 }
