@@ -5,6 +5,7 @@ import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.server.controller.AuctionController;
+import com.auction.system.server.controller.AuthController;
 import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.model.user.User;
 import com.auction.system.model.user.Bidder;
@@ -25,6 +26,7 @@ public class ClientHandler implements Runnable, Closeable {
     private final AuctionManager auctionManager;
     private final AuctionServer auctionServer;
     private final AuctionController auctionController;
+    private final AuthController authController;
     private final PrintWriter writer;
     private final BufferedReader reader;
 
@@ -38,7 +40,8 @@ public class ClientHandler implements Runnable, Closeable {
         this.auctionManager = auctionManager;
         this.auctionServer = auctionServer;
         this.auctionController = new AuctionController();
-        this.writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+        this.authController = new AuthController();
+        this.writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
     }
 
@@ -72,6 +75,7 @@ public class ClientHandler implements Runnable, Closeable {
 
         switch (type) {
             case LOGIN -> handleLogin(payload);
+            case REGISTER -> handleRegister(payload);
             case LIST_ITEMS -> handleListItems();
             case BID -> handleBid(payload);
             case DISCONNECT -> {
@@ -102,6 +106,14 @@ public class ClientHandler implements Runnable, Closeable {
         response.put("fullName", authenticatedUser.getFullName());
         send(response);
         LOGGER.info("User logged in: {}", username);
+    }
+
+    private void handleRegister(Payload payload) throws IOException {
+        ResponsePayload response = authController.register(payload);
+        send(response);
+        if (response.isSuccess()) {
+            LOGGER.info("New user registered: {}", payload.getString("username"));
+        }
     }
 
     private void handleListItems() throws IOException {
