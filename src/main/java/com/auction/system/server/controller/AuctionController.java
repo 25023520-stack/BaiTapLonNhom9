@@ -22,15 +22,15 @@ public class AuctionController {
             return ResponsePayload.error("Please login with a bidder account before placing a bid");
         }
 
-        int itemId; // Đã sửa: String -> int
+        String itemId;
         double amount;
         if (payload instanceof BidPayload bidPayload) {
             itemId = bidPayload.getItemId();
             amount = bidPayload.getAmount();
         } else {
-            Integer parsedItemId = payload.getInt("itemId"); // Đã sửa: getString -> getInt
+            String parsedItemId = payload.getString("itemId");
             Double parsedAmount = payload.getDouble("amount");
-            if (parsedItemId == null || parsedAmount == null) {
+            if (parsedItemId == null || parsedItemId.isBlank() || parsedAmount == null) {
                 return ResponsePayload.error("Bid payload must contain itemId and amount");
             }
             itemId = parsedItemId;

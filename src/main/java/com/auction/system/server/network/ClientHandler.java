@@ -120,7 +120,7 @@ public class ClientHandler implements Runnable, Closeable {
 
         if (response.isSuccess() && response.getBody().get("item") != null) {
             ResponsePayload update = ResponsePayload.auctionUpdate("Auction updated");
-            update.put("itemId", response.getInt("itemId"));
+            update.put("itemId", response.getString("itemId"));
             update.put("amount", response.getDouble("amount"));
             update.put("item", response.getBody().get("item"));
             update.put("bidderId", authenticatedUser.getId());

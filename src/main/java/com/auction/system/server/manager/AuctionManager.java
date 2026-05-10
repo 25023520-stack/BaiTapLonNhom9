@@ -16,7 +16,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 public class AuctionManager {
     private static final AuctionManager INSTANCE =
@@ -24,7 +26,7 @@ public class AuctionManager {
 
     private final AuthManager authManager;
     private final ItemManager itemManager;
-    private final Map<Integer, Auction> auctionsById = new HashMap<>();
+    private final Map<String, Auction> auctionsById = new HashMap<>();
 
     AuctionManager() {
         this(new AuthManager(false), new ItemManager(false));
@@ -75,7 +77,7 @@ public class AuctionManager {
         }
 
         Item existingItem = requireItem(item.getId());
-        if (seller.getId() != existingItem.getSellerId()) {
+        if (!Objects.equals(seller.getId(), existingItem.getSellerId())) {
             throw new IllegalArgumentException("Seller can only update their own item");
         }
         if (existingItem.getStatus() == AuctionStatus.RUNNING) {
@@ -89,10 +91,10 @@ public class AuctionManager {
         }
     }
 
-    public synchronized void removeItem(int itemId, Seller seller) {
+    public synchronized void removeItem(String itemId, Seller seller) {
         validateSeller(seller);
         Item existingItem = requireItem(itemId);
-        if (seller.getId() != existingItem.getSellerId()) {
+        if (!Objects.equals(seller.getId(), existingItem.getSellerId())) {
             throw new IllegalArgumentException("Seller can only remove their own item");
         }
         if (!existingItem.getBidHistory().isEmpty()) {
@@ -107,7 +109,7 @@ public class AuctionManager {
         }
     }
 
-    public synchronized void startAuction(int itemId, LocalDateTime startTime, LocalDateTime endTime) {
+    public synchronized void startAuction(String itemId, LocalDateTime startTime, LocalDateTime endTime) {
         Item item = requireItem(itemId);
         if (endTime == null || startTime == null || !endTime.isAfter(startTime)) {
             throw new IllegalArgumentException("Auction end time must be after start time");
@@ -119,7 +121,7 @@ public class AuctionManager {
         auctionsById.put(itemId, new Auction(itemId, item));
     }
 
-    public synchronized void finishAuction(int itemId) {
+    public synchronized void finishAuction(String itemId) {
         Item item = requireItem(itemId);
         item.setStatus(AuctionStatus.FINISHED);
 
@@ -129,7 +131,7 @@ public class AuctionManager {
         }
     }
 
-    public synchronized Bid placeBid(int itemId, Bidder bidder, double bidAmount) {
+    public synchronized Bid placeBid(String itemId, Bidder bidder, double bidAmount) {
         if (bidder == null) {
             throw new IllegalArgumentException("Bidder must not be null");
         }
@@ -146,7 +148,7 @@ public class AuctionManager {
             throw new IllegalArgumentException("Bid amount must be greater than current price");
         }
 
-        Bid bid = new Bid(item.getBidHistory().size() + 1, bidder, bidAmount);
+        Bid bid = new Bid("BID-" + UUID.randomUUID(), bidder, bidAmount);
         item.setCurrentPrice(bidAmount);
         item.setHighestBidderId(bidder.getId());
         item.addBid(bid);
@@ -156,7 +158,7 @@ public class AuctionManager {
     public synchronized List<Item> getAllItems() {
         return itemManager.getAllItems()
                 .stream()
-                .sorted(Comparator.comparing(Item::getId))
+                .sorted(Comparator.comparing(Item::getId, Comparator.nullsLast(String::compareTo)))
                 .toList();
     }
 
@@ -164,7 +166,7 @@ public class AuctionManager {
         return auctionsById.values();
     }
 
-    public synchronized Optional<Item> findItemById(int itemId) {
+    public synchronized Optional<Item> findItemById(String itemId) {
         try {
             return Optional.of(itemManager.findItemById(itemId));
         } catch (ItemNotFoundException exception) {
@@ -183,7 +185,7 @@ public class AuctionManager {
         }
     }
 
-    private Item requireItem(int itemId) {
+    private Item requireItem(String itemId) {
         try {
             return itemManager.findItemById(itemId);
         } catch (ItemNotFoundException exception) {

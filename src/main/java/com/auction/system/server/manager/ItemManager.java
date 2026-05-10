@@ -14,8 +14,7 @@ import java.util.Map;
 public class ItemManager {
     private static final ItemManager INSTANCE = new ItemManager(false);
 
-    // Đã sửa Map sang dùng Integer
-    private final Map<Integer, Item> itemsById = new HashMap<>();
+    private final Map<String, Item> itemsById = new HashMap<>();
 
     private ItemManager() {
         this(false);
@@ -36,8 +35,7 @@ public class ItemManager {
         itemsById.put(item.getId(), item);
     }
 
-    // Đã sửa tham số itemId thành int
-    public synchronized void updateItem(int itemId, String name, String description, double startPrice)
+    public synchronized void updateItem(String itemId, String name, String description, double startPrice)
             throws ItemNotFoundException, InvalidDataException {
         Item existingItem = findItemById(itemId);
 
@@ -57,21 +55,19 @@ public class ItemManager {
         existingItem.setCurrentPrice(startPrice);
     }
 
-    // Đã sửa tham số itemId thành int
-    public synchronized void deleteItem(int itemId) throws ItemNotFoundException {
+    public synchronized void deleteItem(String itemId) throws ItemNotFoundException {
         requireExistingItemId(itemId);
         itemsById.remove(itemId);
     }
 
-    // Đã sửa tham số itemId thành int
-    public synchronized Item findItemById(int itemId) throws ItemNotFoundException {
+    public synchronized Item findItemById(String itemId) throws ItemNotFoundException {
         requireExistingItemId(itemId);
         return itemsById.get(itemId);
     }
 
     public synchronized List<Item> getAllItems() {
         List<Item> items = new ArrayList<>(itemsById.values());
-        items.sort(Comparator.comparingInt(Item::getId)); // Sửa cách so sánh ID
+        items.sort(Comparator.comparing(Item::getId, Comparator.nullsLast(String::compareTo)));
         return items;
     }
 
@@ -79,11 +75,9 @@ public class ItemManager {
         if (item == null) {
             throw new InvalidDataException("Item must not be null");
         }
-        // Kiểm tra int <= 0 thay vì isBlank
-        if (item.getId() <= 0) {
-            throw new InvalidDataException("Item id must be greater than 0");
+        if (isBlank(item.getId())) {
+            throw new InvalidDataException("Item id must not be blank");
         }
-        // Bỏ .trim() vì id giờ là int
         if (itemsById.containsKey(item.getId())) {
             throw new InvalidDataException("Item id already exists");
         }
@@ -98,17 +92,15 @@ public class ItemManager {
         }
     }
 
-    // Đã sửa tham số itemId thành int, bỏ isBlank và .trim()
-    private void requireExistingItemId(int itemId) throws ItemNotFoundException {
-        if (itemId <= 0 || !itemsById.containsKey(itemId)) {
+    private void requireExistingItemId(String itemId) throws ItemNotFoundException {
+        if (isBlank(itemId) || !itemsById.containsKey(itemId)) {
             throw new ItemNotFoundException("Item not found");
         }
     }
 
     private void seedSampleItems() {
-        // Đã đổi "1", "2" thành 1, 2
-        Item item1 = new Item(1, "Laptop Gaming", "Laptop choi game, card RTX", 1500, 1500, AuctionStatus.OPEN);
-        Item item2 = new Item(2, "Dien thoai thong minh", "Flagship 256GB", 900, 900, AuctionStatus.OPEN);
+        Item item1 = new Item("ITEM-1", "Laptop Gaming", "Laptop choi game, card RTX", 1500, 1500, AuctionStatus.OPEN);
+        Item item2 = new Item("ITEM-2", "Dien thoai thong minh", "Flagship 256GB", 900, 900, AuctionStatus.OPEN);
         itemsById.put(item1.getId(), item1);
         itemsById.put(item2.getId(), item2);
     }

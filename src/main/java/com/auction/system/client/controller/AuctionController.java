@@ -25,6 +25,7 @@ import javafx.application.Platform;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 public class AuctionController {
     private final ObservableList<Item> items = FXCollections.observableArrayList();
@@ -180,8 +181,8 @@ public class AuctionController {
         nameValue.setText(item.getName());
         priceValue.setText(item.getCurrentPrice() + " VND");
         statusValue.setText(item.getStatus().name());
-        sellerValue.setText(item.getSellerId() <= 0 ? "-" : String.valueOf(item.getSellerId()));
-        leaderValue.setText(item.getHighestBidderId() <= 0 ? "Chua co" : String.valueOf(item.getHighestBidderId()));
+        sellerValue.setText(isBlank(item.getSellerId()) ? "-" : item.getSellerId());
+        leaderValue.setText(isBlank(item.getHighestBidderId()) ? "Chua co" : item.getHighestBidderId());
         scheduleValue.setText(formatSchedule(item));
         descriptionArea.setText(item.getDescription());
         bidHistoryArea.setText(formatBidHistory(item));
@@ -256,9 +257,9 @@ public class AuctionController {
         throw new IOException("Unexpected payload received from server");
     }
 
-    private Item findItemById(int itemId) {
+    private Item findItemById(String itemId) {
         return items.stream()
-                .filter(item -> item.getId() == itemId)
+                .filter(item -> Objects.equals(item.getId(), itemId))
                 .findFirst()
                 .orElse(null);
     }
@@ -290,16 +291,20 @@ public class AuctionController {
 
         // Tìm item cũ trong danh sách, thay bằng item mới
         for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getId() == updatedItem.getId()) {
+            if (Objects.equals(items.get(i).getId(), updatedItem.getId())) {
                 items.set(i, updatedItem);
 
                 // Nếu đang xem đúng item này thì cập nhật panel chi tiết luôn
                 Item selected = itemListView.getSelectionModel().getSelectedItem();
-                if (selected != null && selected.getId() == updatedItem.getId()) {
+                if (selected != null && Objects.equals(selected.getId(), updatedItem.getId())) {
                     showItemDetails(updatedItem);
                 }
                 break;
             }
         }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

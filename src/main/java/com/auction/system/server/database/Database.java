@@ -31,7 +31,7 @@ public class Database {
         try (Connection connection1 = getConnection()) {
             String createUsersTable = """
                     CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                    id VARCHAR(100) PRIMARY KEY,
                     full_name VARCHAR(255) NOT NULL,
                     username VARCHAR(50) UNIQUE NOT NULL,
                     email VARCHAR(100) UNIQUE NOT NULL,
@@ -44,15 +44,15 @@ public class Database {
             }
             String createItemsTable = """
                     CREATE TABLE IF NOT EXISTS items (
-                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+                    id VARCHAR(100) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     description CLOB,
                     image_path VARCHAR(500),
                     start_price DOUBLE NOT NULL,
                     current_price DOUBLE NOT NULL,
                     STATUS VARCHAR(30) NOT NULL,
-                    seller_id INTEGER NOT NULL,
-                    highest_bidder_id INTEGER,
+                    seller_id VARCHAR(100) NOT NULL,
+                    highest_bidder_id VARCHAR(100),
                     start_time TIMESTAMP NOT NULL,
                     end_time  TIMESTAMP NOT NULL )
                     """;
@@ -61,12 +61,12 @@ public class Database {
             }
             String createAuctionsTable = """
                     CREATE TABLE IF NOT EXISTS auctions (
-                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    item_id INTEGER UNIQUE NOT NULL,
+                    id VARCHAR(100) PRIMARY KEY,
+                    item_id VARCHAR(100) UNIQUE NOT NULL,
                     start_time TIMESTAMP NOT NULL,
                     end_time TIMESTAMP NOT NULL,
                     status VARCHAR(20) NOT NULL CHECK ( status IN ('OPEN', 'RUNNING', 'FINISHED', 'PAID', 'CANCELED')),
-                    winner_id INTEGER,
+                    winner_id VARCHAR(100),
                     final_price DOUBLE DEFAULT 0,
                     FOREIGN KEY (item_id) REFERENCES items(id),
                     FOREIGN KEY (winner_id) REFERENCES users(id) )
@@ -76,10 +76,10 @@ public class Database {
             }
             String createBidsTable = """
                     CREATE TABLE IF NOT EXISTS bids (
-                    id INTEGER PRIMARY KEY AUTO_INCREMENT,
-                    auction_id INTEGER NOT NULL,
-                    item_id INTEGER NOT NULL,
-                    bidder_id INTEGER NOT NULL,
+                    id VARCHAR(100) PRIMARY KEY,
+                    auction_id VARCHAR(100) NOT NULL,
+                    item_id VARCHAR(100) NOT NULL,
+                    bidder_id VARCHAR(100) NOT NULL,
                     amount DOUBLE NOT NULL,
                     bid_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (auction_id) REFERENCES auctions(id),
