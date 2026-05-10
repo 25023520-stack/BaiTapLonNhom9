@@ -21,16 +21,16 @@
                 <VBox spacing="5.0">
                     <children>
                         <Label text="Tên đăng nhập:" />
-                        <TextField fx:id="txtUsername" prefHeight="35.0" promptText="Nhập tài khoản..." />
+                        <TextField fx:id="txtUsername" onAction="#handleLogin" prefHeight="35.0" promptText="Nhập tài khoản..." />
                     </children>
                 </VBox>
                 <VBox spacing="5.0">
                     <children>
                         <Label text="Mật khẩu:" />
-                        <PasswordField fx:id="txtPassword" prefHeight="35.0" promptText="Nhập mật khẩu..." />
+                        <PasswordField fx:id="txtPassword" onAction="#handleLogin" prefHeight="35.0" promptText="Nhập mật khẩu..." />
                     </children>
                 </VBox>
-                <Button mnemonicParsing="false" onAction="#handleLogin" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG NHẬP" />
+                <Button fx:id="btnLogin" defaultButton="true" mnemonicParsing="false" onAction="#handleLogin" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG NHẬP" />
                 <Button mnemonicParsing="false" onAction="#goToRegister" style="-fx-background-color: transparent; -fx-text-fill: #007bff; -fx-underline: true;" text="Chưa có tài khoản? Đăng ký" />
             </children>
             <padding>
