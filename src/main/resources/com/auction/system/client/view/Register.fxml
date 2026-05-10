@@ -10,9 +10,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="470.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.RegisterController">
+<AnchorPane prefHeight="530.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.RegisterController">
     <children>
-        <VBox alignment="CENTER" layoutX="135.0" layoutY="25.0" prefHeight="420.0" prefWidth="330.0" spacing="16.0" style="-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 10; -fx-background-radius: 10;">
+        <VBox alignment="CENTER" layoutX="135.0" layoutY="25.0" prefHeight="480.0" prefWidth="330.0" spacing="12.0" style="-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 10; -fx-background-radius: 10;">
             <children>
                 <Label text="ĐĂNG KÝ" textFill="#333333">
                     <font>
@@ -28,19 +28,25 @@
                 <VBox spacing="5.0">
                     <children>
                         <Label text="Tên đăng nhập:" />
-                        <TextField fx:id="txtUsername" prefHeight="35.0" promptText="Nhập tài khoản..." />
+                        <TextField fx:id="txtUsername" onAction="#handleRegister" prefHeight="35.0" promptText="Nhập tài khoản..." />
+                    </children>
+                </VBox>
+                <VBox spacing="5.0">
+                    <children>
+                        <Label text="Email:" />
+                        <TextField fx:id="txtEmail" onAction="#handleRegister" prefHeight="35.0" promptText="Nhập email..." />
                     </children>
                 </VBox>
                 <VBox spacing="5.0">
                     <children>
                         <Label text="Mật khẩu:" />
-                        <PasswordField fx:id="txtPassword" prefHeight="35.0" promptText="Nhập mật khẩu..." />
+                        <PasswordField fx:id="txtPassword"  onAction="#handleRegister" prefHeight="35.0" promptText="Nhập mật khẩu..." />
                     </children>
                 </VBox>
                 <VBox spacing="5.0">
                     <children>
                         <Label text="Xác nhận mật khẩu:" />
-                        <PasswordField fx:id="txtConfirmPassword" prefHeight="35.0" promptText="Nhập lại mật khẩu..." />
+                        <PasswordField fx:id="txtConfirmPassword" onAction="#handleRegister" prefHeight="35.0" promptText="Nhập lại mật khẩu..." />
                     </children>
                 </VBox>
                 <VBox spacing="5.0">
@@ -49,7 +55,7 @@
                         <ComboBox fx:id="cbRole" prefHeight="35.0" prefWidth="270.0" />
                     </children>
                 </VBox>
-                <Button mnemonicParsing="false" onAction="#handleRegister" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG KÝ" />
+                <Button fx:id="btnRegister" defaultButton="true" mnemonicParsing="false" onAction="#handleRegister" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG KÝ" />
                 <Button mnemonicParsing="false" onAction="#goLogin" style="-fx-background-color: transparent; -fx-text-fill: #007bff; -fx-underline: true;" text="Đã có tài khoản? Đăng nhập" />
             </children>
             <padding>
