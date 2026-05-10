@@ -9,16 +9,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.List;
+import java.util.UUID;
 
 public class AuthManager {
     private static final AuthManager INSTANCE = new AuthManager(true    );
 
-    private final Map<Integer, User> usersById = new HashMap<>();
+    private final Map<String, User> usersById = new HashMap<>();
     private final Map<String, User> usersByUsername = new HashMap<>();
     private final Map<String, User> usersByEmail = new HashMap<>();
-    private final AtomicInteger nextUserId = new AtomicInteger(1);
 
     private AuthManager() {
         this(false);
@@ -38,7 +37,7 @@ public class AuthManager {
     public synchronized User register(String fullName, String username, String email, String password, String confirmPassword, String role) {
         validateRegisterInput(fullName, username, email, password, confirmPassword, role);
 
-        int userId = nextUserId.getAndIncrement();
+        String userId = generateUserId(role);
         User user = createUserByRole(userId, fullName.trim(), username.trim(), email.trim(), password, role);
         usersById.put(user.getId(), user);
         usersByUsername.put(user.getUserName(), user);
@@ -51,8 +50,8 @@ public class AuthManager {
         if (user == null) {
             throw new IllegalArgumentException("User must not be null");
         }
-        if (user.getId() <= 0) {
-            throw new IllegalArgumentException("User id must be greater than 0");
+        if (isBlank(user.getId())) {
+            throw new IllegalArgumentException("User id must not be blank");
         }
         if (isBlank(user.getUserName())) {
             throw new IllegalArgumentException("Username must not be blank");
@@ -71,7 +70,6 @@ public class AuthManager {
         }
 
         usersById.put(user.getId(), user);
-            nextUserId.updateAndGet(next -> Math.max(next, user.getId() + 1));
         usersByUsername.put(user.getUserName(), user);
         usersByEmail.put(user.getEmail(), user);
     }
@@ -97,7 +95,7 @@ public class AuthManager {
     }
 
     // Tim user theo id, dung Optional de tranh tra ve null truc tiep.
-    public synchronized Optional<User> findById(int id) {
+    public synchronized Optional<User> findById(String id) {
         return Optional.ofNullable(usersById.get(id));
     }
 
@@ -140,7 +138,7 @@ public class AuthManager {
     }
 
     // Factory nho: tao dung object User theo role duoc chon tren giao dien.
-    private User createUserByRole(int id, String fullName, String username, String email, String password, String role) {
+    private User createUserByRole(String id, String fullName, String username, String email, String password, String role) {
         return switch (role.trim().toUpperCase()) {
             case "ADMIN" -> new Admin(id, fullName, username, email, password);
             case "SELLER" -> new Seller(id, fullName, username, email, password);
@@ -149,11 +147,15 @@ public class AuthManager {
         };
     }
 
+    private String generateUserId(String role) {
+        return role.trim().toUpperCase() + "-" + UUID.randomUUID();
+    }
+
     // Tao san mot so tai khoan mau de login nhanh khi demo giao dien.
     private void seedDefaultUsers() {
-        registerUser(new Admin(1, "Admin", "admin", "admin@example.com", "123"));
-        registerUser(new Seller(2, "Seller Demo", "seller", "seller@example.com", "123"));
-        registerUser(new Bidder(3, "Bidder Demo", "bidder", "bidder@example.com", "123"));
+        registerUser(new Admin("ADMIN-1", "Admin", "admin", "admin@example.com", "123"));
+        registerUser(new Seller("SELLER-1", "Seller Demo", "seller", "seller@example.com", "123"));
+        registerUser(new Bidder("BIDDER-1", "Bidder Demo", "bidder", "bidder@example.com", "123"));
     }
 
     // Ham ho tro kiem tra chuoi rong/null de dung lai o nhieu noi.

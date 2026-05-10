@@ -21,8 +21,7 @@ public class UserManager {
         return authManager.getAllUsers();
     }
 
-    // Đã sửa: Đổi String id thành int id
-    public Optional<User> findById(int id) {
+    public Optional<User> findById(String id) {
         return authManager.findById(id);
     }
 }

@@ -6,15 +6,16 @@ import com.auction.system.model.user.Bidder;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class Auction implements Serializable {
-    private int id;
+    private String id;
     private Item item;
     private double currentPrice;
     private AuctionStatus status;
     private List<Bid> bids;
 
-    public Auction(int id, Item item) {
+    public Auction(String id, Item item) {
         if (item == null) {
             throw new IllegalArgumentException("Item không được để trống");
         }
@@ -44,7 +45,7 @@ public class Auction implements Serializable {
         status = AuctionStatus.FINISHED;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
     public Item getItem() {
@@ -70,7 +71,7 @@ public class Auction implements Serializable {
          if (amount <= currentPrice) {
             throw new IllegalArgumentException("Giá đặt phải cao hơn giá hiện tại");
          }
-         int bidId = bids.size() + 1;
+         String bidId = "BID-" + UUID.randomUUID();
          Bid bid = new Bid(bidId, bidder, amount) ;
 
          bids.add(bid);

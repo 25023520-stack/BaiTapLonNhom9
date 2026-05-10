@@ -8,11 +8,11 @@ import com.auction.system.model.item.Item;
 public class ItemFactory {
     public static Item createItem(
         String category,
-        int id,
+        String id,
         String name,
         String description,
         double startingPrice,
-        int sellerId
+        String sellerId
     ) {
         if (category.equalsIgnoreCase("electronics")) {
             return new Electronics(id, name, description, startingPrice, sellerId);
