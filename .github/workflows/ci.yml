@@ -16,4 +16,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
-      - run: mvn test
+      - name: build with maven
+        run: mvn package
+
+
