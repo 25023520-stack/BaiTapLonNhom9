@@ -141,10 +141,12 @@ public class RegisterController {
     }
 
     private ResponsePayload readResponse(AuctionClient client) throws IOException, ClassNotFoundException {
-        if (client.read() instanceof ResponsePayload response) {
-            return response;
-        }
-        throw new IOException("Unexpected payload received from server");
+        Payload raw = client.read();
+        if (raw == null) throw new IOException("Server returned null");
+        ResponsePayload response = new ResponsePayload();
+        response.setType(raw.getType());
+        raw.getBody().forEach(response::put);
+        return response;
     }
 
     private void showAlert(Alert.AlertType alertType, String message) {

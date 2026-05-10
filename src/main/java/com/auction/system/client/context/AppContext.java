@@ -2,6 +2,10 @@ package com.auction.system.client.context;
 
 import com.auction.system.client.network.AuctionClient;
 import com.auction.system.model.user.User;
+import com.auction.system.model.user.Admin;
+import com.auction.system.model.user.Bidder;
+import com.auction.system.model.user.Seller;
+import java.util.Map;
 
 import java.io.IOException;
 
@@ -26,6 +30,34 @@ public final class AppContext {
 
     public static synchronized void setCurrentUser(User user) {
         currentUser = user;
+    }
+
+    public static synchronized void setCurrentUserFromMap(Map<String, Object> userMap) {
+        if (userMap == null) return;
+        int id = getInt(userMap, "id");
+        String fullName = getString(userMap, "fullName");
+        String username = getString(userMap, "userName");
+        String email = getString(userMap, "email");
+        String role = getString(userMap, "role");
+        currentUser = switch (role.toUpperCase()) {
+            case "ADMIN"  -> new Admin(id, fullName, username, email, "");
+            case "SELLER" -> new Seller(id, fullName, username, email, "");
+            default       -> new Bidder(id, fullName, username, email, "");
+        };
+    }
+
+    private static String getString(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        return v != null ? String.valueOf(v) : "";
+    }
+
+    private static int getInt(Map<String, Object> map, String key) {
+        Object v = map.get(key);
+        if (v instanceof Number n) return n.intValue();
+        if (v != null) {
+            try { return Integer.parseInt(String.valueOf(v)); } catch (NumberFormatException ignored) {}
+        }
+        return 0;
     }
 
     private static void ensureConnected() throws IOException {
