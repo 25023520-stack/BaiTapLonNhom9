@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.ui.Login">
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.LoginController">
     <children>
         <VBox alignment="CENTER" layoutX="150.0" layoutY="50.0" prefHeight="300.0" prefWidth="300.0" spacing="20.0" style="-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 10; -fx-background-radius: 10;">
             <children>
@@ -21,17 +21,17 @@
                 <VBox spacing="5.0">
                     <children>
                         <Label text="Tên đăng nhập:" />
-                        <TextField fx:id="txtUsername" prefHeight="35.0" promptText="Nhập tài khoản..." />
+                        <TextField fx:id="txtUsername" onAction="#handleLogin" prefHeight="35.0" promptText="Nhập tài khoản..." />
                     </children>
                 </VBox>
                 <VBox spacing="5.0">
                     <children>
                         <Label text="Mật khẩu:" />
-                        <PasswordField fx:id="txtPassword" prefHeight="35.0" promptText="Nhập mật khẩu..." />
+                        <PasswordField fx:id="txtPassword" onAction="#handleLogin" prefHeight="35.0" promptText="Nhập mật khẩu..." />
                     </children>
                 </VBox>
-                <Button mnemonicParsing="false" onAction="#handleLogin" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG NHẬP" />
-                <Button mnemonicParsing="false" onAction="#goToRegister" style="-fx-background-color: transparent; -fx-text-fill: #007bff; -fx-underline: true;" text="Chưa có tài khoản? Đăng ký ngay" />
+                <Button fx:id="btnLogin" defaultButton="true" mnemonicParsing="false" onAction="#handleLogin" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG NHẬP" />
+                <Button mnemonicParsing="false" onAction="#goToRegister" style="-fx-background-color: transparent; -fx-text-fill: #007bff; -fx-underline: true;" text="Chưa có tài khoản? Đăng ký" />
             </children>
             <padding>
                 <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />

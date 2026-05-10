@@ -4,59 +4,56 @@ import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
-import com.auction.system.manager.AuctionManager;
-import com.auction.system.model.auction.Bid;
-import com.auction.system.model.user.Bidder;
+import com.auction.system.server.controller.AuctionController;
+import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.model.user.User;
+import com.auction.system.model.user.Bidder;
+import com.google.gson.Gson;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 public class ClientHandler implements Runnable, Closeable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientHandler.class);
+    private static final Gson GSON = new Gson();
+
     private final Socket socket;
     private final AuctionManager auctionManager;
     private final AuctionServer auctionServer;
-    private final ObjectOutputStream outputStream;
-    private final ObjectInputStream inputStream;
+    private final AuctionController auctionController;
+    private final PrintWriter writer;
+    private final BufferedReader reader;
 
     private volatile boolean connected = true;
     private volatile boolean closed;
     private User authenticatedUser;
 
+
     public ClientHandler(Socket socket, AuctionManager auctionManager, AuctionServer auctionServer) throws IOException {
         this.socket = socket;
         this.auctionManager = auctionManager;
         this.auctionServer = auctionServer;
-        this.outputStream = new ObjectOutputStream(socket.getOutputStream());
-        this.outputStream.flush();
-        this.inputStream = new ObjectInputStream(socket.getInputStream());
+        this.auctionController = new AuctionController();
+        this.writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+        this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
     }
 
     @Override
     public void run() {
+        LOGGER.info("Client connected: {}", socket.getInetAddress());
         try {
-            while (connected) {
-                Object incoming = inputStream.readObject();
-                if (!(incoming instanceof Payload payload)) {
-                    send(ResponsePayload.error("Unsupported message type"));
-                    continue;
-                }
-
+            String line;
+            while (connected && (line = reader.readLine()) != null) {
+                Payload payload = GSON.fromJson(line, Payload.class);
                 handle(payload);
             }
-        } catch (EOFException ignored) {
-            connected = false;
-        } catch (IOException | ClassNotFoundException exception) {
+        } catch (IOException e) {
             if (connected) {
-                try {
-                    send(ResponsePayload.error("Connection error: " + exception.getMessage()));
-                } catch (IOException ignored) {
-                }
+                LOGGER.warn("Connection error: {}", e.getMessage());
             }
         } finally {
             try {
@@ -104,6 +101,7 @@ public class ClientHandler implements Runnable, Closeable {
         response.put("role", authenticatedUser.getRole());
         response.put("fullName", authenticatedUser.getFullName());
         send(response);
+        LOGGER.info("User logged in: {}", username);
     }
 
     private void handleListItems() throws IOException {
@@ -117,38 +115,21 @@ public class ClientHandler implements Runnable, Closeable {
             send(ResponsePayload.error("Please login with a bidder account before placing a bid"));
             return;
         }
+        ResponsePayload response = auctionController.placeBid(payload, authenticatedUser);
+        send(response); // gửi kết quả về cho client vừa bid
 
-        String itemId;
-        double amount;
-        if (payload instanceof BidPayload bidPayload) {
-            itemId = bidPayload.getItemId();
-            amount = bidPayload.getAmount();
-        } else {
-            String parsedItemId = payload.getString("itemId");
-            Double parsedAmount = payload.getDouble("amount");
-            if (parsedItemId == null || parsedAmount == null) {
-                send(ResponsePayload.error("Bid payload must contain itemId and amount"));
-                return;
-            }
-            itemId = parsedItemId;
-            amount = parsedAmount;
-        }
-
-        try {
-            Bid bid = auctionManager.placeBid(itemId, bidder, amount);
-            ResponsePayload response = ResponsePayload.ok("Bid accepted");
-            response.put("bid", bid);
-            response.put("itemId", itemId);
-            response.put("amount", bid.getAmount());
-            send(response);
-        } catch (RuntimeException exception) {
-            send(ResponsePayload.error(exception.getMessage()));
+        if (response.isSuccess() && response.getBody().get("item") != null) {
+            ResponsePayload update = ResponsePayload.auctionUpdate("Auction updated");
+            update.put("itemId", response.getInt("itemId"));
+            update.put("amount", response.getDouble("amount"));
+            update.put("item", response.getBody().get("item"));
+            update.put("bidderId", authenticatedUser.getId());
+            auctionServer.broadcast(update);
         }
     }
 
-    public synchronized void send(Payload payload) throws IOException {
-        outputStream.writeObject(payload);
-        outputStream.flush();
+    public synchronized void send(Payload payload){
+        writer.println(GSON.toJson(payload));
     }
 
     @Override
@@ -160,8 +141,9 @@ public class ClientHandler implements Runnable, Closeable {
         closed = true;
         connected = false;
         auctionServer.removeClient(this);
-        inputStream.close();
-        outputStream.close();
+        writer.close();
+        reader.close();
         socket.close();
+        LOGGER.info("Client disconnected: {}", socket.getInetAddress());
     }
 }

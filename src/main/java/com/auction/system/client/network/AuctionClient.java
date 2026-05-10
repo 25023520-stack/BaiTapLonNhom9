@@ -1,21 +1,22 @@
 package com.auction.system.client.network;
 
 import com.auction.system.common.payload.Payload;
+import com.google.gson.Gson;
 
-import java.io.Closeable;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 public class AuctionClient implements Closeable {
+    private static final Gson GSON = new Gson();
+
     private Socket socket;
-    private ObjectOutputStream outputStream;
-    private ObjectInputStream inputStream;
     private Thread listenerThread;
     private volatile boolean connected;
+    private PrintWriter writer;
+    private BufferedReader reader;
+
 
     public void connect(String host, int port) throws IOException {
         if (connected) {
@@ -23,9 +24,8 @@ public class AuctionClient implements Closeable {
         }
 
         socket = new Socket(host, port);
-        outputStream = new ObjectOutputStream(socket.getOutputStream());
-        outputStream.flush();
-        inputStream = new ObjectInputStream(socket.getInputStream());
+        writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
+        reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         connected = true;
     }
 
@@ -34,8 +34,7 @@ public class AuctionClient implements Closeable {
             throw new IllegalStateException("Client is not connected");
         }
 
-        outputStream.writeObject(payload);
-        outputStream.flush();
+        writer.println(GSON.toJson(payload));
     }
 
     public void startListening(Consumer<Payload> onMessage, Consumer<Exception> onError) {
@@ -48,21 +47,14 @@ public class AuctionClient implements Closeable {
 
         listenerThread = new Thread(() -> {
             try {
-                while (connected) {
-                    Object incoming = inputStream.readObject();
-                    if (incoming instanceof Payload payload) {
-                        onMessage.accept(payload);
-                    }
+                String line;
+                while (connected && (line = reader.readLine()) != null) {
+                    Payload payload = GSON.fromJson(line, Payload.class);
+                    onMessage.accept(payload);
                 }
-            } catch (EOFException ignored) {
+            } catch (IOException e) {
                 connected = false;
-            } catch (IOException | ClassNotFoundException exception) {
-                connected = false;
-                if (onError != null) {
-                    onError.accept(exception instanceof ClassNotFoundException
-                            ? new IOException("Unsupported payload received", exception)
-                            : exception);
-                }
+                if (onError != null) onError.accept(e);
             }
         }, "auction-client-listener");
         listenerThread.setDaemon(true);
@@ -74,11 +66,9 @@ public class AuctionClient implements Closeable {
             throw new IllegalStateException("Client is not connected");
         }
 
-        Object incoming = inputStream.readObject();
-        if (incoming instanceof Payload payload) {
-            return payload;
-        }
-        throw new IOException("Unsupported message type");
+        String line = reader.readLine();        // block cho đến khi nhận 1 dòng
+        if (line == null) throw new EOFException("Server closed connection");
+        return GSON.fromJson(line, Payload.class);
     }
 
     public boolean isConnected() {
@@ -88,15 +78,8 @@ public class AuctionClient implements Closeable {
     @Override
     public void close() throws IOException {
         connected = false;
-
-        if (inputStream != null) {
-            inputStream.close();
-        }
-        if (outputStream != null) {
-            outputStream.close();
-        }
-        if (socket != null && !socket.isClosed()) {
-            socket.close();
-        }
+        if (reader != null) reader.close();
+        if (writer != null) writer.close();
+        if (socket != null && !socket.isClosed()) socket.close();
     }
 }

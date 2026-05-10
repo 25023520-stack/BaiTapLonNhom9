@@ -1,6 +1,7 @@
 package com.auction.system.server.network;
 
-import com.auction.system.manager.AuctionManager;
+import com.auction.system.common.payload.Payload;
+import com.auction.system.server.manager.AuctionManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -10,6 +11,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AuctionServer {
     private final int port;
@@ -19,6 +22,9 @@ public class AuctionServer {
 
     private ServerSocket serverSocket;
     private volatile boolean running;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuctionServer.class);
+
 
     public AuctionServer(int port, AuctionManager auctionManager) {
         this(port, auctionManager, Executors.newCachedThreadPool());
@@ -38,14 +44,23 @@ public class AuctionServer {
         serverSocket = new ServerSocket(port);
         running = true;
 
+        LOGGER.info("=============================================");
+        LOGGER.info("AUCTION SERVER IS ONLINE ON PORT: {}", port);
+        LOGGER.info("Waiting for clients to connect...");
+        LOGGER.info("=============================================");
+
+
         while (running) {
             try {
                 Socket socket = serverSocket.accept();
-                ClientHandler clientHandler = new ClientHandler(socket, auctionManager, this);
+                LOGGER.info("New client connected from: {}", socket.getRemoteSocketAddress());
+
+                ClientHandler clientHandler = new ClientHandler(socket,auctionManager, this);
                 clients.add(clientHandler);
                 clientPool.submit(clientHandler);
             } catch (IOException exception) {
                 if (running) {
+                    LOGGER.error("Error accepting client connection", exception);
                     throw exception;
                 }
             }
@@ -64,6 +79,12 @@ public class AuctionServer {
             serverSocket.close();
         }
         clientPool.shutdownNow();
+    }
+
+    public void broadcast(Payload payload) {
+        for (ClientHandler client : clients.toArray(new ClientHandler[0])) {
+                client.send(payload);
+        }
     }
 
     void removeClient(ClientHandler clientHandler) {

@@ -3,17 +3,19 @@ package com.auction.system.model.user;
 import java.io.Serializable;
 
 public abstract class User implements Serializable {
-    private String id;
+    private int id;
     private String fullName;
     private String userName;
+    private String email;
     private String passWord;
 
     public User() {}
 
-    public User(String id, String fullName, String userName, String passWord) {
+    public User(int id, String fullName, String userName,String email, String passWord) {
         this.id = id;
         this.fullName = fullName;
         this.userName = userName;
+        this.email = email;
         this.passWord = passWord;
     }
     public boolean checkPassword(String password) {
@@ -28,13 +30,15 @@ public abstract class User implements Serializable {
         return fullName;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
     public String getUserName() {
         return userName;
     }
+
+    public String getEmail() {return email;}
 
     public String getPassWord() {
         return passWord;
@@ -52,7 +56,11 @@ public abstract class User implements Serializable {
         this.fullName = fullName;
     }
 
+    public void setEmail(String email) { this.email = email;}
+
     public abstract String getRole(); // xác định vai trò của người dùng (Seller, Bidder, Admin)
 
-
+    public void setId(int id) {
+        this.id = id;
+    }
 }
