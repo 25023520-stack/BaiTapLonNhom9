@@ -1,5 +1,6 @@
 package com.auction.system.client.network;
 
+import com.auction.system.common.json.GsonProvider;
 import com.auction.system.common.payload.Payload;
 import com.google.gson.Gson;
 
@@ -9,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 public class AuctionClient implements Closeable {
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = GsonProvider.get();
 
     private Socket socket;
     private Thread listenerThread;

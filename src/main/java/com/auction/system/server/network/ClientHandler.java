@@ -1,5 +1,6 @@
 package com.auction.system.server.network;
 
+import com.auction.system.common.json.GsonProvider;
 import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
@@ -20,7 +21,7 @@ import java.util.Optional;
 
 public class ClientHandler implements Runnable, Closeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientHandler.class);
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = GsonProvider.get();
 
     private final Socket socket;
     private final AuctionManager auctionManager;
@@ -102,6 +103,9 @@ public class ClientHandler implements Runnable, Closeable {
 
         authenticatedUser = user.get();
         ResponsePayload response = ResponsePayload.ok("Login successful");
+        response.put("id", authenticatedUser.getId());
+        response.put("userName", authenticatedUser.getUserName());
+        response.put("email", authenticatedUser.getEmail());
         response.put("role", authenticatedUser.getRole());
         response.put("fullName", authenticatedUser.getFullName());
         send(response);
