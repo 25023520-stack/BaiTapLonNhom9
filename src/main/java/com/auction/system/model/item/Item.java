@@ -11,19 +11,19 @@ import java.util.List;
 import com.auction.system.model.auction.AuctionStatus;
 
 public class Item implements Serializable {
-    private int id;
+    private String id;
     private String name, description;
     private double startPrice, currentPrice;
     private AuctionStatus status;
-    private int sellerId;
-    private int highestBidderId;
+    private String sellerId;
+    private String highestBidderId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private final List<Bid> bidHistory = new ArrayList<>();
 
     public Item() {}
 
-    public Item(int id, String name, String description, double startingPrice, int sellerId) {
+    public Item(String id, String name, String description, double startingPrice, String sellerId) {
         this.id = id;
         this.name = name; 
         this.description = description;
@@ -31,7 +31,7 @@ public class Item implements Serializable {
         this.sellerId = sellerId;
     }
 
-    public Item(int id, String name, String description, double startPrice, double currentPrice, AuctionStatus status)  {
+    public Item(String id, String name, String description, double startPrice, double currentPrice, AuctionStatus status)  {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -80,23 +80,23 @@ public class Item implements Serializable {
         this.name = name;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public int getSellerId() {
+    public String getSellerId() {
         return sellerId;
     }
 
-    public void setSellerId(int sellerId) {
+    public void setSellerId(String sellerId) {
         this.sellerId = sellerId;
     }
 
-    public int getHighestBidderId() {
+    public String getHighestBidderId() {
         return highestBidderId;
     }
 
-    public void setHighestBidderId(int highestBidderId) {
+    public void setHighestBidderId(String highestBidderId) {
         this.highestBidderId = highestBidderId;
     }
 

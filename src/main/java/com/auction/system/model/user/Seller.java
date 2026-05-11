@@ -4,15 +4,16 @@ import com.auction.system.model.item.Item;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class Seller extends User {
     private final List<Item> itemForSale = new ArrayList<>();
 
-    public Seller() {
+    public Seller(int id, String fullName, String username, String email, String passWord) {
         super();
     }
 
-    public Seller(int id, String fullName, String userName,String email, String passWord) {
+    public Seller(String id, String fullName, String userName,String email, String passWord) {
         super(id, fullName, userName, email, passWord);
 
     }
@@ -32,7 +33,7 @@ public class Seller extends User {
     public void addItemForSale(Item item) {
     if (item == null) {
         throw new IllegalArgumentException("Item không tồn tại");
-    } else if (item.getSellerId() != this.getId()) {
+    } else if (!Objects.equals(item.getSellerId(), this.getId())) {
         throw new IllegalArgumentException("Item không thuộc về seller này");
     } else {
         itemForSale.add(item);
@@ -44,7 +45,7 @@ public class Seller extends User {
         if (item == null) {
             throw new IllegalArgumentException("Item không tồn tại");
         }
-        else if (item.getSellerId() != this.getId()) {
+        else if (!Objects.equals(item.getSellerId(), this.getId())) {
             throw new IllegalArgumentException("Item không thuộc về Seller này");
         }
         else {
@@ -63,7 +64,7 @@ public class Seller extends User {
 
     public void updateItem(Item updatedItem) {
         for (int i = 0; i < itemForSale.size(); i++) {
-            if (itemForSale.get(i).getId() == updatedItem.getId()) {
+            if (Objects.equals(itemForSale.get(i).getId(), updatedItem.getId())) {
                 itemForSale.set(i, updatedItem);
                 break;
             }

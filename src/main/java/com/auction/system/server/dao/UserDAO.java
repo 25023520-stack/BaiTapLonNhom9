@@ -46,37 +46,33 @@ public class UserDAO {
     }
 
     //thêm user mới vào DB
-    public int insertUser(User user) {
+    public String insertUser(User user) {
         String sql = """
-                INSERT INTO users (full_name, username, email, password, role)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO users (id, full_name, username, email, password, role)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """;
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql,
-                Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, user.getFullName());
-            stmt.setString(2, user.getUserName());
-            stmt.setString(3, user.getEmail());
-            stmt.setString(4, user.getPassWord());
-            stmt.setString(5, user.getRole());
+        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setString(1, user.getId());
+            stmt.setString(2, user.getFullName());
+            stmt.setString(3, user.getUserName());
+            stmt.setString(4, user.getEmail());
+            stmt.setString(5, user.getPassWord());
+            stmt.setString(6, user.getRole());
 
             int rowsAffected = stmt.executeUpdate();
-            ResultSet generatedKeys = stmt.getGeneratedKeys();
-            if (rowsAffected > 0) {
-                if (generatedKeys.next()) {
-                    return generatedKeys.getInt(1);
-                }
-            }
+            return rowsAffected > 0 ? user.getId() : null;
         } catch (SQLException e) {
             System.err.println("Lỗi thêm user: " + e.getMessage());
         }
-        return -1;
+        return null;
 
     }
 
-    public User findByUsername() {
+    public User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 return mapResultSetToUser(rs);
@@ -87,10 +83,11 @@ public class UserDAO {
         return null;
     }
 
-    public User findById() {
+    public User findById(String id) {
         String sql = "SELECT * FROM users WHERE id = ?";
 
         try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+            stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 return mapResultSetToUser(rs);
@@ -116,11 +113,11 @@ public class UserDAO {
         } catch (SQLException e) {
             System.err.println("Lỗi tìm users: " + e.getMessage());
         }
-        return null;
+        return users;
     }
 
     private User mapResultSetToUser(ResultSet rs) throws SQLException {
-        int id = rs.getInt("id");
+        String id = rs.getString("id");
         String username = rs.getString("username");
         String fullname = rs.getString("full_name");
         String email = rs.getString("email");
@@ -143,7 +140,7 @@ public class UserDAO {
             stmt.setString(1, user.getFullName());
             stmt.setString(2, user.getEmail());
             stmt.setString(3, user.getPassWord());
-            stmt.setInt(4, user.getId());
+            stmt.setString(4, user.getId());
 
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected > 0;
@@ -154,10 +151,10 @@ public class UserDAO {
 
     }
 
-    public boolean deleteUser(int id) {
+    public boolean deleteUser(String id) {
         String sql = "DELETE FROM users WHERE id = ? ";
         try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
-            pstmt.setInt(1, id);
+            pstmt.setString(1, id);
 
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;

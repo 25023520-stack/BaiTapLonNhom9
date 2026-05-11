@@ -3,7 +3,7 @@ package com.auction.system.model.user;
 import java.io.Serializable;
 
 public abstract class User implements Serializable {
-    private int id;
+    private String id;
     private String fullName;
     private String userName;
     private String email;
@@ -11,7 +11,7 @@ public abstract class User implements Serializable {
 
     public User() {}
 
-    public User(int id, String fullName, String userName,String email, String passWord) {
+    public User(String id, String fullName, String userName,String email, String passWord) {
         this.id = id;
         this.fullName = fullName;
         this.userName = userName;
@@ -30,7 +30,7 @@ public abstract class User implements Serializable {
         return fullName;
     }
 
-    public int getId() {
+    public String getId() {
         return id;
     }
 
@@ -60,7 +60,7 @@ public abstract class User implements Serializable {
 
     public abstract String getRole(); // xác định vai trò của người dùng (Seller, Bidder, Admin)
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 }

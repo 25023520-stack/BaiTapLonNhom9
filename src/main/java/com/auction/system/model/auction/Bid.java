@@ -6,20 +6,23 @@ import java.time.LocalDateTime;
 import com.auction.system.model.user.Bidder;
 
 public class Bid implements Serializable {
-    private final int bidId;
+    private final String bidId;
     private final Bidder bidder;
     private final double amount;
     private final LocalDateTime timestamp;
 
 
-    public Bid(int bidId, Bidder bidder, double amount) {
+    public Bid(String bidId, Bidder bidder, double amount) {
         this.bidId = bidId;
         this.bidder = bidder;
         this.amount = amount;
         this.timestamp = LocalDateTime.now();
     }
-    public int getBidderId() {
+    public String getBidId() {
         return bidId;
+    }
+    public String getBidderId() {
+        return bidder != null ? bidder.getId() : null;
     }
     public Bidder getBidder() {
         return bidder;
