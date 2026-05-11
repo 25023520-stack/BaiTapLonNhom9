@@ -11,19 +11,19 @@ public abstract class User implements Serializable {
 
     public User() {}
 
-    public User(String id, String fullName, String userName,String email, String passWord) {
+    public User(String id, String fullName, String userName, String email, String passWord) {
         this.id = id;
         this.fullName = fullName;
         this.userName = userName;
         this.email = email;
         this.passWord = passWord;
     }
+
     public boolean checkPassword(String password) {
         if (password == null) {
             return false;
         }
         return password.equals(passWord);
-
     }
 
     public String getFullName() {
@@ -38,7 +38,9 @@ public abstract class User implements Serializable {
         return userName;
     }
 
-    public String getEmail() {return email;}
+    public String getEmail() {
+        return email;
+    }
 
     public String getPassWord() {
         return passWord;
@@ -56,9 +58,11 @@ public abstract class User implements Serializable {
         this.fullName = fullName;
     }
 
-    public void setEmail(String email) { this.email = email;}
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public abstract String getRole(); // xác định vai trò của người dùng (Seller, Bidder, Admin)
+    public abstract String getRole();
 
     public void setId(String id) {
         this.id = id;
