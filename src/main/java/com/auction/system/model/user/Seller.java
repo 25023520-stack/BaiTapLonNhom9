@@ -9,7 +9,7 @@ import java.util.Objects;
 public class Seller extends User {
     private final List<Item> itemForSale = new ArrayList<>();
 
-    public Seller() {
+    public Seller(int id, String fullName, String username, String email, String passWord) {
         super();
     }
 
