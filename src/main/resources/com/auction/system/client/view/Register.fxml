@@ -1,66 +1,186 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.shape.Rectangle?>
 
-<AnchorPane prefHeight="530.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.RegisterController">
+<AnchorPane prefHeight="580.0" prefWidth="900.0" styleClass="main-background" stylesheets="@Styles.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.auction.system.client.controller.RegisterController">
     <children>
-        <VBox alignment="CENTER" layoutX="135.0" layoutY="25.0" prefHeight="480.0" prefWidth="330.0" spacing="12.0" style="-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 10; -fx-background-radius: 10;">
+
+        <!-- Left brand panel -->
+        <VBox alignment="CENTER" prefWidth="220.0" styleClass="brand-panel"
+              AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
             <children>
-                <Label text="ĐĂNG KÝ" textFill="#333333">
-                    <font>
-                        <Font name="System Bold" size="24.0" />
-                    </font>
-                </Label>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Họ và tên:" />
-                        <TextField fx:id="txtFullName" prefHeight="35.0" promptText="Nhập họ và tên" />
-                    </children>
-                </VBox>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Tên đăng nhập:" />
-                        <TextField fx:id="txtUsername" onAction="#handleRegister" prefHeight="35.0" promptText="Nhập tài khoản..." />
-                    </children>
-                </VBox>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Email:" />
-                        <TextField fx:id="txtEmail" onAction="#handleRegister" prefHeight="35.0" promptText="Nhập email..." />
-                    </children>
-                </VBox>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Mật khẩu:" />
-                        <PasswordField fx:id="txtPassword"  onAction="#handleRegister" prefHeight="35.0" promptText="Nhập mật khẩu..." />
-                    </children>
-                </VBox>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Xác nhận mật khẩu:" />
-                        <PasswordField fx:id="txtConfirmPassword" onAction="#handleRegister" prefHeight="35.0" promptText="Nhập lại mật khẩu..." />
-                    </children>
-                </VBox>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Vai trò:" />
-                        <ComboBox fx:id="cbRole" prefHeight="35.0" prefWidth="270.0" />
-                    </children>
-                </VBox>
-                <Button fx:id="btnRegister" defaultButton="true" mnemonicParsing="false" onAction="#handleRegister" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG KÝ" />
-                <Button mnemonicParsing="false" onAction="#goLogin" style="-fx-background-color: transparent; -fx-text-fill: #007bff; -fx-underline: true;" text="Đã có tài khoản? Đăng nhập" />
+                <Label styleClass="brand-icon" text="⚡" />
+                <Label styleClass="brand-title" text="AuctionHub" />
+                <Label styleClass="brand-subtitle" text="Tạo tài khoản mới&#10;và bắt đầu ngay" />
+                <Label styleClass="brand-description" text="Nhanh chóng • An toàn • Minh bạch" />
             </children>
-            <padding>
-                <Insets bottom="24.0" left="30.0" right="30.0" top="24.0" />
-            </padding>
         </VBox>
+
+        <!-- Right form panel -->
+        <VBox alignment="CENTER" prefWidth="680.0" styleClass="form-panel"
+              AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0">
+            <children>
+
+                <VBox styleClass="login-card" spacing="0">
+                    <children>
+
+                        <!-- Header -->
+                        <VBox styleClass="card-header" spacing="4">
+                            <children>
+                                <Label styleClass="login-title" text="Đăng Ký" />
+                                <Label styleClass="login-subtitle" text="Điền thông tin để tạo tài khoản" />
+                            </children>
+                        </VBox>
+
+                        <Rectangle styleClass="card-divider" height="1.0" width="420.0" />
+
+                        <!-- Form body -->
+                        <VBox styleClass="card-body" spacing="12">
+                            <children>
+
+                                <!-- Full name -->
+                                <VBox spacing="5">
+                                    <children>
+                                        <Label styleClass="input-label" text="Họ và tên" />
+                                        <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
+                                            <children>
+                                                <Label styleClass="input-icon" text="👤" />
+                                                <TextField fx:id="txtFullName" onAction="#handleRegister"
+                                                           promptText="Nhập họ và tên..."
+                                                           styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <!-- Username + Email row -->
+                                <GridPane hgap="12">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints />
+                                    </rowConstraints>
+                                    <children>
+                                        <VBox spacing="5" GridPane.columnIndex="0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Tên đăng nhập" />
+                                                <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
+                                                    <children>
+                                                        <Label styleClass="input-icon" text="\@" />
+                                                        <TextField fx:id="txtUsername" onAction="#handleRegister"
+                                                                   promptText="Nhập tài khoản..."
+                                                                   styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="5" GridPane.columnIndex="1">
+                                            <children>
+                                                <Label styleClass="input-label" text="Email" />
+                                                <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
+                                                    <children>
+                                                        <Label styleClass="input-icon" text="✉" />
+                                                        <TextField fx:id="txtEmail" onAction="#handleRegister"
+                                                                   promptText="Nhập email..."
+                                                                   styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </GridPane>
+
+                                <!-- Password + Confirm row -->
+                                <GridPane hgap="12">
+                                    <columnConstraints>
+                                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
+                                    </columnConstraints>
+                                    <rowConstraints>
+                                        <RowConstraints />
+                                    </rowConstraints>
+                                    <children>
+                                        <VBox spacing="5" GridPane.columnIndex="0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Mật khẩu" />
+                                                <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
+                                                    <children>
+                                                        <Label styleClass="input-icon" text="🔒" />
+                                                        <PasswordField fx:id="txtPassword" onAction="#handleRegister"
+                                                                       promptText="Nhập mật khẩu..."
+                                                                       styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="5" GridPane.columnIndex="1">
+                                            <children>
+                                                <Label styleClass="input-label" text="Xác nhận mật khẩu" />
+                                                <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
+                                                    <children>
+                                                        <Label styleClass="input-icon" text="🔒" />
+                                                        <PasswordField fx:id="txtConfirmPassword" onAction="#handleRegister"
+                                                                       promptText="Nhập lại mật khẩu"
+                                                                       styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </GridPane>
+
+                                <!-- Role -->
+                                <VBox spacing="5">
+                                    <children>
+                                        <Label styleClass="input-label" text="Vai trò" />
+                                        <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
+                                            <children>
+                                                <Label styleClass="input-icon" text="👥" />
+                                                <ComboBox fx:id="cbRole" maxWidth="Infinity"
+                                                          promptText="Chọn vai trò..."
+                                                          styleClass="combo-field" HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <!-- Register button -->
+                                <Button fx:id="btnRegister" defaultButton="true" maxWidth="Infinity"
+                                        mnemonicParsing="false" onAction="#handleRegister"
+                                        styleClass="primary-button" text="Đăng Ký" />
+
+                                <!-- Back to login -->
+                                <HBox alignment="CENTER" spacing="6">
+                                    <children>
+                                        <Label styleClass="hint-text" text="Đã có tài khoản?" />
+                                        <Button mnemonicParsing="false" onAction="#goLogin"
+                                                styleClass="link-button" text="Đăng nhập ngay" />
+                                    </children>
+                                </HBox>
+
+                            </children>
+                        </VBox>
+
+                    </children>
+                </VBox>
+
+            </children>
+        </VBox>
+
     </children>
 </AnchorPane>
