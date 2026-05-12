@@ -1,0 +1,202 @@
+/* ============================================================
+   AuctionHub – Login Screen Styles (Neutral Tone)
+   ============================================================ */
+
+.main-background {
+    -fx-background-color: #F1EFE8;
+}
+
+.brand-panel {
+    -fx-background-color: #2C2C2A;
+    -fx-padding: 60 40 60 40;
+    -fx-spacing: 16;
+}
+
+.brand-icon {
+    -fx-font-size: 48px;
+    -fx-padding: 0 0 8 0;
+}
+
+.brand-title {
+    -fx-text-fill: #F1EFE8;
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.brand-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.5);
+    -fx-font-size: 14px;
+    -fx-font-family: "Segoe UI";
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-line-spacing: 4;
+}
+
+.brand-description {
+    -fx-text-fill: rgba(255, 255, 255, 0.35);
+    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI";
+    -fx-padding: 10 0 0 0;
+}
+
+.form-panel {
+    -fx-background-color: #F1EFE8;
+    -fx-padding: 40 50 40 50;
+}
+
+.login-card {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.08), 20, 0, 0, 4);
+    -fx-max-width: 380;
+    -fx-min-width: 340;
+}
+
+.card-header {
+    -fx-padding: 28 28 20 28;
+    -fx-alignment: TOP_LEFT;
+}
+
+.login-title {
+    -fx-text-fill: #2C2C2A;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.login-subtitle {
+    -fx-text-fill: #888780;
+    -fx-font-size: 13px;
+    -fx-font-family: "Segoe UI";
+}
+
+.card-divider {
+    -fx-fill: #D3D1C7;
+}
+
+.card-body {
+    -fx-padding: 20 28 28 28;
+}
+
+.input-label {
+    -fx-text-fill: #5F5E5A;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.input-wrapper {
+    -fx-background-color: #F1EFE8;
+    -fx-background-radius: 9;
+    -fx-border-color: #B4B2A9;
+    -fx-border-radius: 9;
+    -fx-border-width: 1.5;
+    -fx-padding: 0 12 0 14;
+}
+
+.input-wrapper:focused-within {
+    -fx-border-color: #888780;
+    -fx-background-color: white;
+    -fx-effect: dropshadow(gaussian, rgba(136, 135, 128, 0.15), 8, 0, 0, 0);
+}
+
+.input-icon {
+    -fx-font-size: 15px;
+    -fx-text-fill: #888780;
+}
+
+.input-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-font-size: 13px;
+    -fx-font-family: "Segoe UI";
+    -fx-text-fill: #2C2C2A;
+    -fx-prompt-text-fill: #B4B2A9;
+    -fx-pref-height: 40;
+}
+
+.input-field:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+}
+
+.primary-button {
+    -fx-background-color: #444441;
+    -fx-text-fill: #F1EFE8;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+    -fx-background-radius: 9;
+    -fx-pref-height: 44px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.18), 8, 0, 0, 3);
+}
+
+.primary-button:hover {
+    -fx-background-color: #2C2C2A;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 12, 0, 0, 4);
+}
+
+.primary-button:pressed {
+    -fx-background-color: #1a1a19;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.1), 4, 0, 0, 1);
+}
+
+.hint-text {
+    -fx-text-fill: #888780;
+    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI";
+}
+
+.link-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #5F5E5A;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+    -fx-background-radius: 20;
+    -fx-border-color: #B4B2A9;
+    -fx-border-radius: 20;
+    -fx-border-width: 1.5;
+    -fx-padding: 6 16 6 16;
+    -fx-cursor: hand;
+}
+
+.link-button:hover {
+    -fx-background-color: #F1EFE8;
+    -fx-border-color: #888780;
+    -fx-text-fill: #2C2C2A;
+}
+
+.link-button:pressed {
+    -fx-background-color: #D3D1C7;
+}
+
+/* ============================================================
+   Register screen additions
+   ============================================================ */
+
+.combo-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI";
+    -fx-text-fill: #2C2C2A;
+    -fx-prompt-text-fill: #B4B2A9;
+    -fx-pref-height: 38;
+}
+
+.combo-field .list-cell {
+    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI";
+    -fx-text-fill: #2C2C2A;
+    -fx-background-color: transparent;
+}
+
+.combo-field:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-effect: none;
+}
