@@ -121,7 +121,6 @@ public class RegisterController {
         cbRole.setDisable(disabled);
         btnRegister.setDisable(disabled);
     }
-
     @FXML
     void goLogin(ActionEvent event) {
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -139,6 +138,8 @@ public class RegisterController {
             LOGGER.error("Cannot open login screen", exception);
         }
     }
+
+
 
     private ResponsePayload readResponse(AuctionClient client) throws IOException, ClassNotFoundException {
         Payload raw = client.read();

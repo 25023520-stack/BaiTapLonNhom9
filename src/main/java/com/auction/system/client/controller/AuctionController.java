@@ -2,6 +2,7 @@ package com.auction.system.client.controller;
 
 import com.auction.system.client.context.AppContext;
 import com.auction.system.client.network.AuctionClient;
+import com.auction.system.common.json.GsonProvider;
 import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
@@ -10,6 +11,8 @@ import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.User;
+import com.google.gson.Gson;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -21,13 +24,13 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.application.Platform;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
 public class AuctionController {
+    private static final Gson GSON = GsonProvider.get();
     private final ObservableList<Item> items = FXCollections.observableArrayList();
     private final ObservableList<Bidder> bidders = FXCollections.observableArrayList();
 
@@ -106,7 +109,9 @@ public class AuctionController {
         bidButton.setMaxWidth(Double.MAX_VALUE);
         configureCurrentUser();
         loadItems();
-        startRealtimeListener();
+        // Tam tat listener realtime de uu tien xac minh luong load danh sach item.
+        // Bat lai sau khi chot xong co che doc response/listener tren cung socket.
+        // startRealtimeListener();
     }
 
     private void configureCurrentUser() {
@@ -233,8 +238,8 @@ public class AuctionController {
             Object rawItems = response.getBody().get("items");
             if (rawItems instanceof List<?> itemList) {
                 items.setAll(itemList.stream()
-                        .filter(Item.class::isInstance)
-                        .map(Item.class::cast)
+                        .map(this::toItem)
+                        .filter(item -> item != null)
                         .toList());
                 itemListView.getSelectionModel().selectFirst();
                 showItemDetails(itemListView.getSelectionModel().getSelectedItem());
@@ -248,13 +253,20 @@ public class AuctionController {
     }
 
     private ResponsePayload readResponse(AuctionClient client) throws IOException, ClassNotFoundException {
-        if (client.read() instanceof ResponsePayload response) {
-            if (response.getType() == PayloadType.UPDATE_AUCTION) {
-                return readResponse(client);
-            }
-            return response;
+        Payload raw = client.read();
+        if (raw == null) {
+            throw new IOException("Server returned null");
         }
-        throw new IOException("Unexpected payload received from server");
+
+        ResponsePayload response = new ResponsePayload();
+        response.setType(raw.getType());
+        raw.getBody().forEach(response::put);
+
+        if (response.getType() == PayloadType.UPDATE_AUCTION) {
+            return readResponse(client);
+        }
+
+        return response;
     }
 
     private Item findItemById(String itemId) {
@@ -263,44 +275,56 @@ public class AuctionController {
                 .findFirst()
                 .orElse(null);
     }
-    // Bắt đầu lắng nghe update realtime từ server
+
     private void startRealtimeListener() {
         try {
             AuctionClient client = AppContext.getAuctionClient();
             client.startListening(
                     payload -> {
-                        // Chạy trên listener thread, cần dùng Platform.runLater
-                        // để cập nhật UI trên JavaFX thread
                         if (payload instanceof ResponsePayload rp
                                 && rp.getType() == PayloadType.UPDATE_AUCTION) {
                             Platform.runLater(() -> handleAuctionUpdate(rp));
                         }
                     },
                     error -> Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "Mất kết nối tới server"))
+                            showAlert(Alert.AlertType.ERROR, "Mat ket noi toi server"))
             );
         } catch (IOException e) {
-            showAlert(Alert.AlertType.ERROR, "Không thể bắt đầu lắng nghe server.");
+            showAlert(Alert.AlertType.ERROR, "Khong the bat dau lang nghe server.");
         }
     }
 
-    // Xử lý khi nhận được update từ server
     private void handleAuctionUpdate(ResponsePayload update) {
         Object rawItem = update.getBody().get("item");
-        if (!(rawItem instanceof Item updatedItem)) return;
+        Item updatedItem = toItem(rawItem);
+        if (updatedItem == null) {
+            return;
+        }
 
-        // Tìm item cũ trong danh sách, thay bằng item mới
         for (int i = 0; i < items.size(); i++) {
             if (Objects.equals(items.get(i).getId(), updatedItem.getId())) {
                 items.set(i, updatedItem);
 
-                // Nếu đang xem đúng item này thì cập nhật panel chi tiết luôn
                 Item selected = itemListView.getSelectionModel().getSelectedItem();
                 if (selected != null && Objects.equals(selected.getId(), updatedItem.getId())) {
                     showItemDetails(updatedItem);
                 }
                 break;
             }
+        }
+    }
+
+    private Item toItem(Object rawItem) {
+        if (rawItem == null) {
+            return null;
+        }
+        if (rawItem instanceof Item item) {
+            return item;
+        }
+        try {
+            return GSON.fromJson(GSON.toJson(rawItem), Item.class);
+        } catch (RuntimeException exception) {
+            return null;
         }
     }
 

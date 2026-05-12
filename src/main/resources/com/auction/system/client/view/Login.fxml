@@ -1,41 +1,105 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.shape.Rectangle?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.LoginController">
+<AnchorPane prefHeight="600.0" prefWidth="900.0" styleClass="main-background" stylesheets="@Styles.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.LoginController">
     <children>
-        <VBox alignment="CENTER" layoutX="150.0" layoutY="50.0" prefHeight="300.0" prefWidth="300.0" spacing="20.0" style="-fx-background-color: #ffffff; -fx-border-color: #cccccc; -fx-border-radius: 10; -fx-background-radius: 10;">
+
+        <!-- Left panel: branding/illustration side -->
+        <VBox alignment="CENTER" prefWidth="450.0" styleClass="brand-panel"
+              AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
             <children>
-                <Label text="ĐĂNG NHẬP" textFill="#333333">
-                    <font>
-                        <Font name="System Bold" size="24.0" />
-                    </font>
-                </Label>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Tên đăng nhập:" />
-                        <TextField fx:id="txtUsername" onAction="#handleLogin" prefHeight="35.0" promptText="Nhập tài khoản..." />
-                    </children>
-                </VBox>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label text="Mật khẩu:" />
-                        <PasswordField fx:id="txtPassword" onAction="#handleLogin" prefHeight="35.0" promptText="Nhập mật khẩu..." />
-                    </children>
-                </VBox>
-                <Button fx:id="btnLogin" defaultButton="true" mnemonicParsing="false" onAction="#handleLogin" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: #007bff; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5;" text="ĐĂNG NHẬP" />
-                <Button mnemonicParsing="false" onAction="#goToRegister" style="-fx-background-color: transparent; -fx-text-fill: #007bff; -fx-underline: true;" text="Chưa có tài khoản? Đăng ký" />
+                <Label styleClass="brand-icon" text="⚡" />
+                <Label styleClass="brand-title" text="AuctionHub" />
+                <Label styleClass="brand-subtitle" text="Nền tảng đấu giá&#10;trực tuyến hàng đầu" />
+                <Label styleClass="brand-description" text="Nhanh chóng • An toàn • Minh bạch" />
             </children>
-            <padding>
-                <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
-            </padding>
         </VBox>
+
+        <!-- Right panel: login form -->
+        <VBox alignment="CENTER" prefWidth="450.0" styleClass="form-panel"
+              AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="0.0">
+            <children>
+
+                <!-- Card container -->
+                <VBox styleClass="login-card" spacing="0">
+                    <children>
+
+                        <!-- Header -->
+                        <VBox styleClass="card-header" spacing="6">
+                            <children>
+                                <Label styleClass="login-title" text="Đăng Nhập" />
+                                <Label styleClass="login-subtitle" text="Chào mừng bạn quay trở lại" />
+                            </children>
+                        </VBox>
+
+                        <!-- Divider -->
+                        <Rectangle styleClass="card-divider" height="1.0" width="360.0" />
+
+                        <!-- Form body -->
+                        <VBox styleClass="card-body" spacing="20">
+                            <children>
+
+                                <!-- Username field -->
+                                <VBox spacing="8">
+                                    <children>
+                                        <Label styleClass="input-label" text="Tên đăng nhập" />
+                                        <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="10">
+                                            <children>
+                                                <Label styleClass="input-icon" text="👤" />
+                                                <TextField fx:id="txtUsername" onAction="#handleLogin"
+                                                           promptText="Nhập tài khoản"
+                                                           styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <!-- Password field -->
+                                <VBox spacing="8">
+                                    <children>
+                                        <Label styleClass="input-label" text="Mật khẩu" />
+                                        <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="10">
+                                            <children>
+                                                <Label styleClass="input-icon" text="🔒" />
+                                                <PasswordField fx:id="txtPassword" onAction="#handleLogin"
+                                                               promptText="Nhập mật khẩu"
+                                                               styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <!-- Login button -->
+                                <Button fx:id="btnLogin" defaultButton="true" maxWidth="Infinity"
+                                        mnemonicParsing="false" onAction="#handleLogin"
+                                        styleClass="primary-button" text="Đăng Nhập" />
+
+                                <!-- Register link -->
+                                <HBox alignment="CENTER" spacing="4">
+                                    <children>
+                                        <Label styleClass="hint-text" text="Chưa có tài khoản?" />
+                                        <Button mnemonicParsing="false" onAction="#goToRegister"
+                                                styleClass="link-button" text="Đăng ký ngay" />
+                                    </children>
+                                </HBox>
+
+                            </children>
+                        </VBox>
+
+                    </children>
+                </VBox>
+
+            </children>
+        </VBox>
+
     </children>
 </AnchorPane>
