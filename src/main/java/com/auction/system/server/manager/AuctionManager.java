@@ -28,11 +28,11 @@ public class AuctionManager {
     private final ItemManager itemManager;
     private final Map<String, Auction> auctionsById = new HashMap<>();
 
-    AuctionManager() {
-        this(new AuthManager(false), new ItemManager(false));
+    private AuctionManager() {
+        this(AuthManager.getInstance(), ItemManager.getInstance());
     }
 
-    AuctionManager(AuthManager authManager, ItemManager itemManager) {
+    private AuctionManager(AuthManager authManager, ItemManager itemManager) {
         this.authManager = authManager;
         this.itemManager = itemManager;
     }
@@ -163,7 +163,7 @@ public class AuctionManager {
     }
 
     public synchronized Collection<Auction> getAllAuctions() {
-        return auctionsById.values();
+        return List.copyOf(auctionsById.values());
     }
 
     public synchronized Optional<Item> findItemById(String itemId) {
@@ -172,6 +172,12 @@ public class AuctionManager {
         } catch (ItemNotFoundException exception) {
             return Optional.empty();
         }
+    }
+
+    synchronized void resetForTest() {
+        auctionsById.clear();
+        itemManager.resetForTest();
+        authManager.resetForTest();
     }
 
     private void validateSeller(Seller seller) {

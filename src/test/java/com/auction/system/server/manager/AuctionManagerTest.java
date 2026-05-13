@@ -1,10 +1,10 @@
 package com.auction.system.server.manager;
 
+import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
-import com.auction.system.model.auction.AuctionStatus;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -16,6 +16,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AuctionManagerTest {
 
+    private AuctionManager manager;
+
+    @BeforeEach
+    void setUp() {
+        manager = AuctionManager.getInstance();
+        manager.resetForTest();
+    }
+
     @Test
     void itemConstructorKeepsDescriptionAndStatus() {
         Item item = new Item("ITEM-1", "Laptop", "Gaming laptop", 1000, 1000, AuctionStatus.OPEN);
@@ -26,7 +34,6 @@ class AuctionManagerTest {
 
     @Test
     void loginChecksHashedPasswordInsteadOfReturningRawPassword() {
-        AuctionManager manager = new AuctionManager();
         Seller seller = new Seller("SELLER-1", "Seller One", "seller1", "seller1@example.com", "secret");
 
         manager.registerUser(seller);
@@ -37,7 +44,6 @@ class AuctionManagerTest {
 
     @Test
     void placeBidUpdatesCurrentPriceAndHighestBidder() {
-        AuctionManager manager = new AuctionManager();
         Seller seller = new Seller("SELLER-1", "Seller One", "seller1", "seller1@example.com", "secret");
         Bidder bidder = new Bidder("BIDDER-1", "Bidder One", "bidder1", "bidder1@example.com", "secret");
         Item item = new Item("ITEM-1", "Phone", "Brand new", 500, 0, AuctionStatus.OPEN);
@@ -57,7 +63,6 @@ class AuctionManagerTest {
 
     @Test
     void placeBidRejectsPriceLowerThanCurrentPrice() {
-        AuctionManager manager = new AuctionManager();
         Seller seller = new Seller("SELLER-1", "Seller One", "seller1", "seller1@example.com", "secret");
         Bidder bidder = new Bidder("BIDDER-1", "Bidder One", "bidder1", "bidder1@example.com", "secret");
         Item item = new Item("ITEM-1", "Phone", "Brand new", 500, 0, AuctionStatus.OPEN);

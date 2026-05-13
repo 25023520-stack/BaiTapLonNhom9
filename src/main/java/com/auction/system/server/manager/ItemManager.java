@@ -20,7 +20,7 @@ public class ItemManager {
         this(false);
     }
 
-    ItemManager(boolean seedSampleItems) {
+    private ItemManager(boolean seedSampleItems) {
         if (seedSampleItems) {
             seedSampleItems();
         }
@@ -69,6 +69,10 @@ public class ItemManager {
         List<Item> items = new ArrayList<>(itemsById.values());
         items.sort(Comparator.comparing(Item::getId, Comparator.nullsLast(String::compareTo)));
         return items;
+    }
+
+    synchronized void resetForTest() {
+        itemsById.clear();
     }
 
     private void validateItemForCreate(Item item) throws InvalidDataException {
