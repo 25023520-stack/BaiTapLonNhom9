@@ -5,13 +5,24 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Database {
-    private static final String DB_URL = "jdbc:h2:file:./data/auction";
-    private static final String DB_USER = "sa";
-    private static final String DB_PASSWORD = "";
+    private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
+
+    private static final String DB_URL =
+            "jdbc:mysql://26.207.130.115:3306/auction_db"
+            +"?useSLL=false"
+            + "&allowPublicKeyRetrieval=true"
+            +"&serverTimezone=Asia/Bangkok"
+            +"&charaterEncoding=utf8"
+            ;
+
+    private static final String DB_USER = "auction_user";
+    private static final String DB_PASSWORD = "Auction@123456";
 
     private static final Database instance = new Database();
-    private static Connection connection;
 
     private Database() {}
 //Singleton
@@ -20,13 +31,9 @@ public class Database {
     }
 
     public Connection getConnection() throws SQLException {
-        if(connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-        }
-        return connection;
+        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
     }
 
-    // Khá»Ÿi táº¡o DB
     public void initializeDatabase() {
         try (Connection connection1 = getConnection()) {
             String createUsersTable = """
@@ -37,7 +44,9 @@ public class Database {
                     email VARCHAR(100) UNIQUE NOT NULL,
                     password VARCHAR(255) NOT NULL,
                     role VARCHAR(20) DEFAULT 'BIDDER',
-                    create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP )
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+                        )
+                    ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createUsersTable);
@@ -46,15 +55,20 @@ public class Database {
                     CREATE TABLE IF NOT EXISTS items (
                     id VARCHAR(100) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
-                    description CLOB,
+                    description TEXT,
                     image_path VARCHAR(500),
-                    start_price DOUBLE NOT NULL,
-                    current_price DOUBLE NOT NULL,
-                    STATUS VARCHAR(30) NOT NULL,
+                    start_price DECIMAL(15,2) NOT NULL,
+                    current_price DECIMAL(15,2) NOT NULL,
+                    status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
                     seller_id VARCHAR(100) NOT NULL,
                     highest_bidder_id VARCHAR(100),
-                    start_time TIMESTAMP NOT NULL,
-                    end_time  TIMESTAMP NOT NULL )
+                    start_time TIMESTAMP NULL,
+                    end_time  TIMESTAMP NULL,
+                    CONSTRAINT fk_items_seller
+                        FOREIGN KEY (seller_id) REFERENCES users(id),
+                    CONSTRAINT fk_items_highest_bidder
+                        FOREIGN KEY (highest_bidder_id) REFERENCES users(id)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createItemsTable);
@@ -65,11 +79,14 @@ public class Database {
                     item_id VARCHAR(100) UNIQUE NOT NULL,
                     start_time TIMESTAMP NOT NULL,
                     end_time TIMESTAMP NOT NULL,
-                    status VARCHAR(20) NOT NULL CHECK ( status IN ('OPEN', 'RUNNING', 'FINISHED', 'PAID', 'CANCELED')),
+                    status VARCHAR(20) NOT NULL DEFAULT 'OPEN' CHECK ( status IN ('OPEN', 'RUNNING', 'FINISHED', 'PAID', 'CANCELED')),
                     winner_id VARCHAR(100),
-                    final_price DOUBLE DEFAULT 0,
-                    FOREIGN KEY (item_id) REFERENCES items(id),
-                    FOREIGN KEY (winner_id) REFERENCES users(id) )
+                    final_price DECIMAL(15,2) NOT NULL DEFAULT 0,
+                    CONSTRAINT fk_auctions_item
+                        FOREIGN KEY (item_id) REFERENCES items(id),
+                    CONSTRAINT fk_auctions_winner
+                        FOREIGN KEY (winner_id) REFERENCES users(id)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createAuctionsTable);
@@ -80,21 +97,24 @@ public class Database {
                     auction_id VARCHAR(100) NOT NULL,
                     item_id VARCHAR(100) NOT NULL,
                     bidder_id VARCHAR(100) NOT NULL,
-                    amount DOUBLE NOT NULL,
+                    amount DECIMAL(15,2) NOT NULL,
                     bid_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (auction_id) REFERENCES auctions(id),
-                    FOREIGN KEY (item_id) REFERENCES items(id),
-                    FOREIGN KEY (bidder_id) REFERENCES users(id)
+                    CONSTRAINT fk_bids_auction
+                        FOREIGN KEY (auction_id) REFERENCES auctions(id),
+                    CONSTRAINT fk_bids_item
+                        FOREIGN KEY (item_id) REFERENCES items(id),
+                    CONSTRAINT fk_bids_bidder
+                        FOREIGN KEY (bidder_id) REFERENCES users(id)
                     )
+                    ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createBidsTable);
             }
-            System.out.println("=== khoi tao database hoan tat ===");
+            LOGGER.info("Khoi tao database hoan tat.");
         }
         catch (SQLException e) {
-            System.err.println("Lỗi khi tạo bảng " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Loi khi tao bang database.", e);
         }
     }
 

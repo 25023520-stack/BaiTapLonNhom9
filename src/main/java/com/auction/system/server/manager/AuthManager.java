@@ -5,29 +5,20 @@ import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 
+import com.auction.system.server.dao.UserDAO;
+
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 public class AuthManager {
-    private static final AuthManager INSTANCE = new AuthManager(true);
+    private static final AuthManager INSTANCE = new AuthManager();
 
-    private final Map<String, User> usersById = new HashMap<>();
-    private final Map<String, User> usersByUsername = new HashMap<>();
-    private final Map<String, User> usersByEmail = new HashMap<>();
 
-    private AuthManager() {
-        this(false);
-    }
+    private final UserDAO userDAO = new UserDAO();
 
-    private AuthManager(boolean seedDefaultUsers) {
-        if (seedDefaultUsers) {
-            seedDefaultUsers();
-        }
-    }
+    private AuthManager() {}
+
 
     public static AuthManager getInstance() {
         return INSTANCE;
@@ -44,10 +35,21 @@ public class AuthManager {
         validateRegisterInput(fullName, username, email, password, confirmPassword, role);
 
         String userId = generateUserId(role);
-        User user = createUserByRole(userId, fullName.trim(), username.trim(), email.trim(), password, role);
-        usersById.put(user.getId(), user);
-        usersByUsername.put(user.getUserName(), user);
-        usersByEmail.put(user.getEmail(), user);
+        User user = createUserByRole(
+                userId,
+                fullName.trim(),
+                username.trim(),
+                email.trim(),
+                password,
+                role
+        );
+
+        String insertedId = userDAO.insertUser(user);
+
+        if (insertedId == null) {
+            throw new IllegalArgumentException("khong the luu user vao database");
+        }
+
         return user;
     }
 
@@ -61,28 +63,30 @@ public class AuthManager {
         if (isBlank(user.getUserName())) {
             throw new IllegalArgumentException("Username must not be blank");
         }
-        if (usersById.containsKey(user.getId())) {
-            throw new IllegalArgumentException("User id already exists");
-        }
-        if (usersByUsername.containsKey(user.getUserName())) {
-            throw new IllegalArgumentException("Username already exists");
-        }
         if (isBlank(user.getEmail())) {
             throw new IllegalArgumentException("Email must not be blank");
         }
-        if (usersByEmail.containsKey(user.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
+        if(userDAO.findById(user.getId()) != null) {
+            return;
+        }
+        if(userDAO.existsByUsername(user.getUserName())) {
+            return;
+        }
+        if(userDAO.existsByEmail(user.getEmail())) {
+            return;
+        }
+        String insertedId = userDAO.insertUser(user);
+        if(insertedId == null) {
+            throw new IllegalArgumentException("Cannot save user to database");
         }
 
-        usersById.put(user.getId(), user);
-        usersByUsername.put(user.getUserName(), user);
-        usersByEmail.put(user.getEmail(), user);
     }
 
     public synchronized Optional<User> login(String username, String password) {
         validateLoginInput(username, password);
 
-        User user = usersByUsername.get(username.trim());
+        User user = userDAO.findByUsername(username.trim());
+
         if (user == null || !user.checkPassword(password)) {
             return Optional.empty();
         }
@@ -91,25 +95,26 @@ public class AuthManager {
     }
 
     public synchronized boolean existsByUsername(String username) {
-        return !isBlank(username) && usersByUsername.containsKey(username.trim());
+        return !isBlank(username) && userDAO.existsByUsername(username.trim());
     }
 
     public synchronized boolean existsByEmail(String email) {
-        return !isBlank(email) && usersByEmail.containsKey(email.trim());
+        return !isBlank(email) && userDAO.existsByEmail(email.trim());
     }
 
     public synchronized Optional<User> findById(String id) {
-        return Optional.ofNullable(usersById.get(id));
+        if(isBlank(id)) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(userDAO.findById(id));
     }
 
     public synchronized Collection<User> getAllUsers() {
-        return List.copyOf(usersById.values());
+        return userDAO.findAll();
     }
 
     synchronized void resetForTest() {
-        usersById.clear();
-        usersByUsername.clear();
-        usersByEmail.clear();
     }
 
     private void validateRegisterInput(

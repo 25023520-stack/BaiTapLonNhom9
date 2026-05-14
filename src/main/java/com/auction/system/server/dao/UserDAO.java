@@ -1,47 +1,49 @@
 package com.auction.system.server.dao;
 
-import com.auction.system.server.database.Database;
 import com.auction.system.model.user.*;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserDAO {
-
-    //lấy kết nối từ Database singleton
-    private Connection getConnection() throws SQLException {
-        return Database.getInstance().getConnection();
-    }
+public class UserDAO extends BaseDAO {
 
     // kiểm tra tài khoản tồn tại chưa
     public boolean existsByUsername(String username) {
         String sql = "SELECT COUNT(*) FROM users WHERE username = ?"; // đếm số dòng thỏa mãn
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             stmt.setString(1, username);
 
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
+
         } catch (SQLException e) {
             System.err.println("Lỗi kiểm tra username: " + e.getMessage());
         }
+
         return false;
     }
 
     public boolean existsByEmail(String email) {
         String sql = "SELECT COUNT(*) FROM users WHERE email = ?";
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             stmt.setString(1, email);
 
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
+
         } catch (SQLException e) {
-            System.err.println("Lá»—i kiá»ƒm tra email: " + e.getMessage());
+            System.err.println("Loi kiem tra email: " + e.getMessage());
         }
+
         return false;
     }
 
@@ -51,7 +53,8 @@ public class UserDAO {
                 INSERT INTO users (id, full_name, username, email, password, role)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """;
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = getConnection().prepareStatement(sql)) {
             stmt.setString(1, user.getId());
             stmt.setString(2, user.getFullName());
             stmt.setString(3, user.getUserName());
@@ -71,30 +74,40 @@ public class UserDAO {
     public User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
 
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return mapResultSetToUser(rs);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToUser(rs);
+                }
             }
+
         } catch (SQLException e) {
             System.err.println("Lỗi tìm users: " + e.getMessage());
         }
+
         return null;
     }
 
     public User findById(String id) {
         String sql = "SELECT * FROM users WHERE id = ?";
 
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, id);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return mapResultSetToUser(rs);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToUser(rs);
+                }
             }
+
         } catch (SQLException e) {
             System.err.println("Lỗi tìm users: " + e.getMessage());
         }
+
         return null;
     }
 
@@ -103,15 +116,16 @@ public class UserDAO {
 
         List<User> users = new ArrayList<>();
 
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
-            ResultSet rs = stmt.executeQuery();
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
-            while (rs.next()) {
+             while (rs.next()) {
                 User user = mapResultSetToUser(rs);
                 users.add(user);
             }
         } catch (SQLException e) {
-            System.err.println("Lỗi tìm users: " + e.getMessage());
+            System.err.println("Loi lay danh sach users: " + e.getMessage());
         }
         return users;
     }
@@ -136,7 +150,9 @@ public class UserDAO {
         String sql = """
                 UPDATE users SET full_name= ?, email = ?, password = ? WHERE id = ?
                 """;
-        try (PreparedStatement stmt = getConnection().prepareStatement(sql)) {
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             stmt.setString(1, user.getFullName());
             stmt.setString(2, user.getEmail());
             stmt.setString(3, user.getPassWord());
@@ -144,7 +160,7 @@ public class UserDAO {
 
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected > 0;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             System.err.println("Lỗi khi updateUser: " + e.getMessage());
         }
         return false;
@@ -153,14 +169,19 @@ public class UserDAO {
 
     public boolean deleteUser(String id) {
         String sql = "DELETE FROM users WHERE id = ? ";
-        try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
-            pstmt.setString(1, id);
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+             pstmt.setString(1, id);
 
             int rowsAffected = pstmt.executeUpdate();
             return rowsAffected > 0;
+
         } catch(Exception e) {
             System.err.println("Lỗi xóa users: " + e.getMessage());
-        } return false;
+        }
+
+        return false;
     }
 }
 
