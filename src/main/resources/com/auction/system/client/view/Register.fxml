@@ -5,6 +5,8 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
@@ -22,10 +24,13 @@
         <VBox alignment="CENTER" prefWidth="220.0" styleClass="brand-panel"
               AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
             <children>
-                <Label styleClass="brand-icon" text="⚡" />
+                <ImageView fitHeight="108.0" fitWidth="108.0" preserveRatio="true" styleClass="brand-logo">
+                    <image>
+                        <Image url="@assets/dai-hoc-cong-nghe-logo.png" />
+                    </image>
+                </ImageView>
                 <Label styleClass="brand-title" text="AuctionHub" />
                 <Label styleClass="brand-subtitle" text="Tạo tài khoản mới&#10;và bắt đầu ngay" />
-                <Label styleClass="brand-description" text="Nhanh chóng • An toàn • Minh bạch" />
             </children>
         </VBox>
 
