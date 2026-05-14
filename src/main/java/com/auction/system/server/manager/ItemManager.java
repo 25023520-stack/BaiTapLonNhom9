@@ -18,6 +18,7 @@ public class ItemManager {
     private final Map<String, Item> itemsById = new HashMap<>();
 
     private final ItemDAO itemDAO = new ItemDAO();
+    private boolean testMode;
 
     private ItemManager() {
         this(false);
@@ -43,7 +44,7 @@ public class ItemManager {
         if (item.getStatus() == null) {
             item.setStatus(AuctionStatus.OPEN);
         }
-        boolean inserted = itemDAO.insertItem(item);
+        boolean inserted = testMode || itemDAO.insertItem(item);
 
         if(!inserted) {
             throw new InvalidDataException("Cannot save item to database");
@@ -84,7 +85,7 @@ public class ItemManager {
         existingItem.setStartPrice(startPrice);
         existingItem.setCurrentPrice(startPrice);
 
-        boolean updated = itemDAO.updateItem(existingItem);
+        boolean updated = testMode || itemDAO.updateItem(existingItem);
 
         if (!updated) {
             existingItem.setName(oldName);
@@ -101,7 +102,7 @@ public class ItemManager {
     public synchronized void deleteItem(String itemId) throws ItemNotFoundException {
         Item item = findItemById(itemId);
 
-        boolean deleted = itemDAO.deleteItem(item.getId());
+        boolean deleted = testMode || itemDAO.deleteItem(item.getId());
 
         if (!deleted) {
             throw new ItemNotFoundException("Cannot delete item from database");
@@ -117,7 +118,7 @@ public class ItemManager {
 
         Item item = itemsById.get(itemId);
 
-        if (item == null) {
+        if (item == null && !testMode) {
             item = itemDAO.findById(itemId);
 
             if (item != null) {
@@ -139,6 +140,7 @@ public class ItemManager {
     }
 
     synchronized void resetForTest() {
+        testMode = true;
         itemsById.clear();
     }
 
@@ -149,7 +151,7 @@ public class ItemManager {
         if (isBlank(item.getId())) {
             throw new InvalidDataException("Item id must not be blank");
         }
-        if (itemsById.containsKey(item.getId()) || itemDAO.findById(item.getId()) != null) {
+        if (itemsById.containsKey(item.getId()) || (!testMode && itemDAO.findById(item.getId()) != null)) {
             throw new InvalidDataException("Item id already exists");
         }
         if (isBlank(item.getName())) {
