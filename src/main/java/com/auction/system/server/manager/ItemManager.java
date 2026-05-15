@@ -4,6 +4,7 @@ import com.auction.system.exception.InvalidDataException;
 import com.auction.system.exception.ItemNotFoundException;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
+import com.auction.system.server.dao.ItemDAO;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,6 +16,9 @@ public class ItemManager {
     private static final ItemManager INSTANCE = new ItemManager(false);
 
     private final Map<String, Item> itemsById = new HashMap<>();
+
+    private final ItemDAO itemDAO = new ItemDAO();
+    private boolean testMode;
 
     private ItemManager() {
         this(false);
@@ -32,7 +36,29 @@ public class ItemManager {
 
     public synchronized void addItem(Item item) throws InvalidDataException {
         validateItemForCreate(item);
+
+        if(item.getCurrentPrice() <= 0) {
+            item.setCurrentPrice(item.getStartPrice());
+        }
+
+        if (item.getStatus() == null) {
+            item.setStatus(AuctionStatus.OPEN);
+        }
+        boolean inserted = testMode || itemDAO.insertItem(item);
+
+        if(!inserted) {
+            throw new InvalidDataException("Cannot save item to database");
+        }
+
         itemsById.put(item.getId(), item);
+    }
+
+    public synchronized void loadItemsFromDatabase() {
+        itemsById.clear();
+
+        for (Item item : itemDAO.findAll()) {
+            itemsById.put(item.getId(), item);
+        }
     }
 
     public synchronized void updateItem(String itemId, String name, String description, double startPrice)
@@ -49,20 +75,62 @@ public class ItemManager {
             throw new InvalidDataException("Start price must be greater than or equal to 0");
         }
 
+        String oldName = existingItem.getName();
+        String oldDescription = existingItem.getDescription();
+        double oldStartPrice = existingItem.getStartPrice();
+        double oldCurrentPrice = existingItem.getCurrentPrice();
+
         existingItem.setName(name.trim());
         existingItem.setDescription(description.trim());
         existingItem.setStartPrice(startPrice);
         existingItem.setCurrentPrice(startPrice);
+
+        boolean updated = testMode || itemDAO.updateItem(existingItem);
+
+        if (!updated) {
+            existingItem.setName(oldName);
+            existingItem.setDescription(oldDescription);
+            existingItem.setStartPrice(oldStartPrice);
+            existingItem.setCurrentPrice(oldCurrentPrice);
+
+            throw new InvalidDataException("Cannot update item in database");
+        }
+
+        itemsById.put(existingItem.getId(), existingItem);
     }
 
     public synchronized void deleteItem(String itemId) throws ItemNotFoundException {
-        requireExistingItemId(itemId);
-        itemsById.remove(itemId);
+        Item item = findItemById(itemId);
+
+        boolean deleted = testMode || itemDAO.deleteItem(item.getId());
+
+        if (!deleted) {
+            throw new ItemNotFoundException("Cannot delete item from database");
+        }
+
+        itemsById.remove(item.getId());
     }
 
     public synchronized Item findItemById(String itemId) throws ItemNotFoundException {
-        requireExistingItemId(itemId);
-        return itemsById.get(itemId);
+        if (isBlank(itemId)) {
+            throw new ItemNotFoundException("Item not found");
+        }
+
+        Item item = itemsById.get(itemId);
+
+        if (item == null && !testMode) {
+            item = itemDAO.findById(itemId);
+
+            if (item != null) {
+                itemsById.put(item.getId(), item);
+            }
+        }
+
+        if (item == null) {
+            throw new ItemNotFoundException("Item not found");
+        }
+
+        return item;
     }
 
     public synchronized List<Item> getAllItems() {
@@ -72,6 +140,7 @@ public class ItemManager {
     }
 
     synchronized void resetForTest() {
+        testMode = true;
         itemsById.clear();
     }
 
@@ -82,7 +151,7 @@ public class ItemManager {
         if (isBlank(item.getId())) {
             throw new InvalidDataException("Item id must not be blank");
         }
-        if (itemsById.containsKey(item.getId())) {
+        if (itemsById.containsKey(item.getId()) || (!testMode && itemDAO.findById(item.getId()) != null)) {
             throw new InvalidDataException("Item id already exists");
         }
         if (isBlank(item.getName())) {
@@ -97,9 +166,7 @@ public class ItemManager {
     }
 
     private void requireExistingItemId(String itemId) throws ItemNotFoundException {
-        if (isBlank(itemId) || !itemsById.containsKey(itemId)) {
-            throw new ItemNotFoundException("Item not found");
-        }
+        findItemById(itemId);
     }
 
     private void seedSampleItems() {

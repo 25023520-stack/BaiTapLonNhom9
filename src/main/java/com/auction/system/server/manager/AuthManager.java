@@ -5,6 +5,8 @@ import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 
+import com.auction.system.server.dao.UserDAO;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -13,21 +15,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class AuthManager {
-    private static final AuthManager INSTANCE = new AuthManager(true);
+    private static final AuthManager INSTANCE = new AuthManager();
 
+
+    private final UserDAO userDAO = new UserDAO();
     private final Map<String, User> usersById = new HashMap<>();
-    private final Map<String, User> usersByUsername = new HashMap<>();
-    private final Map<String, User> usersByEmail = new HashMap<>();
+    private boolean testMode;
 
-    private AuthManager() {
-        this(false);
-    }
+    private AuthManager() {}
 
-    private AuthManager(boolean seedDefaultUsers) {
-        if (seedDefaultUsers) {
-            seedDefaultUsers();
-        }
-    }
 
     public static AuthManager getInstance() {
         return INSTANCE;
@@ -44,10 +40,17 @@ public class AuthManager {
         validateRegisterInput(fullName, username, email, password, confirmPassword, role);
 
         String userId = generateUserId(role);
-        User user = createUserByRole(userId, fullName.trim(), username.trim(), email.trim(), password, role);
-        usersById.put(user.getId(), user);
-        usersByUsername.put(user.getUserName(), user);
-        usersByEmail.put(user.getEmail(), user);
+        User user = createUserByRole(
+                userId,
+                fullName.trim(),
+                username.trim(),
+                email.trim(),
+                password,
+                role
+        );
+
+        registerUser(user);
+
         return user;
     }
 
@@ -61,28 +64,39 @@ public class AuthManager {
         if (isBlank(user.getUserName())) {
             throw new IllegalArgumentException("Username must not be blank");
         }
-        if (usersById.containsKey(user.getId())) {
-            throw new IllegalArgumentException("User id already exists");
-        }
-        if (usersByUsername.containsKey(user.getUserName())) {
-            throw new IllegalArgumentException("Username already exists");
-        }
         if (isBlank(user.getEmail())) {
             throw new IllegalArgumentException("Email must not be blank");
         }
-        if (usersByEmail.containsKey(user.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
+        if (testMode) {
+            registerUserForTest(user);
+            return;
+        }
+        if(userDAO.findById(user.getId()) != null) {
+            return;
+        }
+        if(userDAO.existsByEmail(user.getEmail())) {
+            return;
+        }
+        String insertedId = userDAO.insertUser(user);
+        if(insertedId == null) {
+            throw new IllegalArgumentException("Cannot save user to database");
         }
 
-        usersById.put(user.getId(), user);
-        usersByUsername.put(user.getUserName(), user);
-        usersByEmail.put(user.getEmail(), user);
     }
 
     public synchronized Optional<User> login(String username, String password) {
         validateLoginInput(username, password);
 
-        User user = usersByUsername.get(username.trim());
+        if (testMode) {
+            User user = findUserByUsernameForTest(username.trim());
+            if (user == null || !user.checkPassword(password)) {
+                return Optional.empty();
+            }
+            return Optional.of(user);
+        }
+
+        User user = userDAO.findByUsername(username.trim());
+
         if (user == null || !user.checkPassword(password)) {
             return Optional.empty();
         }
@@ -91,25 +105,48 @@ public class AuthManager {
     }
 
     public synchronized boolean existsByUsername(String username) {
-        return !isBlank(username) && usersByUsername.containsKey(username.trim());
+        if (isBlank(username)) {
+            return false;
+        }
+        if (testMode) {
+            return findUserByUsernameForTest(username.trim()) != null;
+        }
+        return userDAO.existsByUsername(username.trim());
     }
 
     public synchronized boolean existsByEmail(String email) {
-        return !isBlank(email) && usersByEmail.containsKey(email.trim());
+        if (isBlank(email)) {
+            return false;
+        }
+        if (testMode) {
+            return usersById.values().stream()
+                    .anyMatch(user -> user.getEmail().equalsIgnoreCase(email.trim()));
+        }
+        return userDAO.existsByEmail(email.trim());
     }
 
     public synchronized Optional<User> findById(String id) {
-        return Optional.ofNullable(usersById.get(id));
+        if(isBlank(id)) {
+            return Optional.empty();
+        }
+
+        if (testMode) {
+            return Optional.ofNullable(usersById.get(id));
+        }
+
+        return Optional.ofNullable(userDAO.findById(id));
     }
 
     public synchronized Collection<User> getAllUsers() {
-        return List.copyOf(usersById.values());
+        if (testMode) {
+            return List.copyOf(usersById.values());
+        }
+        return userDAO.findAll();
     }
 
     synchronized void resetForTest() {
+        testMode = true;
         usersById.clear();
-        usersByUsername.clear();
-        usersByEmail.clear();
     }
 
     private void validateRegisterInput(
@@ -163,6 +200,26 @@ public class AuthManager {
 
     private String generateUserId(String role) {
         return role.trim().toUpperCase() + "-" + UUID.randomUUID();
+    }
+
+    private void registerUserForTest(User user) {
+        if (usersById.containsKey(user.getId())) {
+            return;
+        }
+        if (existsByUsername(user.getUserName())) {
+            return;
+        }
+        if (existsByEmail(user.getEmail())) {
+            return;
+        }
+        usersById.put(user.getId(), user);
+    }
+
+    private User findUserByUsernameForTest(String username) {
+        return usersById.values().stream()
+                .filter(user -> user.getUserName().equalsIgnoreCase(username))
+                .findFirst()
+                .orElse(null);
     }
 
     private void seedDefaultUsers() {

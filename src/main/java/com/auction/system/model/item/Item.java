@@ -10,7 +10,7 @@ import java.util.List;
 
 import com.auction.system.model.auction.AuctionStatus;
 
-public class Item implements Serializable {
+public class    Item implements Serializable {
     private String id;
     private String name, description;
     private double startPrice, currentPrice;
