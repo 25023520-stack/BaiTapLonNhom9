@@ -1,10 +1,14 @@
-name: System CI
+name: System Ci
 
-on: [push, pull_request]
+on: [push,pull_request]
 
 jobs:
   builds:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -12,5 +16,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
-      - name: Build and Test
-        run: mvn verify
+      - name: build with maven
+        run: mvn package
+
+

@@ -5,9 +5,7 @@ import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
-import com.auction.system.server.database.Database;
 import com.auction.system.server.manager.AuctionManager;
-import com.auction.system.server.manager.ItemManager;
 import com.auction.system.server.network.AuctionServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +23,6 @@ public class ServerMain {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerMain.class);
 
     public static void main(String[] args) throws Exception {
-        Database.getInstance().initializeDatabase();
-
-        ItemManager.getInstance().loadItemsFromDatabase();
-
         ensureDemoData();
         logServerAddress(DEFAULT_PORT);
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
