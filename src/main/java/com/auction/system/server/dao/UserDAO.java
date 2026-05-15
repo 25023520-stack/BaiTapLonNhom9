@@ -12,10 +12,10 @@ public class UserDAO extends BaseDAO {
     public boolean existsByUsername(String username) {
         String sql = "SELECT COUNT(*) FROM users WHERE username = ?"; // đếm số dòng thỏa mãn
         try (Connection conn = getConnection();
-             PreparedStatement stmt = getConnection().prepareStatement(sql)) {
-            stmt.setString(1, username);
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, username);
 
-            try (ResultSet rs = stmt.executeQuery()) {
+            try (ResultSet rs = pstm.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1) > 0;
                 }
@@ -31,10 +31,10 @@ public class UserDAO extends BaseDAO {
     public boolean existsByEmail(String email) {
         String sql = "SELECT COUNT(*) FROM users WHERE email = ?";
         try (Connection conn = getConnection();
-             PreparedStatement stmt = getConnection().prepareStatement(sql)) {
-            stmt.setString(1, email);
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, email);
 
-            try (ResultSet rs = stmt.executeQuery()) {
+            try (ResultSet rs = pstm.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1) > 0;
                 }
@@ -54,15 +54,15 @@ public class UserDAO extends BaseDAO {
                 VALUES (?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = getConnection();
-             PreparedStatement stmt = getConnection().prepareStatement(sql)) {
-            stmt.setString(1, user.getId());
-            stmt.setString(2, user.getFullName());
-            stmt.setString(3, user.getUserName());
-            stmt.setString(4, user.getEmail());
-            stmt.setString(5, user.getPassWord());
-            stmt.setString(6, user.getRole());
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, user.getId());
+            pstm.setString(2, user.getFullName());
+            pstm.setString(3, user.getUserName());
+            pstm.setString(4, user.getEmail());
+            pstm.setString(5, user.getPassWord());
+            pstm.setString(6, user.getRole());
 
-            int rowsAffected = stmt.executeUpdate();
+            int rowsAffected = pstm.executeUpdate();
             return rowsAffected > 0 ? user.getId() : null;
         } catch (SQLException e) {
             System.err.println("Lỗi thêm user: " + e.getMessage());
@@ -75,10 +75,10 @@ public class UserDAO extends BaseDAO {
         String sql = "SELECT * FROM users WHERE username = ?";
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, username);
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, username);
 
-            try (ResultSet rs = stmt.executeQuery()) {
+            try (ResultSet rs = pstm.executeQuery()) {
                 if (rs.next()) {
                     return mapResultSetToUser(rs);
                 }
@@ -95,10 +95,10 @@ public class UserDAO extends BaseDAO {
         String sql = "SELECT * FROM users WHERE id = ?";
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, id);
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, id);
 
-            try (ResultSet rs = stmt.executeQuery()) {
+            try (ResultSet rs = pstm.executeQuery()) {
                 if (rs.next()) {
                     return mapResultSetToUser(rs);
                 }
@@ -117,8 +117,8 @@ public class UserDAO extends BaseDAO {
         List<User> users = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement pstm = conn.prepareStatement(sql);
+             ResultSet rs = pstm.executeQuery()) {
 
              while (rs.next()) {
                 User user = mapResultSetToUser(rs);
@@ -151,14 +151,14 @@ public class UserDAO extends BaseDAO {
                 UPDATE users SET full_name= ?, email = ?, password = ? WHERE id = ?
                 """;
         try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, user.getFullName());
-            stmt.setString(2, user.getEmail());
-            stmt.setString(3, user.getPassWord());
-            stmt.setString(4, user.getId());
+            pstm.setString(1, user.getFullName());
+            pstm.setString(2, user.getEmail());
+            pstm.setString(3, user.getPassWord());
+            pstm.setString(4, user.getId());
 
-            int rowsAffected = stmt.executeUpdate();
+            int rowsAffected = pstm.executeUpdate();
             return rowsAffected > 0;
         } catch (SQLException e) {
             System.err.println("Lỗi khi updateUser: " + e.getMessage());
@@ -170,11 +170,11 @@ public class UserDAO extends BaseDAO {
     public boolean deleteUser(String id) {
         String sql = "DELETE FROM users WHERE id = ? ";
         try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
 
-             pstmt.setString(1, id);
+             pstm.setString(1, id);
 
-            int rowsAffected = pstmt.executeUpdate();
+            int rowsAffected = pstm.executeUpdate();
             return rowsAffected > 0;
 
         } catch(Exception e) {
