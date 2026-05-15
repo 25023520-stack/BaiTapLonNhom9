@@ -108,10 +108,8 @@ public class AuctionController {
         bidHistoryArea.setWrapText(true);
         bidButton.setMaxWidth(Double.MAX_VALUE);
         configureCurrentUser();
+        startRealtimeListener();
         loadItems();
-        // Tam tat listener realtime de uu tien xac minh luong load danh sach item.
-        // Bat lai sau khi chot xong co che doc response/listener tren cung socket.
-        // startRealtimeListener();
     }
 
     private void configureCurrentUser() {
@@ -163,7 +161,7 @@ public class AuctionController {
             showItemDetails(findItemById(selectedItem.getId()));
             bidAmountField.clear();
             showAlert(Alert.AlertType.INFORMATION, "Dat gia thanh cong.");
-        } catch (IOException | ClassNotFoundException exception) {
+        } catch (IOException exception) {
             showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
         } catch (RuntimeException exception) {
             showAlert(Alert.AlertType.ERROR, exception.getMessage());
@@ -247,12 +245,12 @@ public class AuctionController {
             }
 
             showAlert(Alert.AlertType.ERROR, "Du lieu san pham tu server khong hop le.");
-        } catch (IOException | ClassNotFoundException exception) {
+        } catch (IOException exception) {
             showAlert(Alert.AlertType.ERROR, "Khong the tai danh sach san pham tu server.");
         }
     }
 
-    private ResponsePayload readResponse(AuctionClient client) throws IOException, ClassNotFoundException {
+    private ResponsePayload readResponse(AuctionClient client) throws IOException {
         Payload raw = client.read();
         if (raw == null) {
             throw new IOException("Server returned null");
@@ -261,11 +259,6 @@ public class AuctionController {
         ResponsePayload response = new ResponsePayload();
         response.setType(raw.getType());
         raw.getBody().forEach(response::put);
-
-        if (response.getType() == PayloadType.UPDATE_AUCTION) {
-            return readResponse(client);
-        }
-
         return response;
     }
 
@@ -281,9 +274,11 @@ public class AuctionController {
             AuctionClient client = AppContext.getAuctionClient();
             client.startListening(
                     payload -> {
-                        if (payload instanceof ResponsePayload rp
-                                && rp.getType() == PayloadType.UPDATE_AUCTION) {
-                            Platform.runLater(() -> handleAuctionUpdate(rp));
+                        if (payload != null && payload.getType() == PayloadType.UPDATE_AUCTION) {
+                            ResponsePayload update = new ResponsePayload();
+                            update.setType(payload.getType());
+                            payload.getBody().forEach(update::put);
+                            Platform.runLater(() -> handleAuctionUpdate(update));
                         }
                     },
                     error -> Platform.runLater(() ->
