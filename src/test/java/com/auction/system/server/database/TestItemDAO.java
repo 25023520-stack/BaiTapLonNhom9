@@ -12,7 +12,7 @@ public class TestItemDAO {
 
         ItemDAO itemDAO = new ItemDAO();
 
-        String sellerId = "SELLER-10"; // sửa nếu seller_id của bạn khác
+        String sellerId = "SELLER-10";
         String itemId = "ITEM-TEST-" + UUID.randomUUID();
 
         Item item = new Item(
