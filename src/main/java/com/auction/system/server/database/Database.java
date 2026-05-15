@@ -13,10 +13,10 @@ public class Database {
 
     private static final String DB_URL =
             "jdbc:mysql://26.207.130.115:3306/auction_db"
-            +"?useSLL=false"
+            +"?useSSL=false"
             + "&allowPublicKeyRetrieval=true"
             +"&serverTimezone=Asia/Bangkok"
-            +"&charaterEncoding=utf8"
+            +"&characterEncoding=utf8"
             ;
 
     private static final String DB_USER = "auction_user";
