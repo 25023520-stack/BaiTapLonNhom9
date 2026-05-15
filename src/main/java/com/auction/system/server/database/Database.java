@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public class Database {
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
+    private static final String MYSQL_DRIVER_CLASS = "com.mysql.cj.jdbc.Driver";
 
     private static final String DB_URL =
             "jdbc:mysql://26.207.130.115:3306/auction_db"
@@ -24,7 +25,9 @@ public class Database {
 
     private static final Database instance = new Database();
 
-    private Database() {}
+    private Database() {
+        loadDriver();
+    }
 //Singleton
     public static synchronized Database getInstance() {
         return instance;
@@ -115,6 +118,15 @@ public class Database {
         }
         catch (SQLException e) {
             LOGGER.error("Loi khi tao bang database.", e);
+        }
+    }
+
+    private void loadDriver() {
+        try {
+            Class.forName(MYSQL_DRIVER_CLASS);
+            LOGGER.info("MySQL JDBC driver loaded.");
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("Khong tim thay MySQL JDBC driver trong runtime classpath.", exception);
         }
     }
 
