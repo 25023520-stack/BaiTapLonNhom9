@@ -9,7 +9,12 @@ import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
+import com.auction.system.server.dao.ItemDAO;
+import com.auction.system.server.dao.AuctionDAO;
+import com.auction.system.server.database.Database;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Comparator;
@@ -27,6 +32,9 @@ public class AuctionManager {
     private final AuthManager authManager;
     private final ItemManager itemManager;
     private final Map<String, Auction> auctionsById = new HashMap<>();
+
+    private final ItemDAO itemDAO = new ItemDAO();
+    private final AuctionDAO auctionDAO = new AuctionDAO();
 
     private AuctionManager() {
         this(AuthManager.getInstance(), ItemManager.getInstance());
@@ -111,14 +119,82 @@ public class AuctionManager {
 
     public synchronized void startAuction(String itemId, LocalDateTime startTime, LocalDateTime endTime) {
         Item item = requireItem(itemId);
-        if (endTime == null || startTime == null || !endTime.isAfter(startTime)) {
+
+        if (startTime == null || endTime == null) {
+            throw new IllegalArgumentException("Start time and end time must not be null");
+        }
+
+        if (!endTime.isAfter(startTime)) {
             throw new IllegalArgumentException("Auction end time must be after start time");
         }
 
-        item.setStartTime(startTime);
-        item.setEndTime(endTime);
-        item.setStatus(AuctionStatus.RUNNING);
-        auctionsById.put(itemId, new Auction(itemId, item));
+        String auctionId = "AUC-" + itemId;
+
+        try (Connection conn = Database.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                boolean itemUpdated = itemDAO.updateAuctionInfo(
+                        conn,
+                        itemId,
+                        AuctionStatus.RUNNING,
+                        startTime,
+                        endTime
+                );
+
+                if (!itemUpdated) {
+                    throw new SQLException("Cannot update item auction info");
+                }
+
+                boolean auctionSaved;
+
+                if (auctionDAO.existsByItemId(conn, itemId)) {
+                    auctionSaved = auctionDAO.updateAuctionTimeAndStatus(
+                            conn,
+                            itemId,
+                            startTime,
+                            endTime,
+                            AuctionStatus.RUNNING
+                    );
+                } else {
+                    auctionSaved = auctionDAO.insertAuction(
+                            conn,
+                            auctionId,
+                            itemId,
+                            startTime,
+                            endTime,
+                            AuctionStatus.RUNNING
+                    );
+                }
+
+                if (!auctionSaved) {
+                    throw new SQLException("Cannot save auction");
+                }
+
+                conn.commit();
+
+                //update RAM sau khi thành công
+                item.setStartTime(startTime);
+                item.setEndTime(endTime);
+                item.setStatus(AuctionStatus.RUNNING);
+
+                Auction auction = auctionsById.get(itemId);
+                if (auction == null) {
+                    auction = new Auction(auctionId, item);
+                    auctionsById.put(itemId, auction);
+                }
+                auction.setStatus(AuctionStatus.RUNNING);
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new IllegalStateException("Cannot start auction: " + e.getMessage(), e);
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException("Database error when starting auction", e);
+        }
     }
 
     public synchronized void finishAuction(String itemId) {
