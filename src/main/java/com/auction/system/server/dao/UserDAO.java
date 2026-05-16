@@ -106,6 +106,7 @@ public class UserDAO extends BaseDAO {
 
         } catch (SQLException e) {
             System.err.println("Lỗi tìm users: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return null;
