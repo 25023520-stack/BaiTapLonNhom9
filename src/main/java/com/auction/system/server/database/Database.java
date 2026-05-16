@@ -1,7 +1,9 @@
 package com.auction.system.server.database;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -11,29 +13,62 @@ import org.slf4j.LoggerFactory;
 public class Database {
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
 
+    private static final String DB_HOST = "26.207.130.115";
+    private static final String DB_PORT = "3306";
+    private static final String DB_NAME = "auction_db";
+
     private static final String DB_URL =
-            "jdbc:mysql://26.207.130.115:3306/auction_db"
-            +"?useSSL=false"
+            "jdbc:mysql://" + DB_HOST + ":" +DB_PORT + "/" + DB_NAME
+            + "?useSSL=false"
             + "&allowPublicKeyRetrieval=true"
-            +"&serverTimezone=Asia/Bangkok"
-            +"&characterEncoding=utf8"
-            ;
+            + "&useUnicode=true"
+            + "&characterEncoding=UTF-8"
+            + "&serverTimezone=Asia/Bangkok";
 
     private static final String DB_USER = "auction_user";
     private static final String DB_PASSWORD = "Auction@123456";
 
     private static final Database instance = new Database();
 
-    private Database() {}
+    private HikariDataSource dataSource;
+
+    private Database() {
+        initializeConnectionPool();
+    }
 //Singleton
-    public static synchronized Database getInstance() {
-        return instance;
+    public static synchronized Database getInstance() {return instance;
+    }
+
+    //khoi tao pool
+    private void initializeConnectionPool() {
+        HikariConfig config = new HikariConfig();
+
+        config.setJdbcUrl(DB_URL);
+        config.setUsername(DB_USER);
+        config.setPassword(DB_PASSWORD);
+
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(3);
+
+        config.setConnectionTimeout(10000);
+        config.setIdleTimeout(600000);
+        config.setMaxLifetime(1800000);
+
+        config.setPoolName("AuctionSystemPool");
+
+        dataSource = new HikariDataSource(config);
     }
 
     public Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+        return dataSource.getConnection();
     }
 
+    public void shutdown() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
+    }
+    
     public void initializeDatabase() {
         try (Connection connection1 = getConnection()) {
             String createUsersTable = """

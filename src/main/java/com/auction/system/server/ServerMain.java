@@ -27,6 +27,10 @@ public class ServerMain {
     public static void main(String[] args) throws Exception {
         Database.getInstance().initializeDatabase();
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            Database.getInstance().shutdown();
+        }));
+
         ItemManager.getInstance().loadItemsFromDatabase();
 
         ensureDemoData();
