@@ -4,7 +4,10 @@ import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 
 import java.math.BigDecimal;
+
 import java.sql.*;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -185,4 +188,69 @@ public class ItemDAO extends BaseDAO {
         return false;
 
     }
+// cap nhap khi bat dau auction
+    public boolean updateAuctionInfo(
+            Connection conn,
+            String itemId,
+            AuctionStatus status,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    ) throws SQLException {
+        String sql = """
+                UPDATE items SET status = ?, start_time = ?, end_time = ? WHERE id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, status.name());
+            pstm.setTimestamp(2, toTimestamp(startTime));
+            pstm.setTimestamp(3, toTimestamp(endTime));
+            pstm.setString(4, itemId);
+
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
+    public boolean updateAfterBid(
+            Connection conn,
+            String itemId,
+            BigDecimal currentPrice,
+            String highestBidderId
+    ) throws SQLException {
+        String sql = """
+                UPDATE items SET 
+                current_price = ?, highest_bidder_id = ? WHERE id = ?
+                """;
+
+        try(PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setBigDecimal(1, currentPrice);
+            pstm.setString(2, highestBidderId);
+            pstm.setString(3, itemId);
+
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
+    public boolean updateStatus(
+            Connection conn,
+            String itemId,
+            AuctionStatus status
+    ) throws SQLException {
+        String sql = """
+                UPDATE items
+                SET status = ? 
+                WHERE id = ?
+                WHERE id = ?
+                """;
+
+        try(PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, status.name());
+            pstm.setString(2, itemId);
+
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
+
+
+
 }

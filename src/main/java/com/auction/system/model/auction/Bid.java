@@ -18,6 +18,14 @@ public class Bid implements Serializable {
         this.amount = amount;
         this.timestamp = LocalDateTime.now();
     }
+
+    public Bid(String bidId, Bidder bidder, double amount, LocalDateTime timestamp) {
+        this.bidId = bidId;
+        this.bidder = bidder;
+        this.amount = amount;
+        this.timestamp = timestamp;
+    }
+
     public String getBidId() {
         return bidId;
     }
