@@ -121,9 +121,7 @@ public class ClientHandler implements Runnable, Closeable {
     }
 
     private void handleListItems() throws IOException {
-        ResponsePayload response = ResponsePayload.ok("Items retrieved");
-        response.put("items", auctionManager.getAllItems());
-        send(response);
+        send(auctionController.listItems());
     }
 
     private void handleBid(Payload payload) throws IOException {
