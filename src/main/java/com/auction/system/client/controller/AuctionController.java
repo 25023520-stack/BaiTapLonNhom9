@@ -13,6 +13,8 @@ import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.User;
 import com.google.gson.Gson;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -27,6 +29,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.List;
@@ -37,8 +41,10 @@ public class AuctionController {
     private static final Gson GSON = GsonProvider.get();
     private static final DecimalFormat VND_FORMAT =
             new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(new Locale("vi", "VN")));
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private final ObservableList<Item> items = FXCollections.observableArrayList();
     private final ObservableList<Bidder> bidders = FXCollections.observableArrayList();
+    private Timeline countdownTimer;
 
     @FXML
     private ListView<Item> itemListView;
@@ -60,6 +66,9 @@ public class AuctionController {
 
     @FXML
     private Label scheduleValue;
+
+    @FXML
+    private Label countdownValue;
 
     @FXML
     private TextArea descriptionArea;
@@ -115,6 +124,7 @@ public class AuctionController {
         bidButton.setMaxWidth(Double.MAX_VALUE);
         bidButton.setDisable(true);
         configureCurrentUser();
+        startCountdownTimer();
         startRealtimeListener();
         loadItems();
     }
@@ -203,6 +213,7 @@ public class AuctionController {
             sellerValue.setText("-");
             leaderValue.setText("-");
             scheduleValue.setText("-");
+            countdownValue.setText("-");
             descriptionArea.clear();
             bidHistoryArea.clear();
             updateBidControls(null);
@@ -215,16 +226,59 @@ public class AuctionController {
         sellerValue.setText(isBlank(item.getSellerId()) ? "-" : item.getSellerId());
         leaderValue.setText(isBlank(item.getHighestBidderId()) ? "Chua co" : item.getHighestBidderId());
         scheduleValue.setText(formatSchedule(item));
+        updateCountdown(item);
         descriptionArea.setText(item.getDescription());
         bidHistoryArea.setText(formatBidHistory(item));
         updateBidControls(item);
+    }
+
+    private void startCountdownTimer() {
+        countdownTimer = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), event -> {
+            Item selectedItem = itemListView.getSelectionModel().getSelectedItem();
+            updateCountdown(selectedItem);
+            updateBidControls(selectedItem);
+        }));
+        countdownTimer.setCycleCount(Timeline.INDEFINITE);
+        countdownTimer.play();
+    }
+
+    private void updateCountdown(Item item) {
+        if (item == null || item.getStartTime() == null || item.getEndTime() == null) {
+            countdownValue.setText("-");
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(item.getStartTime())) {
+            countdownValue.setText("Bat dau sau " + formatRemainingTime(java.time.Duration.between(now, item.getStartTime())));
+            return;
+        }
+        if (now.isBefore(item.getEndTime())) {
+            countdownValue.setText("Ket thuc sau " + formatRemainingTime(java.time.Duration.between(now, item.getEndTime())));
+            return;
+        }
+
+        countdownValue.setText("Da ket thuc");
+    }
+
+    private String formatRemainingTime(java.time.Duration duration) {
+        long totalSeconds = Math.max(0, duration.getSeconds());
+        long days = totalSeconds / 86_400;
+        long hours = (totalSeconds % 86_400) / 3_600;
+        long minutes = (totalSeconds % 3_600) / 60;
+        long seconds = totalSeconds % 60;
+
+        if (days > 0) {
+            return String.format("%d ngay %02d:%02d:%02d", days, hours, minutes, seconds);
+        }
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
     private String formatSchedule(Item item) {
         if (item.getStartTime() == null || item.getEndTime() == null) {
             return "-";
         }
-        return item.getStartTime() + " -> " + item.getEndTime();
+        return DATE_TIME_FORMATTER.format(item.getStartTime()) + " -> " + DATE_TIME_FORMATTER.format(item.getEndTime());
     }
 
     private String formatBidHistory(Item item) {
@@ -361,16 +415,32 @@ public class AuctionController {
         User currentUser = AppContext.getCurrentUser();
         boolean canBid = currentUser instanceof Bidder
                 && item != null
-                && item.getStatus() == AuctionStatus.RUNNING;
+                && item.getStatus() == AuctionStatus.RUNNING
+                && isWithinBiddingWindow(item);
         bidButton.setDisable(!canBid);
         bidAmountField.setDisable(!(currentUser instanceof Bidder));
         if (canBid) {
             bidAmountField.setPromptText("Gia phai lon hon " + formatCurrency(item.getCurrentPrice()));
+        } else if (currentUser instanceof Bidder && item != null && item.getStartTime() != null
+                && LocalDateTime.now().isBefore(item.getStartTime())) {
+            bidAmountField.setPromptText("Phien dau gia chua bat dau");
+        } else if (currentUser instanceof Bidder && item != null && item.getEndTime() != null
+                && !LocalDateTime.now().isBefore(item.getEndTime())) {
+            bidAmountField.setPromptText("Phien dau gia da ket thuc");
         } else if (currentUser instanceof Bidder) {
             bidAmountField.setPromptText("Phien nay khong mo de dat gia");
         } else {
             bidAmountField.setPromptText("Chi bidder moi dat gia duoc");
         }
+    }
+
+    private boolean isWithinBiddingWindow(Item item) {
+        if (item.getStartTime() == null || item.getEndTime() == null) {
+            return true;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        return !now.isBefore(item.getStartTime()) && now.isBefore(item.getEndTime());
     }
 
     private String formatCurrency(double amount) {
