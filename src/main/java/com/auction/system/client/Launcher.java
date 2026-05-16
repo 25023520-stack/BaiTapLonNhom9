@@ -1,6 +1,5 @@
 package com.auction.system.client;
 
-import com.auction.system.server.ServerMain;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -16,13 +15,7 @@ public class Launcher extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        ClientRunMode runMode = ClientRunMode.current();
-        if (runMode.shouldStartEmbeddedServer()) {
-            ServerMain.startInBackground();
-            LOGGER.info("Starting client in DEMO mode with local server bootstrap");
-        } else {
-            LOGGER.info("Starting client in SEPARATE mode; expecting an external server");
-        }
+        LOGGER.info("Starting client UI; expecting an external server");
 
         URL resource = getClass().getResource("/com/auction/system/client/view/Login.fxml");
         if (resource == null) {
