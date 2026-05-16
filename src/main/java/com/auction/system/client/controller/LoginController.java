@@ -1,12 +1,10 @@
 package com.auction.system.client.controller;
 
-import com.auction.system.client.AuctionApplication;
 import com.auction.system.client.context.AppContext;
 import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
-import com.auction.system.model.user.User;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -54,7 +52,7 @@ public class LoginController {
                 ResponsePayload response = readResponse(client);
 
                 Platform.runLater(() -> handleLoginResponse(stage, response));
-            } catch (IOException | ClassNotFoundException exception) {
+            } catch (IOException exception) {
                 Platform.runLater(() -> {
                     setLoginDisabled(false);
                     showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
@@ -92,7 +90,10 @@ public class LoginController {
 
     private void openAuctionScreen(Stage stage) {
         try {
-            new AuctionApplication().start(stage);
+            Parent auctionView = FXMLLoader.load(getClass().getResource("/com/auction/system/client/view/Auction.fxml"));
+            stage.setScene(new Scene(auctionView, 980, 620));
+            stage.setTitle("Auction System");
+            stage.show();
         } catch (Exception exception) {
             showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh dau gia.");
             LOGGER.error("Cannot open auction screen", exception);
@@ -113,9 +114,11 @@ public class LoginController {
         }
     }
 
-    private ResponsePayload readResponse(AuctionClient client) throws IOException, ClassNotFoundException {
+    private ResponsePayload readResponse(AuctionClient client) throws IOException {
         Payload raw = client.read();
-        if (raw == null) throw new IOException("Server returned null");
+        if (raw == null) {
+            throw new IOException("Server returned null");
+        }
         ResponsePayload response = new ResponsePayload();
         response.setType(raw.getType());
         raw.getBody().forEach(response::put);
