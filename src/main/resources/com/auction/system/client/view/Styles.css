@@ -199,3 +199,189 @@
     -fx-border-color: transparent;
     -fx-effect: none;
 }
+
+/* ============================================================
+   Auction screen
+   ============================================================ */
+
+/* ── Header bar ── */
+.auction-header {
+    -fx-background-color: linear-gradient(to right, #003E6A, #006BA6);
+    -fx-padding: 13 24 13 24;
+    -fx-effect: dropshadow(gaussian, rgba(0, 62, 106, 0.45), 10, 0, 0, 4);
+}
+
+.auction-header-brand {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-header-tagline {
+    -fx-text-fill: rgba(255, 255, 255, 0.72);
+    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI";
+}
+
+/* ── Sidebar ── */
+.auction-sidebar {
+    -fx-background-color: linear-gradient(to bottom, #F8FCFF, #DDEDF7);
+    -fx-padding: 20 18 20 18;
+}
+
+.auction-sidebar-title {
+    -fx-text-fill: #004E84;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-sidebar-subtitle {
+    -fx-text-fill: #5E8CAA;
+    -fx-font-size: 11px;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-sidebar-divider {
+    -fx-fill: #A9CDE2;
+    -fx-opacity: 0.65;
+}
+
+.auction-list-view {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #A9CDE2;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.08), 8, 0, 0, 2);
+}
+
+.auction-list-view .list-cell {
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #2C668D;
+    -fx-background-color: transparent;
+    -fx-padding: 10 12 10 14;
+    -fx-border-color: transparent transparent #EAF3F9 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.auction-list-view .list-cell:selected {
+    /* dark-blue 4 px stripe on the left, light blue fill behind */
+    -fx-background-color: #004E84, #DDEDF7;
+    -fx-background-insets: 0, 0 0 0 4;
+    -fx-background-radius: 0, 0;
+    -fx-text-fill: #004E84;
+    -fx-font-weight: bold;
+}
+
+.auction-list-view .list-cell:hover {
+    -fx-background-color: #EAF3F9;
+}
+
+/* ── Center panel ── */
+.auction-center {
+    -fx-background-color: #EAF3F9;
+    -fx-padding: 18 22 18 22;
+}
+
+.auction-section-title {
+    -fx-text-fill: #004E84;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+/* ── Info card ── */
+.auction-info-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #004E84 #C7DFEF #C7DFEF #C7DFEF;
+    -fx-border-width: 3 1 1 1;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.13), 14, 0, 0, 4);
+    -fx-padding: 15 20 15 20;
+}
+
+.auction-row-icon {
+    -fx-font-size: 14px;
+    -fx-min-width: 22;
+    -fx-alignment: center;
+}
+
+.auction-info-label {
+    -fx-text-fill: #5E8CAA;
+    -fx-font-size: 12px;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-info-value {
+    -fx-text-fill: #123C59;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-countdown-value {
+    -fx-text-fill: #C9481B;
+    -fx-font-size: 13px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-price-value {
+    -fx-text-fill: #004E84;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+/* ── Form card ── */
+.auction-form-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #006BA6 #C7DFEF #C7DFEF #C7DFEF;
+    -fx-border-width: 3 1 1 1;
+    -fx-border-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.13), 14, 0, 0, 4);
+    -fx-padding: 15 20 15 20;
+}
+
+/* ── Bid button ── */
+.auction-bid-button {
+    -fx-background-color: linear-gradient(to bottom, #006BA6, #004E84);
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+    -fx-background-radius: 9;
+    -fx-pref-height: 46px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.30), 10, 0, 0, 4);
+}
+
+.auction-bid-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #0080C6, #006BA6);
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.40), 14, 0, 0, 5);
+}
+
+.auction-bid-button:pressed {
+    -fx-background-color: #003E6A;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.20), 5, 0, 0, 1);
+}
+
+/* ── TextArea ── */
+.auction-textarea {
+    -fx-control-inner-background: #F8FCFF;
+    -fx-font-family: "Segoe UI";
+    -fx-font-size: 12px;
+    -fx-text-fill: #123C59;
+    -fx-prompt-text-fill: #8CADC2;
+    -fx-border-color: #A9CDE2;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-focus-color: #006BA6;
+    -fx-faint-focus-color: rgba(0, 107, 166, 0.10);
+}

@@ -1,100 +1,202 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ComboBox?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Priority?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
 
-<BorderPane prefHeight="620.0" prefWidth="980.0" style="-fx-background-color: linear-gradient(to bottom, #f7efe5, #ead7c3);" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.AuctionController">
-    <left>
-        <VBox prefWidth="360.0" spacing="12.0" style="-fx-background-color: rgba(255,255,255,0.72);">
-            <padding>
-                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-            </padding>
+<BorderPane prefHeight="700.0" prefWidth="1120.0" style="-fx-background-color: linear-gradient(to bottom right, #F8FCFF, #EAF3F9 50%, #DDEDF7);" styleClass="main-background" stylesheets="@Styles.css" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.AuctionController">
+
+    <top>
+        <VBox spacing="0.0" style="-fx-background-color: linear-gradient(to right, #002F52, #006BA6 62%, #00A6A6); -fx-effect: dropshadow(gaussian, rgba(0, 62, 106, 0.38), 18, 0, 0, 5);">
             <children>
-                <Label text="Danh sach phien dau gia">
-                    <font>
-                        <Font name="Arial" size="22.0" />
-                    </font>
-                </Label>
-                <Label text="Chon san pham de xem thong tin va dat gia." />
-                <ListView fx:id="itemListView" VBox.vgrow="ALWAYS" />
+                <HBox alignment="CENTER_LEFT" spacing="18.0" style="-fx-padding: 18 28 16 28;">
+                    <children>
+                        <StackPane minHeight="48.0" minWidth="48.0" prefHeight="48.0" prefWidth="48.0" style="-fx-background-color: rgba(255,255,255,0.16); -fx-background-radius: 16; -fx-border-color: rgba(255,255,255,0.32); -fx-border-radius: 16;">
+                            <children>
+                                <ImageView fitHeight="38.0" fitWidth="38.0" pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@assets/dai-hoc-cong-nghe-logo.png" />
+                                    </image>
+                                </ImageView>
+                            </children>
+                        </StackPane>
+                        <VBox spacing="2.0">
+                            <children>
+                                <Label style="-fx-text-fill: white; -fx-font-size: 25px; -fx-font-weight: 800; -fx-font-family: 'Segoe UI';" text="AuctionHub" />
+                                <Label style="-fx-text-fill: rgba(255,255,255,0.76); -fx-font-size: 12px; -fx-font-family: 'Segoe UI';" text="Hệ thống đấu giá trực tuyến" />
+                            </children>
+                        </VBox>
+                        <Region HBox.hgrow="ALWAYS" />
+                        <HBox alignment="CENTER" spacing="8.0" style="-fx-background-color: rgba(255,255,255,0.13); -fx-background-radius: 999; -fx-padding: 8 14 8 14; -fx-border-color: rgba(255,255,255,0.25); -fx-border-radius: 999;">
+                            <children>
+                                <Circle fill="#37F2C4" radius="4.5" />
+                                <Label style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI';" text="Live Auction Floor" />
+                            </children>
+                        </HBox>
+                    </children>
+                </HBox>
+                <Rectangle fill="#FFFFFF" height="1.0" opacity="0.20" width="1120.0" />
+            </children>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox prefWidth="310.0" spacing="16.0" style="-fx-background-color: linear-gradient(to bottom, #FFFFFF, #F2F8FC); -fx-padding: 22 18 22 22; -fx-border-color: transparent #C7DFEF transparent transparent; -fx-border-width: 0 1 0 0;">
+            <children>
+                <VBox spacing="5.0">
+                    <children>
+                        <Label style="-fx-text-fill: #003E6A; -fx-font-size: 18px; -fx-font-weight: 800; -fx-font-family: 'Segoe UI';" text="Phiên đang mở" />
+                        <Label style="-fx-text-fill: #5E8CAA; -fx-font-size: 12px; -fx-font-family: 'Segoe UI';" text="Chọn sản phẩm để xem chi tiết và đặt giá." wrapText="true" />
+                    </children>
+                </VBox>
+                <HBox alignment="CENTER_LEFT" spacing="8.0" style="-fx-background-color: #EAF8F5; -fx-background-radius: 10; -fx-padding: 9 11 9 11;">
+                    <children>
+                        <Label style="-fx-font-size: 15px;" text="⚡" />
+                        <Label style="-fx-text-fill: #087A74; -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI';" text="Cập nhật giá theo thời gian thực" />
+                    </children>
+                </HBox>
+                <ListView fx:id="itemListView" styleClass="auction-list-view" VBox.vgrow="ALWAYS" />
             </children>
         </VBox>
     </left>
+
     <center>
-        <VBox spacing="16.0" style="-fx-background-color: rgba(255,248,240,0.88);">
-            <padding>
-                <Insets bottom="24.0" left="24.0" right="24.0" top="24.0" />
-            </padding>
+        <HBox spacing="18.0" style="-fx-padding: 22 24 24 24;">
             <children>
-                <Label text="Chi tiet phien">
-                    <font>
-                        <Font name="Arial" size="24.0" />
-                    </font>
-                </Label>
-                <VBox spacing="10.0">
+                <VBox spacing="16.0" HBox.hgrow="ALWAYS">
                     <children>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        <VBox spacing="4.0">
                             <children>
-                                <Label prefWidth="120.0" text="Ten san pham:" />
-                                <Label fx:id="nameValue" wrapText="true" text="-" />
+                                <Label style="-fx-text-fill: #003E6A; -fx-font-size: 22px; -fx-font-weight: 800; -fx-font-family: 'Segoe UI';" text="Chi tiết phiên đấu giá" />
+                                <Label style="-fx-text-fill: #5E8CAA; -fx-font-size: 12px; -fx-font-family: 'Segoe UI';" text="Theo dõi thông tin sản phẩm, giá hiện tại và người đang dẫn đầu." />
                             </children>
-                        </HBox>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        </VBox>
+
+                        <VBox spacing="14.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-color: #C7DFEF; -fx-border-radius: 16; -fx-padding: 18 20 18 20; -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.14), 18, 0, 0, 5);">
                             <children>
-                                <Label prefWidth="120.0" text="Gia hien tai:" />
-                                <Label fx:id="priceValue" wrapText="true" text="-" />
+                                <HBox alignment="CENTER_LEFT" spacing="14.0">
+                                    <children>
+                                        <StackPane minHeight="54.0" minWidth="54.0" prefHeight="54.0" prefWidth="54.0" style="-fx-background-color: linear-gradient(to bottom right, #EAF3F9, #D6F3EE); -fx-background-radius: 18;">
+                                            <children>
+                                                <Label style="-fx-font-size: 25px;" text="📦" />
+                                            </children>
+                                        </StackPane>
+                                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label style="-fx-text-fill: #5E8CAA; -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI';" text="Sản phẩm nổi bật" />
+                                                <Label fx:id="nameValue" style="-fx-text-fill: #123C59; -fx-font-size: 20px; -fx-font-weight: 800; -fx-font-family: 'Segoe UI';" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+
+                                <HBox spacing="12.0">
+                                    <children>
+                                        <VBox spacing="5.0" style="-fx-background-color: linear-gradient(to bottom right, #F8FCFF, #EAF3F9); -fx-background-radius: 12; -fx-padding: 13 15 13 15;" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label style="-fx-text-fill: #5E8CAA; -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI';" text="Giá hiện tại" />
+                                                <Label fx:id="priceValue" style="-fx-text-fill: #005C93; -fx-font-size: 22px; -fx-font-weight: 900; -fx-font-family: 'Segoe UI';" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="5.0" style="-fx-background-color: #F0FBF7; -fx-background-radius: 12; -fx-padding: 13 15 13 15;" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label style="-fx-text-fill: #5E8CAA; -fx-font-size: 11px; -fx-font-weight: bold; -fx-font-family: 'Segoe UI';" text="Trạng thái" />
+                                                <Label fx:id="statusValue" style="-fx-text-fill: #087A74; -fx-font-size: 16px; -fx-font-weight: 900; -fx-font-family: 'Segoe UI';" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+
+                                <VBox spacing="10.0">
+                                    <children>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <Label styleClass="auction-row-icon" text="🏪" />
+                                                <Label prefWidth="115.0" styleClass="auction-info-label" text="Người bán" />
+                                                <Label fx:id="sellerValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <Label styleClass="auction-row-icon" text="🏅" />
+                                                <Label prefWidth="115.0" styleClass="auction-info-label" text="Người dẫn đầu" />
+                                                <Label fx:id="leaderValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <Label styleClass="auction-row-icon" text="⏰" />
+                                                <Label prefWidth="115.0" styleClass="auction-info-label" text="Thời gian" />
+                                                <Label fx:id="scheduleValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <Label styleClass="auction-row-icon" text="⌛" />
+                                                <Label prefWidth="115.0" styleClass="auction-info-label" text="Đếm ngược" />
+                                                <Label fx:id="countdownValue" styleClass="auction-countdown-value" text="-" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                              <DialogPane />
+                              <FlowPane prefHeight="200.0" prefWidth="200.0" />
+                                    </children>
+                                </VBox>
                             </children>
-                        </HBox>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                        </VBox>
+
+                        <VBox spacing="9.0" style="-fx-background-color: white; -fx-background-radius: 16; -fx-border-color: #C7DFEF; -fx-border-radius: 16; -fx-padding: 16 18 18 18; -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.10), 14, 0, 0, 4);" VBox.vgrow="ALWAYS">
                             <children>
-                                <Label prefWidth="120.0" text="Trang thai:" />
-                                <Label fx:id="statusValue" wrapText="true" text="-" />
+                                <Label style="-fx-text-fill: #003E6A; -fx-font-size: 14px; -fx-font-weight: 800; -fx-font-family: 'Segoe UI';" text="Mô tả sản phẩm" />
+                                <TextArea fx:id="descriptionArea" prefRowCount="6" styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
                             </children>
-                        </HBox>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                            <children>
-                                <Label prefWidth="120.0" text="Nguoi ban:" />
-                                <Label fx:id="sellerValue" wrapText="true" text="-" />
-                            </children>
-                        </HBox>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                            <children>
-                                <Label prefWidth="120.0" text="Nguoi dang dan:" />
-                                <Label fx:id="leaderValue" wrapText="true" text="-" />
-                            </children>
-                        </HBox>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                            <children>
-                                <Label prefWidth="120.0" text="Thoi gian:" />
-                                <Label fx:id="scheduleValue" wrapText="true" text="-" />
-                            </children>
-                        </HBox>
+                        </VBox>
                     </children>
                 </VBox>
-                <VBox spacing="10.0">
+
+                <VBox prefWidth="340.0" spacing="14.0" style="-fx-background-color: white; -fx-background-radius: 18; -fx-border-color: #B5D9E8; -fx-border-radius: 18; -fx-padding: 20 20 20 20; -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.18), 20, 0, 0, 6);">
                     <children>
-                        <Label text="Mo ta" />
-                        <TextArea fx:id="descriptionArea" prefRowCount="4" wrapText="true" />
-                        <Label text="Nguoi dau gia" />
-                        <ComboBox fx:id="bidderSelector" maxWidth="1.7976931348623157E308" />
-                        <Label text="Gia moi" />
-                        <TextField fx:id="bidAmountField" promptText="Nhap gia ban muon dat" />
-                        <Button fx:id="bidButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#submitBid" text="Dat gia" />
-                        <Label text="Lich su dau gia" />
-                        <TextArea fx:id="bidHistoryArea" prefRowCount="10" wrapText="true" VBox.vgrow="ALWAYS" />
+                        <VBox spacing="4.0">
+                            <children>
+                                <Label style="-fx-text-fill: #003E6A; -fx-font-size: 21px; -fx-font-weight: 900; -fx-font-family: 'Segoe UI';" text="Đặt giá ngay" />
+                                <Label style="-fx-text-fill: #5E8CAA; -fx-font-size: 12px; -fx-font-family: 'Segoe UI';" text="Nhập mức giá cao hơn giá hiện tại để tham gia phiên." wrapText="true" />
+                            </children>
+                        </VBox>
+
+                        <Rectangle fill="#DDEDF7" height="1.0" width="300.0" />
+
+                        <Label styleClass="input-label" text="Người đấu giá" />
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                            <children>
+                                <Label styleClass="input-icon" text="👤" />
+                                <ComboBox fx:id="bidderSelector" maxWidth="1.7976931348623157E308" styleClass="combo-field" HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+
+                        <Label styleClass="input-label" text="Giá mới" />
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                            <children>
+                                <Label styleClass="input-icon" text="💰" />
+                                <TextField fx:id="bidAmountField" promptText="Nhập giá bạn muốn đặt" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+
+                        <Button fx:id="bidButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#submitBid" styleClass="auction-bid-button" text="🔨  Đặt giá" />
+
+                        <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                            <children>
+                                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                    <children>
+                                        <Label style="-fx-font-size: 15px;" text="📈" />
+                                        <Label style="-fx-text-fill: #003E6A; -fx-font-size: 14px; -fx-font-weight: 800; -fx-font-family: 'Segoe UI';" text="Lịch sử đấu giá" />
+                                    </children>
+                                </HBox>
+                                <TextArea fx:id="bidHistoryArea" prefRowCount="12" styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
                     </children>
                 </VBox>
             </children>
-        </VBox>
+        </HBox>
     </center>
 </BorderPane>
