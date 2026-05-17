@@ -36,6 +36,8 @@ public class AuctionManager {
     private final ItemDAO itemDAO = new ItemDAO();
     private final AuctionDAO auctionDAO = new AuctionDAO();
 
+    private com.auction.system.server.observer.AuctionSubject auctionSubject;
+
     private AuctionManager() {
         this(AuthManager.getInstance(), ItemManager.getInstance());
     }
@@ -184,6 +186,9 @@ public class AuctionManager {
                     auctionsById.put(itemId, auction);
                 }
                 auction.setStatus(AuctionStatus.RUNNING);
+                if (auctionSubject != null) {
+                    auctionSubject.notifyObservers(item, "AUCTION_STARTED");
+                }
 
             } catch (SQLException e) {
                 conn.rollback();
@@ -204,6 +209,9 @@ public class AuctionManager {
         Auction auction = auctionsById.get(itemId);
         if (auction != null) {
             auction.finishAuction();
+        }
+        if (auctionSubject != null) {
+            auctionSubject.notifyObservers(item, "AUCTION_FINISHED");
         }
     }
 
@@ -273,5 +281,9 @@ public class AuctionManager {
         } catch (ItemNotFoundException exception) {
             throw new IllegalArgumentException("Item does not exist", exception);
         }
+    }
+
+    public void setAuctionSubject(com.auction.system.server.observer.AuctionSubject subject) {
+        this.auctionSubject = subject;
     }
 }

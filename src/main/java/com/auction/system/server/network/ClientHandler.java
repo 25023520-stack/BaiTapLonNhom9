@@ -10,6 +10,8 @@ import com.auction.system.server.controller.AuthController;
 import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.model.user.User;
 import com.auction.system.model.user.Bidder;
+import com.auction.system.server.observer.AuctionObserver;
+import com.auction.system.model.item.Item;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +21,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-public class ClientHandler implements Runnable, Closeable {
+public class ClientHandler implements Runnable, Closeable, AuctionObserver {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientHandler.class);
     private static final Gson GSON = GsonProvider.get();
 
@@ -44,6 +46,7 @@ public class ClientHandler implements Runnable, Closeable {
         this.authController = new AuthController();
         this.writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+        this.auctionServer.addObserver(this);
     }
 
     @Override
@@ -130,16 +133,25 @@ public class ClientHandler implements Runnable, Closeable {
             return;
         }
         ResponsePayload response = auctionController.placeBid(payload, authenticatedUser);
-        send(response); // gửi kết quả về cho client vừa bid
+        send(response);
 
-        if (response.isSuccess() && response.getBody().get("item") != null) {
-            ResponsePayload update = ResponsePayload.auctionUpdate("Auction updated");
-            update.put("itemId", response.getString("itemId"));
-            update.put("amount", response.getDouble("amount"));
-            update.put("item", response.getBody().get("item"));
-            update.put("bidderId", authenticatedUser.getId());
-            auctionServer.broadcast(update);
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item updatedItem) {
+                auctionServer.notifyObservers(updatedItem, "BID_PLACED");
+            }
         }
+    }
+
+    @Override
+    public void onAuctionUpdated(Item item, String eventType) {
+        if (!connected || closed) return;
+
+        ResponsePayload update = ResponsePayload.auctionUpdate("Auction updated");
+        update.put("itemId", item.getId());
+        update.put("item", item);
+        update.put("eventType", eventType);  // "BID_PLACED", "AUCTION_STARTED", "AUCTION_FINISHED"
+        send(update);
     }
 
     public synchronized void send(Payload payload){
@@ -155,6 +167,7 @@ public class ClientHandler implements Runnable, Closeable {
         closed = true;
         connected = false;
         auctionServer.removeClient(this);
+        auctionServer.removeObserver(this);
         writer.close();
         reader.close();
         socket.close();

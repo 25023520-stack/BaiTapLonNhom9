@@ -2,6 +2,9 @@ package com.auction.system.server.network;
 
 import com.auction.system.common.payload.Payload;
 import com.auction.system.server.manager.AuctionManager;
+import com.auction.system.server.observer.AuctionObserver;
+import com.auction.system.server.observer.AuctionSubject;
+import com.auction.system.model.item.Item;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -11,14 +14,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AuctionServer {
+public class AuctionServer implements AuctionSubject{
     private final int port;
     private final AuctionManager auctionManager;
     private final ExecutorService clientPool;
     private final Set<ClientHandler> clients = Collections.synchronizedSet(new HashSet<>());
+    private final List<AuctionObserver> observers = new CopyOnWriteArrayList<>();
 
     private ServerSocket serverSocket;
     private volatile boolean running;
@@ -82,12 +88,35 @@ public class AuctionServer {
     }
 
     public void broadcast(Payload payload) {
-        for (ClientHandler client : clients.toArray(new ClientHandler[0])) {
+        ClientHandler[] snapshot = clients.toArray(new ClientHandler[0]);
+        for (ClientHandler client : snapshot) {
+            try {
                 client.send(payload);
+            } catch (Exception e) {
+                LOGGER.warn("Failed to send to client, removing: {}", e.getMessage());
+                removeClient(client);
+            }
         }
     }
 
     void removeClient(ClientHandler clientHandler) {
         clients.remove(clientHandler);
+    }
+
+    @Override
+    public void addObserver(AuctionObserver observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void removeObserver(AuctionObserver observer) {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers(Item item, String eventType) {
+        for (AuctionObserver observer : observers) {
+            observer.onAuctionUpdated(item, eventType);
+        }
     }
 }
