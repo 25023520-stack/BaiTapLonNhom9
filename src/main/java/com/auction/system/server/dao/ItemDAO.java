@@ -239,7 +239,6 @@ public class ItemDAO extends BaseDAO {
                 UPDATE items
                 SET status = ? 
                 WHERE id = ?
-                WHERE id = ?
                 """;
 
         try(PreparedStatement pstm = conn.prepareStatement(sql)) {
