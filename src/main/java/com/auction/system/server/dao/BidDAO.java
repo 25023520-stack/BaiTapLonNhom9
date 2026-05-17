@@ -44,7 +44,7 @@ public class BidDAO extends BaseDAO {
         String sql = """
                 SELECT * FROM bids
                 WHERE item_id = ?
-                ODER BY bid_time ASC
+                ORDER BY bid_time ASC
                 """;
 
         List<Bid> bids = new ArrayList<>();

@@ -10,12 +10,14 @@ import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 import com.auction.system.server.dao.ItemDAO;
+import com.auction.system.server.dao.BidDAO;
 import com.auction.system.server.dao.AuctionDAO;
 import com.auction.system.server.database.Database;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,6 +37,7 @@ public class AuctionManager {
 
     private final ItemDAO itemDAO = new ItemDAO();
     private final AuctionDAO auctionDAO = new AuctionDAO();
+    private final BidDAO bidDAO = new BidDAO();
 
     private com.auction.system.server.observer.AuctionSubject auctionSubject;
 
@@ -204,14 +207,59 @@ public class AuctionManager {
 
     public synchronized void finishAuction(String itemId) {
         Item item = requireItem(itemId);
-        item.setStatus(AuctionStatus.FINISHED);
 
-        Auction auction = auctionsById.get(itemId);
-        if (auction != null) {
-            auction.finishAuction();
-        }
-        if (auctionSubject != null) {
-            auctionSubject.notifyObservers(item, "AUCTION_FINISHED");
+        String winnerId = item.getHighestBidderId();
+        double finalPrice = winnerId == null ? 0 : item.getCurrentPrice();
+
+        try (Connection conn = Database.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                boolean itemUpdated = itemDAO.updateStatus(
+                        conn,
+                        itemId,
+                        AuctionStatus.FINISHED
+                );
+
+                if (!itemUpdated) {
+                    throw new SQLException("Cannot update item status to FINISHED");
+                }
+
+                boolean auctionUpdated = auctionDAO.finishAuction(
+                        conn,
+                        itemId,
+                        winnerId,
+                        finalPrice
+                );
+
+                if (!auctionUpdated) {
+                    throw new SQLException("Cannot update auction status to FINISHED");
+                }
+
+                conn.commit();
+
+                // update auction trong RAM
+                item.setStatus(AuctionStatus.FINISHED);
+
+                Auction auction = auctionsById.get(itemId);
+                if (auction != null) {
+                    auction.finishAuction();
+                }
+
+                //thong bao cho observer
+                if (auctionSubject != null) {
+                    auctionSubject.notifyObservers(item, "AUCTION_FINISHED");
+                }
+
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new IllegalStateException("Cannot finish auction: " + e.getMessage(), e);
+            } finally {
+                conn.setAutoCommit(true);
+            }
+
+        } catch (SQLException e) {
+            throw new IllegalStateException("Database error when finishing auction", e);
         }
     }
 
@@ -225,14 +273,52 @@ public class AuctionManager {
             throw new IllegalStateException("Auction is not running");
         }
         if (item.getEndTime() != null && LocalDateTime.now().isAfter(item.getEndTime())) {
-            item.setStatus(AuctionStatus.FINISHED);
+            finishAuction(itemId);
             throw new IllegalStateException("Auction already finished");
         }
         if (bidAmount <= item.getCurrentPrice()) {
             throw new IllegalArgumentException("Bid amount must be greater than current price");
         }
 
-        Bid bid = new Bid("BID-" + UUID.randomUUID(), bidder, bidAmount);
+        String bidId = "Bid-" + UUID.randomUUID();
+        LocalDateTime bidTime = LocalDateTime.now();
+
+        try(Connection conn = Database.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+
+            try {
+                String auctionId = auctionDAO.findAuctionByItemId(conn, itemId);
+
+                if(auctionId == null) {
+                    throw  new SQLException("Cannot find auction for item:" + itemId);
+
+                }
+
+                boolean bidSaved = bidDAO.insertBid(conn, bidId, auctionId, itemId, bidder.getId(), bidAmount, bidTime);
+
+                if (!bidSaved ) {
+                    throw new SQLException("Cannot insert bid");
+                }
+
+                boolean itemUpdated = itemDAO.updateAfterBid(conn, itemId, BigDecimal.valueOf(bidAmount), bidder.getId());
+
+                if(!itemUpdated) {
+                    throw new SQLException("Cannot update item after bid");
+                }
+                
+                conn.commit();
+
+            }catch (SQLException e) {
+                conn.rollback();
+                throw new IllegalStateException("cannot place bid: " + e.getMessage(), e);
+            }finally {
+                conn.setAutoCommit(true);
+            }
+        } catch(SQLException e) {
+            throw new IllegalStateException("Database error when palce bid", e);
+        }
+
+        Bid bid = new Bid(bidId, bidder, bidAmount, bidTime);
         item.setCurrentPrice(bidAmount);
         item.setHighestBidderId(bidder.getId());
         item.addBid(bid);
