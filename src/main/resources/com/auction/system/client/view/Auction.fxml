@@ -12,7 +12,7 @@
             <children>
                 <HBox alignment="CENTER_LEFT" spacing="18.0" style="-fx-padding: 18 28 16 28;">
                     <children>
-                        <StackPane minHeight="48.0" minWidth="48.0" prefHeight="48.0" prefWidth="48.0" style="-fx-background-color: rgba(255,255,255,0.16); -fx-background-radius: 16; -fx-border-color: rgba(255,255,255,0.32); -fx-border-radius: 16;">
+                        <StackPane minHeight="48.0" minWidth="48.0" prefHeight="48.0" prefWidth="48.0" style="-fx-background-color: #FFFFFF; -fx-background-radius: 16; -fx-border-color: rgba(255,255,255,0.32); -fx-border-radius: 16;">
                             <children>
                                 <ImageView fitHeight="38.0" fitWidth="38.0" pickOnBounds="true" preserveRatio="true">
                                     <image>
