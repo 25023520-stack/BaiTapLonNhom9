@@ -31,9 +31,11 @@ public class Database {
 
     private static final Database instance = new Database();
 
+    private HikariDataSource dataSource;
+
     private Database() {
         loadDriver();
-  initializeConnectionPool();
+        initializeConnectionPool();
     }
 //Singleton
     public static synchronized Database getInstance() {return instance;
