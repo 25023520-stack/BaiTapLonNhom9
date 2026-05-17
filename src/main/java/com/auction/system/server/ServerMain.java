@@ -36,6 +36,7 @@ public class ServerMain {
         ensureDemoData();
         logServerAddress(DEFAULT_PORT);
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
+        AUCTION_MANAGER.setAuctionSubject(server);
         server.start();
     }
 
@@ -46,6 +47,7 @@ public class ServerMain {
 
         ensureDemoData();
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
+        AUCTION_MANAGER.setAuctionSubject(server);
         serverThread = new Thread(() -> {
             try {
                 server.start();
