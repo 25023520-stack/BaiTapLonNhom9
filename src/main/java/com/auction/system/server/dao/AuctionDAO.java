@@ -125,8 +125,9 @@ public class AuctionDAO extends BaseDAO {
             String itemId
     ) throws SQLException {
         String sql = """
-                SELECT COUNT(*) FROM auctions 
+                SELECT id FROM auctions 
                 WHERE item_id = ?
+                LIMIT 1
                 """;
 
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
