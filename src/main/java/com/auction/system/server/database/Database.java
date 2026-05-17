@@ -14,9 +14,11 @@ public class Database {
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
     private static final String MYSQL_DRIVER_CLASS = "com.mysql.cj.jdbc.Driver";
 
-    private static final String DB_HOST = "26.207.130.115";
-    private static final String DB_PORT = "3306";
-    private static final String DB_NAME = "auction_db";
+    // create separate sql environment for users
+
+    private static final String  DB_HOST =  System.getenv().getOrDefault("DB_HOST", "26.207.130.115" ) ;
+    private static final String DB_PORT = System.getenv().getOrDefault("DB_PORT", "3306");
+    private static final String DB_NAME = System.getenv().getOrDefault("DB_NAME", "auction_db");
 
     private static final String DB_URL =
             "jdbc:mysql://" + DB_HOST + ":" +DB_PORT + "/" + DB_NAME
@@ -26,8 +28,8 @@ public class Database {
             + "&characterEncoding=UTF-8"
             + "&serverTimezone=Asia/Bangkok";
 
-    private static final String DB_USER = "auction_user";
-    private static final String DB_PASSWORD = "Auction@123456";
+    private static final String DB_USER = System.getenv().getOrDefault("DB_USER", "auction_user");
+    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "Auction123");
 
     private static final Database instance = new Database();
 
