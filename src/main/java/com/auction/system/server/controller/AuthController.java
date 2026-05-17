@@ -30,6 +30,8 @@ public class AuthController {
             return response;
         } catch (IllegalArgumentException exception) {
             return ResponsePayload.error(exception.getMessage());
+        } catch (Exception exception) {
+            return ResponsePayload.error("Loi he thong, vui long thu lai sau.");
         }
     }
 
@@ -48,6 +50,8 @@ public class AuthController {
             return response;
         } catch (IllegalArgumentException exception) {
             return ResponsePayload.error(exception.getMessage());
+        } catch (Exception exception) {
+            return ResponsePayload.error("Loi he thong, vui long thu lai sau.");
         }
     }
 }
