@@ -16,7 +16,7 @@ public class Database {
 
     // create separate sql environment for users
 
-    private static final String  DB_HOST =  System.getenv().getOrDefault("DB_HOST", "26.207.130.115" ) ;
+    private static final String  DB_HOST =  System.getenv().getOrDefault("DB_HOST", "localhost" ) ;
     private static final String DB_PORT = System.getenv().getOrDefault("DB_PORT", "3306");
     private static final String DB_NAME = System.getenv().getOrDefault("DB_NAME", "auction_db");
 
