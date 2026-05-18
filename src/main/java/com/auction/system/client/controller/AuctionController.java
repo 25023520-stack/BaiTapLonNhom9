@@ -3,30 +3,29 @@ package com.auction.system.client.controller;
 import com.auction.system.client.context.AppContext;
 import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.json.GsonProvider;
-import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
-import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
-import com.auction.system.model.user.Bidder;
-import com.auction.system.model.user.User;
 import com.google.gson.Gson;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -43,7 +42,6 @@ public class AuctionController {
             new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(new Locale("vi", "VN")));
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
     private final ObservableList<Item> items = FXCollections.observableArrayList();
-    private final ObservableList<Bidder> bidders = FXCollections.observableArrayList();
     private Timeline countdownTimer;
 
     @FXML
@@ -77,16 +75,7 @@ public class AuctionController {
     private TextArea bidHistoryArea;
 
     @FXML
-    private ComboBox<Bidder> bidderSelector;
-
-    @FXML
-    private TextField bidAmountField;
-
-    @FXML
-    private Button bidButton;
-
-    @FXML
-    void initialize() {
+    protected void initialize() {
         itemListView.setItems(items);
         itemListView.setCellFactory(list -> new ListCell<>() {
             @Override
@@ -101,111 +90,46 @@ public class AuctionController {
         });
         itemListView.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showItemDetails(newItem));
 
-        bidderSelector.setItems(bidders);
-        bidderSelector.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(Bidder bidder, boolean empty) {
-                super.updateItem(bidder, empty);
-                setText(empty || bidder == null ? null : bidder.getFullName());
-            }
-        });
-        bidderSelector.setButtonCell(new ListCell<>() {
-            @Override
-            protected void updateItem(Bidder bidder, boolean empty) {
-                super.updateItem(bidder, empty);
-                setText(empty || bidder == null ? "Tai khoan dau gia" : bidder.getFullName());
-            }
-        });
-
         descriptionArea.setEditable(false);
         descriptionArea.setWrapText(true);
         bidHistoryArea.setEditable(false);
         bidHistoryArea.setWrapText(true);
-        bidButton.setMaxWidth(Double.MAX_VALUE);
-        bidButton.setDisable(true);
-        configureCurrentUser();
+        initializeAuctionActions();
         startCountdownTimer();
         startRealtimeListener();
         loadItems();
     }
 
-    private void configureCurrentUser() {
-        User currentUser = AppContext.getCurrentUser();
-        if (currentUser instanceof Bidder bidder) {
-            bidders.setAll(bidder);
-            bidderSelector.getSelectionModel().selectFirst();
-            bidderSelector.setDisable(true);
-            bidAmountField.setDisable(false);
-            return;
-        }
-
-        bidders.clear();
-        bidderSelector.setDisable(true);
-        bidAmountField.setDisable(true);
-        bidButton.setDisable(true);
+    protected void initializeAuctionActions() {
     }
 
     @FXML
-    void submitBid() {
-        Item selectedItem = itemListView.getSelectionModel().getSelectedItem();
-        if (selectedItem == null) {
-            showAlert(Alert.AlertType.WARNING, "Ban chua chon san pham.");
-            return;
-        }
-
-        User currentUser = AppContext.getCurrentUser();
-        if (!(currentUser instanceof Bidder bidder)) {
-            showAlert(Alert.AlertType.WARNING, "Tai khoan hien tai khong co quyen dat gia.");
-            return;
-        }
-
-        double bidAmount;
+    public void handleLogout(ActionEvent event) {
+        stopTimers();
         try {
-            bidAmount = Double.parseDouble(bidAmountField.getText().trim());
-        } catch (NumberFormatException exception) {
-            showAlert(Alert.AlertType.ERROR, "Gia dat khong hop le.");
-            return;
-        }
-        if (bidAmount <= 0) {
-            showAlert(Alert.AlertType.ERROR, "Gia dat phai lon hon 0.");
-            return;
-        }
-        if (selectedItem.getStatus() != AuctionStatus.RUNNING) {
-            showAlert(Alert.AlertType.WARNING, "Phien dau gia hien khong mo de dat gia.");
-            return;
-        }
-        if (bidAmount <= selectedItem.getCurrentPrice()) {
-            showAlert(Alert.AlertType.WARNING,
-                    "Gia dat phai lon hon gia hien tai " + formatCurrency(selectedItem.getCurrentPrice()) + ".");
-            return;
+            AppContext.logout();
+        } catch (IOException ignored) {
+            // The local session is closed even if the server disconnect acknowledgement fails.
         }
 
         try {
-            AuctionClient client = AppContext.getAuctionClient();
-            bidButton.setDisable(true);
-            client.send(new BidPayload(selectedItem.getId(), bidAmount));
-            ResponsePayload response = readResponse(client);
-            if (!response.isSuccess()) {
-                updateBidControls(selectedItem);
-                showAlert(Alert.AlertType.ERROR, response.getMessage());
-                return;
-            }
-
-            loadItems();
-            itemListView.getSelectionModel().select(findItemById(selectedItem.getId()));
-            showItemDetails(findItemById(selectedItem.getId()));
-            bidAmountField.clear();
-            showAlert(Alert.AlertType.INFORMATION, "Dat gia thanh cong.");
+            Parent loginView = FXMLLoader.load(getClass().getResource("/com/auction/system/client/view/Login.fxml"));
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setScene(new Scene(loginView));
+            stage.setTitle("Dang nhap");
+            stage.show();
         } catch (IOException exception) {
-            updateBidControls(selectedItem);
-            showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
-        } catch (RuntimeException exception) {
-            updateBidControls(selectedItem);
-            showAlert(Alert.AlertType.ERROR, exception.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Không thể mở màn hình đăng nhập.");
         }
     }
 
-    private void showItemDetails(Item item) {
+    protected void stopTimers() {
+        if (countdownTimer != null) {
+            countdownTimer.stop();
+        }
+    }
+
+    protected void showItemDetails(Item item) {
         if (item == null) {
             nameValue.setText("-");
             priceValue.setText("-");
@@ -216,7 +140,7 @@ public class AuctionController {
             countdownValue.setText("-");
             descriptionArea.clear();
             bidHistoryArea.clear();
-            updateBidControls(null);
+            updateAuctionActions(null);
             return;
         }
 
@@ -224,19 +148,19 @@ public class AuctionController {
         priceValue.setText(formatCurrency(item.getCurrentPrice()));
         statusValue.setText(item.getStatus().name());
         sellerValue.setText(isBlank(item.getSellerId()) ? "-" : item.getSellerId());
-        leaderValue.setText(isBlank(item.getHighestBidderId()) ? "Chua co" : item.getHighestBidderId());
+        leaderValue.setText(isBlank(item.getHighestBidderId()) ? "Chưa có" : item.getHighestBidderId());
         scheduleValue.setText(formatSchedule(item));
         updateCountdown(item);
         descriptionArea.setText(item.getDescription());
         bidHistoryArea.setText(formatBidHistory(item));
-        updateBidControls(item);
+        updateAuctionActions(item);
     }
 
     private void startCountdownTimer() {
         countdownTimer = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), event -> {
             Item selectedItem = itemListView.getSelectionModel().getSelectedItem();
             updateCountdown(selectedItem);
-            updateBidControls(selectedItem);
+            updateAuctionActions(selectedItem);
         }));
         countdownTimer.setCycleCount(Timeline.INDEFINITE);
         countdownTimer.play();
@@ -250,15 +174,15 @@ public class AuctionController {
 
         LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(item.getStartTime())) {
-            countdownValue.setText("Bat dau sau " + formatRemainingTime(java.time.Duration.between(now, item.getStartTime())));
+            countdownValue.setText("Bắt đầu sau " + formatRemainingTime(java.time.Duration.between(now, item.getStartTime())));
             return;
         }
         if (now.isBefore(item.getEndTime())) {
-            countdownValue.setText("Ket thuc sau " + formatRemainingTime(java.time.Duration.between(now, item.getEndTime())));
+            countdownValue.setText("Kết thúc sau " + formatRemainingTime(java.time.Duration.between(now, item.getEndTime())));
             return;
         }
 
-        countdownValue.setText("Da ket thuc");
+        countdownValue.setText("Đã kết thúc");
     }
 
     private String formatRemainingTime(java.time.Duration duration) {
@@ -269,7 +193,7 @@ public class AuctionController {
         long seconds = totalSeconds % 60;
 
         if (days > 0) {
-            return String.format("%d ngay %02d:%02d:%02d", days, hours, minutes, seconds);
+            return String.format("%d ngày %02d:%02d:%02d", days, hours, minutes, seconds);
         }
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
@@ -283,7 +207,7 @@ public class AuctionController {
 
     private String formatBidHistory(Item item) {
         if (item.getBidHistory().isEmpty()) {
-            return "Chua co luot dat gia nao.";
+            return "Chưa có lượt đặt giá nào.";
         }
 
         StringBuilder builder = new StringBuilder();
@@ -298,14 +222,14 @@ public class AuctionController {
         return builder.toString();
     }
 
-    private void showAlert(Alert.AlertType alertType, String message) {
+    protected void showAlert(Alert.AlertType alertType, String message) {
         Alert alert = new Alert(alertType);
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
     }
 
-    private void loadItems() {
+    protected void loadItems() {
         try {
             AuctionClient client = AppContext.getAuctionClient();
             client.send(new Payload(PayloadType.LIST_ITEMS));
@@ -326,13 +250,13 @@ public class AuctionController {
                 return;
             }
 
-            showAlert(Alert.AlertType.ERROR, "Du lieu san pham tu server khong hop le.");
+            showAlert(Alert.AlertType.ERROR, "Dữ liệu sản phẩm từ server không hợp lệ.");
         } catch (IOException exception) {
-            showAlert(Alert.AlertType.ERROR, "Khong the tai danh sach san pham tu server.");
+            showAlert(Alert.AlertType.ERROR, "Không thể tải danh sách sản phẩm từ server.");
         }
     }
 
-    private ResponsePayload readResponse(AuctionClient client) throws IOException {
+    protected ResponsePayload readResponse(AuctionClient client) throws IOException {
         Payload raw = client.read();
         if (raw == null) {
             throw new IOException("Server returned null");
@@ -344,11 +268,19 @@ public class AuctionController {
         return response;
     }
 
-    private Item findItemById(String itemId) {
+    protected Item findItemById(String itemId) {
         return items.stream()
                 .filter(item -> Objects.equals(item.getId(), itemId))
                 .findFirst()
                 .orElse(null);
+    }
+
+    protected Item getSelectedItem() {
+        return itemListView.getSelectionModel().getSelectedItem();
+    }
+
+    protected void selectItem(Item item) {
+        itemListView.getSelectionModel().select(item);
     }
 
     private void startRealtimeListener() {
@@ -364,10 +296,10 @@ public class AuctionController {
                         }
                     },
                     error -> Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "Mat ket noi toi server"))
+                            showAlert(Alert.AlertType.ERROR, "Mất kết nối tới server"))
             );
         } catch (IOException e) {
-            showAlert(Alert.AlertType.ERROR, "Khong the bat dau lang nghe server.");
+            showAlert(Alert.AlertType.ERROR, "Không thể bắt đầu lắng nghe server.");
         }
     }
 
@@ -386,7 +318,7 @@ public class AuctionController {
                 if (selected != null && Objects.equals(selected.getId(), updatedItem.getId())) {
                     showItemDetails(updatedItem);
                 } else {
-                    updateBidControls(itemListView.getSelectionModel().getSelectedItem());
+                    updateAuctionActions(itemListView.getSelectionModel().getSelectedItem());
                 }
                 break;
             }
@@ -411,30 +343,10 @@ public class AuctionController {
         return value == null || value.isBlank();
     }
 
-    private void updateBidControls(Item item) {
-        User currentUser = AppContext.getCurrentUser();
-        boolean canBid = currentUser instanceof Bidder
-                && item != null
-                && item.getStatus() == AuctionStatus.RUNNING
-                && isWithinBiddingWindow(item);
-        bidButton.setDisable(!canBid);
-        bidAmountField.setDisable(!(currentUser instanceof Bidder));
-        if (canBid) {
-            bidAmountField.setPromptText("Gia phai lon hon " + formatCurrency(item.getCurrentPrice()));
-        } else if (currentUser instanceof Bidder && item != null && item.getStartTime() != null
-                && LocalDateTime.now().isBefore(item.getStartTime())) {
-            bidAmountField.setPromptText("Phien dau gia chua bat dau");
-        } else if (currentUser instanceof Bidder && item != null && item.getEndTime() != null
-                && !LocalDateTime.now().isBefore(item.getEndTime())) {
-            bidAmountField.setPromptText("Phien dau gia da ket thuc");
-        } else if (currentUser instanceof Bidder) {
-            bidAmountField.setPromptText("Phien nay khong mo de dat gia");
-        } else {
-            bidAmountField.setPromptText("Chi bidder moi dat gia duoc");
-        }
+    protected void updateAuctionActions(Item item) {
     }
 
-    private boolean isWithinBiddingWindow(Item item) {
+    protected boolean isWithinBiddingWindow(Item item) {
         if (item.getStartTime() == null || item.getEndTime() == null) {
             return true;
         }
@@ -443,7 +355,7 @@ public class AuctionController {
         return !now.isBefore(item.getStartTime()) && now.isBefore(item.getEndTime());
     }
 
-    private String formatCurrency(double amount) {
+    protected String formatCurrency(double amount) {
         return VND_FORMAT.format(amount) + " VND";
     }
 }
