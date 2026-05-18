@@ -5,6 +5,7 @@ import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.model.user.Seller;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -79,7 +80,11 @@ public class LoginController {
         AppContext.setCurrentUserFromMap(response.getBody());
 
         showAlert(Alert.AlertType.INFORMATION, response.getMessage());
-        openAuctionScreen(stage);
+        if (AppContext.getCurrentUser() instanceof Seller) {
+            openSellerScreen(stage);
+        } else {
+            openBidderScreen(stage);
+        }
     }
 
     private void setLoginDisabled(boolean disabled) {
@@ -88,15 +93,27 @@ public class LoginController {
         btnLogin.setDisable(disabled);
     }
 
-    private void openAuctionScreen(Stage stage) {
+    private void openBidderScreen(Stage stage) {
         try {
-            Parent auctionView = FXMLLoader.load(getClass().getResource("/com/auction/system/client/view/Auction.fxml"));
-            stage.setScene(new Scene(auctionView, 980, 620));
-            stage.setTitle("Auction System");
+            Parent bidderView = FXMLLoader.load(getClass().getResource("/com/auction/system/client/view/Bidder.fxml"));
+            stage.setScene(new Scene(bidderView, 1120, 700));
+            stage.setTitle("Bidder Workspace");
             stage.show();
         } catch (Exception exception) {
-            showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh dau gia.");
-            LOGGER.error("Cannot open auction screen", exception);
+            showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh bidder.");
+            LOGGER.error("Cannot open bidder screen", exception);
+        }
+    }
+
+    private void openSellerScreen(Stage stage) {
+        try {
+            Parent sellerView = FXMLLoader.load(getClass().getResource("/com/auction/system/client/view/Seller.fxml"));
+            stage.setScene(new Scene(sellerView, 1120, 700));
+            stage.setTitle("Seller Workspace");
+            stage.show();
+        } catch (Exception exception) {
+            showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh seller.");
+            LOGGER.error("Cannot open seller screen", exception);
         }
     }
 

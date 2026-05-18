@@ -37,11 +37,15 @@ public class AuctionClient implements Closeable {
             return;
         }
 
+        responseQueue.clear();
+        terminalReadException = null;
+        messageConsumer = null;
+        errorConsumer = null;
         socket = new Socket(host, port);
         writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         connected = true;
-        startReaderThread();
+        startReaderThread(socket, reader);
     }
 
     public synchronized void send(Payload payload) throws IOException {
@@ -85,26 +89,49 @@ public class AuctionClient implements Closeable {
     @Override
     public synchronized void close() throws IOException {
         connected = false;
-        if (reader != null) {
-            reader.close();
+        messageConsumer = null;
+        errorConsumer = null;
+        terminalReadException = null;
+        responseQueue.clear();
+
+        IOException closeException = null;
+        try {
+            if (reader != null) {
+                reader.close();
+            }
+        } catch (IOException exception) {
+            closeException = exception;
         }
         if (writer != null) {
             writer.close();
         }
-        if (socket != null && !socket.isClosed()) {
-            socket.close();
+        try {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
+        } catch (IOException exception) {
+            if (closeException == null) {
+                closeException = exception;
+            } else {
+                closeException.addSuppressed(exception);
+            }
+        } finally {
+            socket = null;
+            writer = null;
+            reader = null;
+            readerThread = null;
+        }
+
+        if (closeException != null) {
+            throw closeException;
         }
     }
 
-    private void startReaderThread() {
-        if (readerThread != null && readerThread.isAlive()) {
-            return;
-        }
-
+    private void startReaderThread(Socket activeSocket, BufferedReader activeReader) {
         readerThread = new Thread(() -> {
             try {
                 String line;
-                while (connected && (line = reader.readLine()) != null) {
+                while (isActiveConnection(activeSocket) && (line = activeReader.readLine()) != null) {
                     Payload payload = GSON.fromJson(line, Payload.class);
                     if (payload == null) {
                         continue;
@@ -121,12 +148,12 @@ public class AuctionClient implements Closeable {
                     responseQueue.offer(payload);
                 }
 
-                if (connected) {
+                if (isActiveConnection(activeSocket)) {
                     terminalReadException = new EOFException("Server closed connection");
                     responseQueue.offer(new Payload());
                 }
             } catch (IOException exception) {
-                if (connected) {
+                if (isActiveConnection(activeSocket)) {
                     terminalReadException = exception;
                     responseQueue.offer(new Payload());
                     Consumer<Exception> consumer = errorConsumer;
@@ -135,10 +162,16 @@ public class AuctionClient implements Closeable {
                     }
                 }
             } finally {
-                connected = false;
+                if (socket == activeSocket) {
+                    connected = false;
+                }
             }
         }, "auction-client-reader");
         readerThread.setDaemon(true);
         readerThread.start();
+    }
+
+    private boolean isActiveConnection(Socket activeSocket) {
+        return connected && socket == activeSocket;
     }
 }

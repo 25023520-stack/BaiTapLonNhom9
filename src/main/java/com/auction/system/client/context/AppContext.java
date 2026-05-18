@@ -1,6 +1,8 @@
 package com.auction.system.client.context;
 
 import com.auction.system.client.network.AuctionClient;
+import com.auction.system.common.payload.Payload;
+import com.auction.system.common.payload.PayloadType;
 import com.auction.system.model.user.User;
 import com.auction.system.model.user.Admin;
 import com.auction.system.model.user.Bidder;
@@ -30,6 +32,32 @@ public final class AppContext {
 
     public static synchronized void setCurrentUser(User user) {
         currentUser = user;
+    }
+
+    public static synchronized void logout() throws IOException {
+        IOException logoutException = null;
+        try {
+            if (AUCTION_CLIENT.isConnected()) {
+                AUCTION_CLIENT.send(new Payload(PayloadType.DISCONNECT));
+            }
+        } catch (IOException exception) {
+            logoutException = exception;
+        } finally {
+            currentUser = null;
+            try {
+                AUCTION_CLIENT.close();
+            } catch (IOException exception) {
+                if (logoutException == null) {
+                    logoutException = exception;
+                } else {
+                    logoutException.addSuppressed(exception);
+                }
+            }
+        }
+
+        if (logoutException != null) {
+            throw logoutException;
+        }
     }
 
     public static synchronized void setCurrentUserFromMap(Map<String, Object> userMap) {

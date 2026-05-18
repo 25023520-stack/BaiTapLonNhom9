@@ -81,6 +81,10 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             case LOGIN -> handleLogin(payload);
             case REGISTER -> handleRegister(payload);
             case LIST_ITEMS -> handleListItems();
+            case LIST_ITEMS_BY_SELLER -> send(auctionController.listItemsBySeller(payload, authenticatedUser));
+            case ADD_ITEM -> send(auctionController.addItem(payload, authenticatedUser));
+            case UPDATE_ITEM -> send(auctionController.updateItem(payload, authenticatedUser));
+            case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
             case BID -> handleBid(payload);
             case DISCONNECT -> {
                 send(ResponsePayload.ok("Disconnected"));
