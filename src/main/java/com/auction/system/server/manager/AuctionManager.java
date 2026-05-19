@@ -14,6 +14,10 @@ import com.auction.system.server.dao.BidDAO;
 import com.auction.system.server.dao.AuctionDAO;
 import com.auction.system.server.database.Database;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -34,6 +38,7 @@ public class AuctionManager {
     private final AuthManager authManager;
     private final ItemManager itemManager;
     private final Map<String, Auction> auctionsById = new HashMap<>();
+    private final ConcurrentMap<String, ReentrantLock> itemLocks = new ConcurrentHashMap<>();
 
     private final ItemDAO itemDAO = new ItemDAO();
     private final AuctionDAO auctionDAO = new AuctionDAO();
@@ -122,90 +127,103 @@ public class AuctionManager {
         }
     }
 
-    public synchronized void startAuction(String itemId, LocalDateTime startTime, LocalDateTime endTime) {
-        Item item = requireItem(itemId);
-
-        if (startTime == null || endTime == null) {
-            throw new IllegalArgumentException("Start time and end time must not be null");
+    public void startAuction(String itemId, LocalDateTime startTime, LocalDateTime endTime) {
+        if(itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
         }
 
-        if (!endTime.isAfter(startTime)) {
-            throw new IllegalArgumentException("Auction end time must be after start time");
-        }
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
 
-        String auctionId = "AUC-" + itemId;
+        try{
+            Item item = requireItem(itemId);
 
-        try (Connection conn = Database.getInstance().getConnection()) {
-            conn.setAutoCommit(false);
+            if (startTime == null || endTime == null) {
+                throw new IllegalArgumentException("Start time and end time must not be null");
+            }
 
-            try {
-                boolean itemUpdated = itemDAO.updateAuctionInfo(
-                        conn,
-                        itemId,
-                        AuctionStatus.RUNNING,
-                        startTime,
-                        endTime
-                );
+            if (!endTime.isAfter(startTime)) {
+                throw new IllegalArgumentException("Auction end time must be after start time");
+            }
 
-                if (!itemUpdated) {
-                    throw new SQLException("Cannot update item auction info");
-                }
+            String auctionId = "AUC-" + itemId;
 
-                boolean auctionSaved;
+            try (Connection conn = Database.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
 
-                if (auctionDAO.existsByItemId(conn, itemId)) {
-                    auctionSaved = auctionDAO.updateAuctionTimeAndStatus(
+                try {
+                    boolean itemUpdated = itemDAO.updateAuctionInfo(
                             conn,
                             itemId,
+                            AuctionStatus.RUNNING,
                             startTime,
-                            endTime,
-                            AuctionStatus.RUNNING
+                            endTime
                     );
-                } else {
-                    auctionSaved = auctionDAO.insertAuction(
-                            conn,
-                            auctionId,
-                            itemId,
-                            startTime,
-                            endTime,
-                            AuctionStatus.RUNNING
-                    );
-                }
 
-                if (!auctionSaved) {
-                    throw new SQLException("Cannot save auction");
-                }
+                    if (!itemUpdated) {
+                        throw new SQLException("Cannot update item auction info");
+                    }
 
-                conn.commit();
+                    boolean auctionSaved;
 
-                //update RAM sau khi thành công
-                item.setStartTime(startTime);
-                item.setEndTime(endTime);
-                item.setStatus(AuctionStatus.RUNNING);
+                    if (auctionDAO.existsByItemId(conn, itemId)) {
+                        auctionSaved = auctionDAO.updateAuctionTimeAndStatus(
+                                conn,
+                                itemId,
+                                startTime,
+                                endTime,
+                                AuctionStatus.RUNNING
+                        );
+                    } else {
+                        auctionSaved = auctionDAO.insertAuction(
+                                conn,
+                                auctionId,
+                                itemId,
+                                startTime,
+                                endTime,
+                                AuctionStatus.RUNNING
+                        );
+                    }
 
-                Auction auction = auctionsById.get(itemId);
-                if (auction == null) {
-                    auction = new Auction(auctionId, item);
-                    auctionsById.put(itemId, auction);
-                }
-                auction.setStatus(AuctionStatus.RUNNING);
-                if (auctionSubject != null) {
-                    auctionSubject.notifyObservers(item, "AUCTION_STARTED");
+                    if (!auctionSaved) {
+                        throw new SQLException("Cannot save auction");
+                    }
+
+                    conn.commit();
+
+                    //update RAM sau khi thành công
+                    item.setStartTime(startTime);
+                    item.setEndTime(endTime);
+                    item.setStatus(AuctionStatus.RUNNING);
+
+                    Auction auction = auctionsById.get(itemId);
+                    if (auction == null) {
+                        auction = new Auction(auctionId, item);
+                        auctionsById.put(itemId, auction);
+                    }
+                    auction.setStatus(AuctionStatus.RUNNING);
+                    if (auctionSubject != null) {
+                        auctionSubject.notifyObservers(item, "AUCTION_STARTED");
+                    }
+
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw new IllegalStateException("Cannot start auction: " + e.getMessage(), e);
+                } finally {
+                    conn.setAutoCommit(true);
                 }
 
             } catch (SQLException e) {
-                conn.rollback();
-                throw new IllegalStateException("Cannot start auction: " + e.getMessage(), e);
-            } finally {
-                conn.setAutoCommit(true);
+                throw new IllegalStateException("Database error when starting auction", e);
             }
 
-        } catch (SQLException e) {
-            throw new IllegalStateException("Database error when starting auction", e);
+        } finally {
+            lock.unlock();
         }
+
     }
 
-    public synchronized void finishAuction(String itemId) {
+    private void finishAuctionLocked(String itemId) {
         Item item = requireItem(itemId);
 
         String winnerId = item.getHighestBidderId();
@@ -263,66 +281,116 @@ public class AuctionManager {
         }
     }
 
-    public synchronized Bid placeBid(String itemId, Bidder bidder, double bidAmount) {
-        if (bidder == null) {
-            throw new IllegalArgumentException("Bidder must not be null");
+    public void finishAuction(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
         }
 
-        Item item = requireItem(itemId);
-        if (item.getStatus() != AuctionStatus.RUNNING) {
-            throw new IllegalStateException("Auction is not running");
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
+
+        try {
+            finishAuctionLocked(itemId);
+        } finally {
+            lock.unlock();
         }
-        if (item.getEndTime() != null && LocalDateTime.now().isAfter(item.getEndTime())) {
-            finishAuction(itemId);
-            throw new IllegalStateException("Auction already finished");
+    }
+
+    public Bid placeBid(String itemId, Bidder bidder, double bidAmount) {
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
         }
-        if (bidAmount <= item.getCurrentPrice()) {
-            throw new IllegalArgumentException("Bid amount must be greater than current price");
-        }
 
-        String bidId = "Bid-" + UUID.randomUUID();
-        LocalDateTime bidTime = LocalDateTime.now();
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
 
-        try(Connection conn = Database.getInstance().getConnection()) {
-            conn.setAutoCommit(false);
-
-            try {
-                String auctionId = auctionDAO.findAuctionByItemId(conn, itemId);
-
-                if(auctionId == null) {
-                    throw  new SQLException("Cannot find auction for item:" + itemId);
-
-                }
-
-                boolean bidSaved = bidDAO.insertBid(conn, bidId, auctionId, itemId, bidder.getId(), bidAmount, bidTime);
-
-                if (!bidSaved ) {
-                    throw new SQLException("Cannot insert bid");
-                }
-
-                boolean itemUpdated = itemDAO.updateAfterBid(conn, itemId, BigDecimal.valueOf(bidAmount), bidder.getId());
-
-                if(!itemUpdated) {
-                    throw new SQLException("Cannot update item after bid");
-                }
-                
-                conn.commit();
-
-            }catch (SQLException e) {
-                conn.rollback();
-                throw new IllegalStateException("cannot place bid: " + e.getMessage(), e);
-            }finally {
-                conn.setAutoCommit(true);
+        try {
+            if (bidder == null) {
+                throw new IllegalArgumentException("Bidder must not be null");
             }
-        } catch(SQLException e) {
-            throw new IllegalStateException("Database error when palce bid", e);
-        }
 
-        Bid bid = new Bid(bidId, bidder, bidAmount, bidTime);
-        item.setCurrentPrice(bidAmount);
-        item.setHighestBidderId(bidder.getId());
-        item.addBid(bid);
-        return bid;
+            Item item = requireItem(itemId);
+
+            if (item.getStatus() != AuctionStatus.RUNNING) {
+                throw new IllegalStateException("Auction is not running");
+            }
+
+            if (item.getEndTime() != null && LocalDateTime.now().isAfter(item.getEndTime())) {
+                finishAuctionLocked(itemId);
+                throw new IllegalStateException("Auction already finished");
+            }
+
+            if (bidAmount <= item.getCurrentPrice()) {
+                throw new IllegalArgumentException("Bid amount must be greater than current price");
+            }
+
+            String bidId = "Bid-" + UUID.randomUUID();
+            LocalDateTime bidTime = LocalDateTime.now();
+
+            try (Connection conn = Database.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    String auctionId = auctionDAO.findAuctionByItemId(conn, itemId);
+
+                    if (auctionId == null) {
+                        throw new SQLException("Cannot find auction for item: " + itemId);
+                    }
+
+                    boolean itemUpdated = itemDAO.updateAfterBid(
+                            conn,
+                            itemId,
+                            BigDecimal.valueOf(bidAmount),
+                            bidder.getId()
+                    );
+
+                    if (!itemUpdated) {
+                        throw new IllegalStateException(
+                                "Bid failed because another bidder placed a higher or equal bid first, or auction is no longer running."
+                        );
+                    }
+
+                    boolean bidSaved = bidDAO.insertBid(
+                            conn,
+                            bidId,
+                            auctionId,
+                            itemId,
+                            bidder.getId(),
+                            bidAmount,
+                            bidTime
+                    );
+
+                    if (!bidSaved) {
+                        throw new SQLException("Cannot insert bid");
+                    }
+
+                    conn.commit();
+
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw new IllegalStateException("Cannot place bid: " + e.getMessage(), e);
+                } catch (RuntimeException e) {
+                    conn.rollback();
+                    throw e;
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+
+            } catch (SQLException e) {
+                throw new IllegalStateException("Database error when placing bid", e);
+            }
+
+            Bid bid = new Bid(bidId, bidder, bidAmount, bidTime);
+
+            item.setCurrentPrice(bidAmount);
+            item.setHighestBidderId(bidder.getId());
+            item.addBid(bid);
+
+            return bid;
+
+        } finally {
+            lock.unlock();
+        }
     }
 
     public synchronized List<Item> getAllItems() {
@@ -346,9 +414,17 @@ public class AuctionManager {
 
     synchronized void resetForTest() {
         auctionsById.clear();
+        itemLocks.clear();
         itemManager.resetForTest();
         authManager.resetForTest();
     }
+
+    // tìm khóa theo itemId nếu có rồi thì trả về khóa đó,
+    // nếu chưa có thì tạo new ReentrantLock, lưu vào map và trả về khóa mới tạo
+    private ReentrantLock lockForItem(String itemId) {
+        return itemLocks.computeIfAbsent(itemId, id -> new ReentrantLock());
+    }
+
 
     private void validateSeller(Seller seller) {
         if (seller == null) {
@@ -371,5 +447,13 @@ public class AuctionManager {
 
     public void setAuctionSubject(com.auction.system.server.observer.AuctionSubject subject) {
         this.auctionSubject = subject;
+    }
+
+    public ItemManager getItemManager() {
+        return this.itemManager; // itemManager là field trong AuctionManager
+    }
+
+    public AuthManager getAuthManager() {
+        return this.authManager; // authManager là field trong AuctionManager
     }
 }
