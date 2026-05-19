@@ -103,7 +103,7 @@ public class AuctionManager {
         }
 
         try {
-            itemManager.updateItem(item.getId(), item.getName(), item.getDescription(), item.getStartPrice());
+            itemManager.updateItem(item.getId(), item.getName(), item.getDescription(), item.getStartPrice(), item.getImagePath());
         } catch (ItemNotFoundException | InvalidDataException exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
         }
@@ -202,9 +202,6 @@ public class AuctionManager {
                         auctionsById.put(itemId, auction);
                     }
                     auction.setStatus(AuctionStatus.RUNNING);
-                    if (auctionSubject != null) {
-                        auctionSubject.notifyObservers(item, "AUCTION_STARTED");
-                    }
 
                 } catch (SQLException e) {
                     conn.rollback();

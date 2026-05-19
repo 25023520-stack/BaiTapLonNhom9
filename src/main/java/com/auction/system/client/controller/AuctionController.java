@@ -25,13 +25,17 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -73,6 +77,9 @@ public class AuctionController {
 
     @FXML
     private TextArea bidHistoryArea;
+
+    @FXML
+    private ImageView itemImageView;
 
     @FXML
     protected void initialize() {
@@ -140,6 +147,7 @@ public class AuctionController {
             countdownValue.setText("-");
             descriptionArea.clear();
             bidHistoryArea.clear();
+            setItemImage(null);
             updateAuctionActions(null);
             return;
         }
@@ -153,7 +161,27 @@ public class AuctionController {
         updateCountdown(item);
         descriptionArea.setText(item.getDescription());
         bidHistoryArea.setText(formatBidHistory(item));
+        setItemImage(item);
         updateAuctionActions(item);
+    }
+
+    private void setItemImage(Item item) {
+        if (itemImageView == null) {
+            return;
+        }
+
+        String imageBase64 = item == null ? null : item.getImageBase64();
+        if (imageBase64 == null || imageBase64.isBlank()) {
+            itemImageView.setImage(null);
+            return;
+        }
+
+        try {
+            byte[] bytes = Base64.getDecoder().decode(imageBase64);
+            itemImageView.setImage(new Image(new ByteArrayInputStream(bytes), 54, 54, true, true));
+        } catch (IllegalArgumentException exception) {
+            itemImageView.setImage(null);
+        }
     }
 
     private void startCountdownTimer() {
@@ -312,6 +340,11 @@ public class AuctionController {
 
         for (int i = 0; i < items.size(); i++) {
             if (Objects.equals(items.get(i).getId(), updatedItem.getId())) {
+                Item previousItem = items.get(i);
+                if ((updatedItem.getImageBase64() == null || updatedItem.getImageBase64().isBlank())
+                        && previousItem.getImageBase64() != null) {
+                    updatedItem.setImageBase64(previousItem.getImageBase64());
+                }
                 items.set(i, updatedItem);
 
                 Item selected = itemListView.getSelectionModel().getSelectedItem();
@@ -321,6 +354,13 @@ public class AuctionController {
                     updateAuctionActions(itemListView.getSelectionModel().getSelectedItem());
                 }
                 break;
+            }
+        }
+
+        if (findItemById(updatedItem.getId()) == null) {
+            items.add(updatedItem);
+            if (itemListView.getSelectionModel().getSelectedItem() == null) {
+                itemListView.getSelectionModel().select(updatedItem);
             }
         }
     }

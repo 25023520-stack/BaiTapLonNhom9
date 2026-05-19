@@ -82,9 +82,10 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             case REGISTER -> handleRegister(payload);
             case LIST_ITEMS -> handleListItems();
             case LIST_ITEMS_BY_SELLER -> send(auctionController.listItemsBySeller(payload, authenticatedUser));
-            case ADD_ITEM -> send(auctionController.addItem(payload, authenticatedUser));
-            case UPDATE_ITEM -> send(auctionController.updateItem(payload, authenticatedUser));
+            case ADD_ITEM -> handleItemMutation(payload, "ITEM_ADDED");
+            case UPDATE_ITEM -> handleItemMutation(payload, "ITEM_UPDATED");
             case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
+            case START_AUCTION -> handleItemMutation(payload, "AUCTION_STARTED");
             case BID -> handleBid(payload);
             case DISCONNECT -> {
                 send(ResponsePayload.ok("Disconnected"));
@@ -129,6 +130,23 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
 
     private void handleListItems() throws IOException {
         send(auctionController.listItems());
+    }
+
+    private void handleItemMutation(Payload payload, String eventType) throws IOException {
+        ResponsePayload response = switch (payload.getType()) {
+            case ADD_ITEM -> auctionController.addItem(payload, authenticatedUser);
+            case UPDATE_ITEM -> auctionController.updateItem(payload, authenticatedUser);
+            case START_AUCTION -> auctionController.startAuction(payload, authenticatedUser);
+            default -> ResponsePayload.error("Unsupported item mutation: " + payload.getType());
+        };
+
+        send(response);
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item item) {
+                auctionServer.notifyObservers(item, eventType);
+            }
+        }
     }
 
     private void handleBid(Payload payload) throws IOException {

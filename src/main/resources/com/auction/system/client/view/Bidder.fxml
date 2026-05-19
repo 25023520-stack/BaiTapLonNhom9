@@ -83,7 +83,7 @@
                                     <children>
                                         <StackPane minHeight="54.0" minWidth="54.0" prefHeight="54.0" prefWidth="54.0" styleClass="bidder-item-icon-box">
                                             <children>
-                                                <Label styleClass="bidder-item-icon" text="#" />
+                                                <ImageView fx:id="itemImageView" fitHeight="54.0" fitWidth="54.0" preserveRatio="true" />
                                             </children>
                                         </StackPane>
                                         <VBox spacing="4.0" HBox.hgrow="ALWAYS">

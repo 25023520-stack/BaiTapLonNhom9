@@ -7,6 +7,7 @@ import com.auction.system.common.payload.AddItemPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
@@ -25,12 +26,21 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -49,10 +59,16 @@ public class SellerController {
     @FXML private Button updateButton;
     @FXML private Button removeButton;
     @FXML private Button refreshButton;
+    @FXML private Button startAuctionButton;
+    @FXML private Button newItemButton;
+    @FXML private ImageView imagePreview;
+    @FXML private Label imageNameLabel;
+    @FXML private Spinner<Integer> durationHoursSpinner;
 
     private final ObservableList<Item> sellersItem = FXCollections.observableArrayList();
     private Seller currentSeller;
     private Timeline autoRefresh;
+    private File selectedImageFile;
 
     @FXML
     public void initialize() {
@@ -78,6 +94,9 @@ public class SellerController {
 
         updateButton.setDisable(true);
         removeButton.setDisable(true);
+        startAuctionButton.setDisable(true);
+        addButton.setDisable(false);
+        durationHoursSpinner.setValueFactory(new IntegerSpinnerValueFactory(1, 168, 1));
 
         refreshItems();
         autoRefresh = new Timeline(new KeyFrame(POLL_INTERVAL, e -> refreshItems()));
@@ -87,6 +106,11 @@ public class SellerController {
 
     @FXML
     private void setAddButton() {
+        if (sellerItemList.getSelectionModel().getSelectedItem() != null) {
+            showError("Dang chon san pham", "Bam 'San pham moi' truoc khi them san pham khac.");
+            return;
+        }
+
         String name = safeTrim(nameField.getText());
         String desc = safeTrim(descriptionField.getText());
         String priceText = safeTrim(startPriceField.getText());
@@ -105,7 +129,21 @@ public class SellerController {
 
         String newId = "ITEM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-        Payload req = new AddItemPayload(newId, name, desc, price, currentSeller.getId());
+        Payload req;
+        try {
+            req = new AddItemPayload(
+                    newId,
+                    name,
+                    desc,
+                    price,
+                    currentSeller.getId(),
+                    selectedImageFile == null ? null : selectedImageFile.getName(),
+                    selectedImageFile == null ? null : encodeImage(selectedImageFile)
+            );
+        } catch (IOException exception) {
+            showError("Lá»—i", "KhĂ´ng thá»ƒ Ä‘á»c file áº£nh.");
+            return;
+        }
 
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
@@ -145,6 +183,15 @@ public class SellerController {
         req.put("description", desc);
         req.put("startPrice", price);
         req.put("sellerId", currentSeller.getId());
+        try {
+            if (selectedImageFile != null) {
+                req.put("imageFileName", selectedImageFile.getName());
+                req.put("imageBase64", encodeImage(selectedImageFile));
+            }
+        } catch (IOException exception) {
+            showError("Loi", "Khong the doc file anh.");
+            return;
+        }
 
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
@@ -189,6 +236,59 @@ public class SellerController {
     private void onRefreshClick() { refreshItems(); }
 
     @FXML
+    private void clearFormForNew() {
+        clearForm();
+    }
+
+    @FXML
+    private void setStartAuctionButton() {
+        Item selected = sellerItemList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+
+        Payload req = new Payload(PayloadType.START_AUCTION);
+        int durationHours = durationHoursSpinner.getValue();
+        req.put("id", selected.getId());
+        req.put("startTime", LocalDateTime.now().toString());
+        req.put("endTime", LocalDateTime.now().plusHours(durationHours).toString());
+
+        runAsync(req, resp -> {
+            if (resp.isSuccess()) {
+                Item updatedItem = toItem(resp.getBody().get("item"));
+                if (updatedItem != null) {
+                    replaceOrAddSellerItem(updatedItem);
+                    sellerItemList.getSelectionModel().select(updatedItem);
+                    setChangeButton(updatedItem);
+                }
+                showInfo("Da mo phien dau gia: " + selected.getName());
+                refreshItems();
+            } else {
+                showError("Khong mo duoc phien", resp.getMessage());
+            }
+        });
+    }
+
+    @FXML
+    private void chooseImage() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Chon anh san pham");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(
+                "Image files", "*.png", "*.jpg", "*.jpeg"
+        ));
+
+        Stage stage = (Stage) nameField.getScene().getWindow();
+        File file = chooser.showOpenDialog(stage);
+        if (file == null) {
+            return;
+        }
+
+        selectedImageFile = file;
+        imageNameLabel.setText(file.getName());
+        imagePreview.setImage(new Image(file.toURI().toString(), 128, 96, true, true));
+    }
+
+    @FXML
     public void handleLogout(ActionEvent event) {
         if (autoRefresh != null) {
             autoRefresh.stop();
@@ -213,6 +313,20 @@ public class SellerController {
 
     private void refreshItems() {
         if (currentSeller == null) return;
+        Item selectedBeforeRefresh = sellerItemList.getSelectionModel().getSelectedItem();
+        String selectedId = selectedBeforeRefresh == null ? null : selectedBeforeRefresh.getId();
+        String draftName = nameField.getText();
+        String draftDescription = descriptionField.getText();
+        String draftStartPrice = startPriceField.getText();
+        File draftImageFile = selectedImageFile;
+        Image draftImage = imagePreview.getImage();
+        String draftImageName = imageNameLabel.getText();
+        boolean preserveDraft = selectedId == null
+                && (!safeTrim(draftName).isEmpty()
+                || !safeTrim(draftDescription).isEmpty()
+                || !safeTrim(draftStartPrice).isEmpty()
+                || draftImageFile != null);
+
         Payload req = new Payload(PayloadType.LIST_ITEMS_BY_SELLER);
         req.put("sellerId", currentSeller.getId());
 
@@ -225,6 +339,19 @@ public class SellerController {
                         .filter(i -> i != null)
                         .toList();
                 sellersItem.setAll(items);
+                if (selectedId != null) {
+                    sellersItem.stream()
+                            .filter(item -> selectedId.equals(item.getId()))
+                            .findFirst()
+                            .ifPresent(item -> sellerItemList.getSelectionModel().select(item));
+                } else if (preserveDraft) {
+                    nameField.setText(draftName);
+                    descriptionField.setText(draftDescription);
+                    startPriceField.setText(draftStartPrice);
+                    selectedImageFile = draftImageFile;
+                    imagePreview.setImage(draftImage);
+                    imageNameLabel.setText(draftImageName);
+                }
             }
         });
     }
@@ -236,13 +363,24 @@ public class SellerController {
             startPriceField.clear();
             updateButton.setDisable(true);
             removeButton.setDisable(true);
+            startAuctionButton.setDisable(true);
+            addButton.setDisable(false);
+            selectedImageFile = null;
+            imageNameLabel.setText("Chua chon anh");
+            imagePreview.setImage(null);
             return;
         }
         nameField.setText(picked.getName());
         descriptionField.setText(picked.getDescription());
         startPriceField.setText(String.valueOf(picked.getStartPrice()));
-        updateButton.setDisable(false);
-        removeButton.setDisable(false);
+        selectedImageFile = null;
+        imageNameLabel.setText(picked.getImagePath() == null ? "Chua co anh" : picked.getImagePath());
+        setImagePreviewFromBase64(picked.getImageBase64());
+        boolean running = picked.getStatus() == AuctionStatus.RUNNING;
+        addButton.setDisable(true);
+        updateButton.setDisable(running);
+        removeButton.setDisable(running);
+        startAuctionButton.setDisable(picked.getStatus() != AuctionStatus.OPEN);
     }
 
     private void runAsync(Payload req, Consumer<ResponsePayload> onResult) {
@@ -271,11 +409,42 @@ public class SellerController {
         catch (RuntimeException e) { return null; }
     }
 
+    private void replaceOrAddSellerItem(Item updatedItem) {
+        for (int i = 0; i < sellersItem.size(); i++) {
+            if (updatedItem.getId().equals(sellersItem.get(i).getId())) {
+                sellersItem.set(i, updatedItem);
+                return;
+            }
+        }
+        sellersItem.add(updatedItem);
+    }
+
     private void clearForm() {
         nameField.clear();
         descriptionField.clear();
         startPriceField.clear();
+        selectedImageFile = null;
+        imageNameLabel.setText("Chua chon anh");
+        imagePreview.setImage(null);
+        addButton.setDisable(false);
+        updateButton.setDisable(true);
+        removeButton.setDisable(true);
+        startAuctionButton.setDisable(true);
         sellerItemList.getSelectionModel().clearSelection();
+    }
+
+    private String encodeImage(File file) throws IOException {
+        return Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
+    }
+
+    private void setImagePreviewFromBase64(String imageBase64) {
+        if (imageBase64 == null || imageBase64.isBlank()) {
+            imagePreview.setImage(null);
+            return;
+        }
+
+        byte[] bytes = Base64.getDecoder().decode(imageBase64);
+        imagePreview.setImage(new Image(new ByteArrayInputStream(bytes), 128, 96, true, true));
     }
 
     private String safeTrim(String s) { return s == null ? "" : s.trim(); }

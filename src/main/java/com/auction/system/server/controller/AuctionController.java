@@ -10,14 +10,20 @@ import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 import com.auction.system.server.manager.AuctionManager;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 
 public class AuctionController {
     private final AuctionManager auctionManager = AuctionManager.getInstance();
+    private static final Path ITEM_UPLOAD_DIR = Path.of("data", "uploads", "items");
 
     public ResponsePayload listItems() {
         ResponsePayload response = ResponsePayload.ok("Items retrieved");
-        response.put("items", auctionManager.getAllItems());
+        response.put("items", withImageData(auctionManager.getAllItems()));
         return response;
     }
 
@@ -34,8 +40,11 @@ public class AuctionController {
         }
         try {
             Item item = new Item(id, name, description, startPrice, seller.getId());
+            String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
+            item.setImagePath(imagePath);
             auctionManager.addItem(item, seller);
             ResponsePayload resp = ResponsePayload.ok("Item added successfully");
+            attachImageData(item);
             resp.put("item", item);
             return resp;
         } catch (Exception e) {
@@ -56,9 +65,17 @@ public class AuctionController {
         }
         try {
             Item item = new Item(id, name, description, startPrice, seller.getId());
+            String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
+            if (imagePath != null) {
+                item.setImagePath(imagePath);
+            } else {
+                auctionManager.findItemById(id).ifPresent(existing -> item.setImagePath(existing.getImagePath()));
+            }
             auctionManager.updateItem(item, seller);
+            Item updatedItem = auctionManager.findItemById(id).orElse(item);
+            attachImageData(updatedItem);
             ResponsePayload resp = ResponsePayload.ok("Item updated successfully");
-            resp.put("item", item);
+            resp.put("item", updatedItem);
             return resp;
         } catch (Exception e) {
             return ResponsePayload.error(e.getMessage());
@@ -81,6 +98,37 @@ public class AuctionController {
         }
     }
 
+    public ResponsePayload startAuction(Payload payload, User user) {
+        if (!(user instanceof Seller seller)) {
+            return ResponsePayload.error("Only sellers can start auctions");
+        }
+
+        String itemId = payload.getString("id");
+        String startTimeText = payload.getString("startTime");
+        String endTimeText = payload.getString("endTime");
+        if (itemId == null || startTimeText == null || endTimeText == null) {
+            return ResponsePayload.error("id, startTime, endTime are required");
+        }
+
+        try {
+            Item item = auctionManager.findItemById(itemId)
+                    .orElseThrow(() -> new IllegalArgumentException("Item does not exist"));
+            if (!seller.getId().equals(item.getSellerId())) {
+                return ResponsePayload.error("Seller can only start their own item auction");
+            }
+
+            auctionManager.startAuction(itemId, LocalDateTime.parse(startTimeText), LocalDateTime.parse(endTimeText));
+            Item updatedItem = auctionManager.findItemById(itemId).orElse(item);
+            attachImageData(updatedItem);
+
+            ResponsePayload response = ResponsePayload.ok("Auction started successfully");
+            response.put("item", updatedItem);
+            return response;
+        } catch (RuntimeException exception) {
+            return ResponsePayload.error(exception.getMessage());
+        }
+    }
+
     public ResponsePayload listItemsBySeller(Payload payload, User user) {
         if (!(user instanceof Seller)) {
             return ResponsePayload.error("Only sellers can list their items");
@@ -93,7 +141,7 @@ public class AuctionController {
                 .filter(item -> sellerId.equals(item.getSellerId()))
                 .toList();
         ResponsePayload resp = ResponsePayload.ok("Items retrieved");
-        resp.put("items", items);
+        resp.put("items", withImageData(items));
         return resp;
     }
 
@@ -123,10 +171,60 @@ public class AuctionController {
             response.put("bid", bid);
             response.put("itemId", itemId);
             response.put("amount", bid.getAmount());
-            auctionManager.findItemById(itemId).ifPresent(item -> response.put("item", item));
+            auctionManager.findItemById(itemId).ifPresent(item -> {
+                attachImageData(item);
+                response.put("item", item);
+            });
             return response;
         } catch (RuntimeException exception) {
             return ResponsePayload.error(exception.getMessage());
         }
+    }
+
+    private List<Item> withImageData(List<Item> items) {
+        items.forEach(this::attachImageData);
+        return items;
+    }
+
+    private void attachImageData(Item item) {
+        if (item == null || item.getImagePath() == null || item.getImagePath().isBlank()) {
+            return;
+        }
+
+        try {
+            Path imagePath = Path.of(item.getImagePath());
+            if (Files.exists(imagePath)) {
+                item.setImageBase64(Base64.getEncoder().encodeToString(Files.readAllBytes(imagePath)));
+            }
+        } catch (IOException ignored) {
+            item.setImageBase64(null);
+        }
+    }
+
+    private String saveItemImage(String itemId, String imageFileName, String imageBase64) throws IOException {
+        if (imageBase64 == null || imageBase64.isBlank()) {
+            return null;
+        }
+
+        Files.createDirectories(ITEM_UPLOAD_DIR);
+        String extension = getSafeExtension(imageFileName);
+        Path target = ITEM_UPLOAD_DIR.resolve(itemId + extension);
+        Files.write(target, Base64.getDecoder().decode(imageBase64));
+        return target.toString();
+    }
+
+    private String getSafeExtension(String fileName) {
+        if (fileName == null) {
+            return ".jpg";
+        }
+
+        String normalized = fileName.toLowerCase();
+        if (normalized.endsWith(".png")) {
+            return ".png";
+        }
+        if (normalized.endsWith(".jpeg")) {
+            return ".jpeg";
+        }
+        return ".jpg";
     }
 }

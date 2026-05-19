@@ -13,6 +13,8 @@ import com.auction.system.model.auction.AuctionStatus;
 public class Item implements Serializable {
     private String id;
     private String name, description;
+    private String imagePath;
+    private String imageBase64;
     private double startPrice, currentPrice;
     private AuctionStatus status;
     private String sellerId;
@@ -70,6 +72,22 @@ public class Item implements Serializable {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+    }
+
+    public String getImageBase64() {
+        return imageBase64;
+    }
+
+    public void setImageBase64(String imageBase64) {
+        this.imageBase64 = imageBase64;
     }
 
     public String getName() {

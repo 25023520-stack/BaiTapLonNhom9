@@ -13,4 +13,11 @@ public class AddItemPayload extends Payload {
         put("startPrice", startPrice);
         put("sellerId", sellerId);
     }
+
+    public AddItemPayload(String id, String name, String description, double startPrice, String sellerId,
+                          String imageFileName, String imageBase64) {
+        this(id, name, description, startPrice, sellerId);
+        put("imageFileName", imageFileName);
+        put("imageBase64", imageBase64);
+    }
 }

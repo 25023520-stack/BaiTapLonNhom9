@@ -37,7 +37,7 @@ public class ItemDAO extends BaseDAO {
             pstm.setString(1, item.getId());
             pstm.setString(2, item.getName());
             pstm.setString(3, item.getDescription());
-            pstm.setString(4, null);
+            pstm.setString(4, item.getImagePath());
 
             pstm.setBigDecimal(5, java.math.BigDecimal.valueOf(item.getStartPrice()));
             pstm.setBigDecimal(6, java.math.BigDecimal.valueOf(currentPrice));
@@ -126,6 +126,7 @@ public class ItemDAO extends BaseDAO {
                 status
         );
         item.setSellerId(rs.getString("seller_id"));
+        item.setImagePath(rs.getString("image_path"));
         item.setHighestBidderId(rs.getString("highest_bidder_id"));
         item.setStartTime(toLocalDateTime(rs.getTimestamp("start_time")));
         item.setEndTime(toLocalDateTime(rs.getTimestamp("end_time")));
@@ -136,7 +137,7 @@ public class ItemDAO extends BaseDAO {
     public boolean updateItem(Item item) {
         String sql = """
             UPDATE items
-            SET name = ?, description = ?, start_price = ?, current_price = ?
+            SET name = ?, description = ?, image_path = ?, start_price = ?, current_price = ?
             WHERE id = ?
             """;
 
@@ -151,9 +152,10 @@ public class ItemDAO extends BaseDAO {
             // Gán các giá trị vào PreparedStatement
             pstm.setString(1, item.getName());
             pstm.setString(2, item.getDescription());
-            pstm.setBigDecimal(3, BigDecimal.valueOf(item.getStartPrice()));
-            pstm.setBigDecimal(4, BigDecimal.valueOf(currentPrice));
-            pstm.setString(5, item.getId());  // Sử dụng item ID để tìm item cần cập nhật
+            pstm.setString(3, item.getImagePath());
+            pstm.setBigDecimal(4, BigDecimal.valueOf(item.getStartPrice()));
+            pstm.setBigDecimal(5, BigDecimal.valueOf(currentPrice));
+            pstm.setString(6, item.getId());  // Sử dụng item ID để tìm item cần cập nhật
 
             // Thực thi câu SQL UPDATE
             return pstm.executeUpdate() > 0;

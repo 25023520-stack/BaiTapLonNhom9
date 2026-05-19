@@ -62,6 +62,11 @@ public class ItemManager {
 
     public synchronized void updateItem(String itemId, String name, String description, double startPrice)
             throws ItemNotFoundException, InvalidDataException {
+        updateItem(itemId, name, description, startPrice, null);
+    }
+
+    public synchronized void updateItem(String itemId, String name, String description, double startPrice, String imagePath)
+            throws ItemNotFoundException, InvalidDataException {
         Item existingItem = findItemById(itemId);
 
         if (isBlank(name)) {
@@ -76,11 +81,15 @@ public class ItemManager {
 
         String oldName = existingItem.getName();
         String oldDescription = existingItem.getDescription();
+        String oldImagePath = existingItem.getImagePath();
         double oldStartPrice = existingItem.getStartPrice();
         double oldCurrentPrice = existingItem.getCurrentPrice();
 
         existingItem.setName(name.trim());
         existingItem.setDescription(description.trim());
+        if (imagePath != null) {
+            existingItem.setImagePath(imagePath);
+        }
         existingItem.setStartPrice(startPrice);
         existingItem.setCurrentPrice(startPrice);
 
@@ -89,6 +98,7 @@ public class ItemManager {
         if (!updated) {
             existingItem.setName(oldName);
             existingItem.setDescription(oldDescription);
+            existingItem.setImagePath(oldImagePath);
             existingItem.setStartPrice(oldStartPrice);
             existingItem.setCurrentPrice(oldCurrentPrice);
 

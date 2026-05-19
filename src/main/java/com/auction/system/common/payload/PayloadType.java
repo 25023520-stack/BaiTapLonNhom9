@@ -8,6 +8,7 @@ public enum PayloadType {
     ADD_ITEM,
     UPDATE_ITEM,
     REMOVE_ITEM,
+    START_AUCTION,
     BID,
     RESPONSE,
     UPDATE_AUCTION,

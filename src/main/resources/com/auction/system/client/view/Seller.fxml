@@ -3,6 +3,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
@@ -14,12 +15,10 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.shape.Rectangle?>
 
-<BorderPane prefHeight="700.0" prefWidth="1120.0" styleClass="main-background" stylesheets="@Styles.css"
-            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.auction.system.client.controller.SellerController">
+<BorderPane prefHeight="700.0" prefWidth="1120.0" styleClass="main-background" stylesheets="@Styles.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.SellerController">
 
     <top>
-        <VBox styleClass="seller-header" spacing="0.0">
+        <VBox spacing="0.0" styleClass="seller-header">
             <children>
                 <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="seller-header-content">
                     <children>
@@ -58,9 +57,9 @@
                         <Label styleClass="seller-section-subtitle" text="Chọn một sản phẩm để sửa thông tin hoặc xóa khỏi danh sách." wrapText="true" />
                     </children>
                 </VBox>
-                <Button fx:id="refreshButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false"
-                        onAction="#onRefreshClick" styleClass="secondary-button" text="Làm mới danh sách" />
+                <Button fx:id="refreshButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#onRefreshClick" styleClass="secondary-button" text="Làm mới danh sách" />
                 <ListView fx:id="sellerItemList" styleClass="auction-list-view" VBox.vgrow="ALWAYS" />
+                    <Button fx:id="newItemButton" mnemonicParsing="false" onAction="#clearFormForNew" styleClass="secondary-button" text="Sản phẩm mới" />
             </children>
         </VBox>
     </left>
@@ -96,7 +95,7 @@
                                         <Label styleClass="input-label" text="Giá khởi điểm" />
                                         <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
                                             <children>
-                                                <Label styleClass="input-icon" text="/$" />
+                                                <Label styleClass="input-icon" text="VNĐ" />
                                                 <TextField fx:id="startPriceField" promptText="Nhập giá khởi điểm" styleClass="input-field" HBox.hgrow="ALWAYS" />
                                             </children>
                                         </HBox>
@@ -108,15 +107,36 @@
                         <VBox spacing="8.0" VBox.vgrow="ALWAYS">
                             <children>
                                 <Label styleClass="input-label" text="Mô tả" />
-                                <TextArea fx:id="descriptionField" prefRowCount="8" promptText="Nhập mô tả sản phẩm"
-                                          styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
+                                <TextArea fx:id="descriptionField" prefRowCount="8" promptText="Nhập mô tả sản phẩm" styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="14.0">
+                            <children>
+                                <ImageView fx:id="imagePreview" fitHeight="96.0" fitWidth="128.0" preserveRatio="true" styleClass="seller-image-preview" />
+                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="input-label" text="Ảnh sản phẩm" />
+                                        <Label fx:id="imageNameLabel" styleClass="seller-page-subtitle" text="Chưa chọn ảnh" wrapText="true" />
+                                        <Button mnemonicParsing="false" onAction="#chooseImage" styleClass="secondary-button" text="Chọn ảnh" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="14.0">
+                            <children>
+                                <Label styleClass="input-label" text="Thời lượng phiên" />
+                                <Spinner fx:id="durationHoursSpinner" editable="true" prefWidth="120.0" styleClass="combo-field" />
+                                <Label styleClass="seller-page-subtitle" text="giờ" />
+                            </children>
+                        </HBox>
 
                         <HBox alignment="CENTER_RIGHT" spacing="10.0">
                             <children>
                                 <Button fx:id="removeButton" mnemonicParsing="false" onAction="#setRemoveButton" styleClass="danger-button" text="Xóa" />
                                 <Button fx:id="updateButton" mnemonicParsing="false" onAction="#setUpdateButton" styleClass="secondary-button" text="Cập nhật" />
+                                <Button fx:id="startAuctionButton" mnemonicParsing="false" onAction="#setStartAuctionButton" styleClass="secondary-button" text="Mở phiên" />
                                 <Button fx:id="addButton" defaultButton="true" mnemonicParsing="false" onAction="#setAddButton" styleClass="primary-button" text="Thêm sản phẩm" />
                             </children>
                         </HBox>
