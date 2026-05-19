@@ -3,6 +3,7 @@ package com.auction.system.client.controller;
 import com.auction.system.client.context.AppContext;
 import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.json.GsonProvider;
+import com.auction.system.common.payload.AddItemPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
@@ -104,12 +105,7 @@ public class SellerController {
 
         String newId = "ITEM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
-        Payload req = new Payload(PayloadType.ADD_ITEM);
-        req.put("id", newId);
-        req.put("name", name);
-        req.put("description", desc);
-        req.put("startPrice", price);
-        req.put("sellerId", currentSeller.getId());
+        Payload req = new AddItemPayload(newId, name, desc, price, currentSeller.getId());
 
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
