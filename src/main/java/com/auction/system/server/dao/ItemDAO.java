@@ -213,18 +213,23 @@ public class ItemDAO extends BaseDAO {
     public boolean updateAfterBid(
             Connection conn,
             String itemId,
-            BigDecimal currentPrice,
+            BigDecimal newPrice,
             String highestBidderId
     ) throws SQLException {
         String sql = """
-                UPDATE items SET 
-                current_price = ?, highest_bidder_id = ? WHERE id = ?
-                """;
+            UPDATE items SET 
+            current_price = ?, highest_bidder_id = ?
+            WHERE id = ?
+            AND current_price < ?
+            AND status = 'RUNNING'
+            AND end_time > NOW()
+            """;
 
-        try(PreparedStatement pstm = conn.prepareStatement(sql)) {
-            pstm.setBigDecimal(1, currentPrice);
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setBigDecimal(1, newPrice);
             pstm.setString(2, highestBidderId);
             pstm.setString(3, itemId);
+            pstm.setBigDecimal(4, newPrice);
 
             return pstm.executeUpdate() > 0;
         }

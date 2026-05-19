@@ -9,10 +9,6 @@ import java.util.Objects;
 public class Seller extends User {
     private final List<Item> itemForSale = new ArrayList<>();
 
-    public Seller(int id, String fullName, String username, String email, String passWord) {
-        super();
-    }
-
     public Seller(String id, String fullName, String userName,String email, String passWord) {
         super(id, fullName, userName, email, passWord);
 
