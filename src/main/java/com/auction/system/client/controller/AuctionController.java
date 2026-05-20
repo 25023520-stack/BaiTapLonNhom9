@@ -337,6 +337,22 @@ public class AuctionController {
         if (updatedItem == null) {
             return;
         }
+        String eventType = String.valueOf(update.getBody().get("eventType"));
+
+        if ("ITEM_ADDED".equals(eventType)) {
+            boolean exists = items.stream().anyMatch(i -> Objects.equals(i.getId(), updatedItem.getId()));
+            if (!exists) items.add(updatedItem);
+            return;
+        }
+
+        if ("ITEM_REMOVED".equals(eventType)) {
+            items.removeIf(i -> Objects.equals(i.getId(), updatedItem.getId()));
+            Item selected = itemListView.getSelectionModel().getSelectedItem();
+            if (selected != null && Objects.equals(selected.getId(), updatedItem.getId())) {
+                showItemDetails(null);
+            }
+            return;
+        }
 
         for (int i = 0; i < items.size(); i++) {
             if (Objects.equals(items.get(i).getId(), updatedItem.getId())) {

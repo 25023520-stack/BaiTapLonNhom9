@@ -86,6 +86,9 @@ public class AuctionManager {
         } catch (InvalidDataException exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
         }
+        if (auctionSubject != null) {
+            auctionSubject.notifyObservers(item, "ITEM_ADDED");
+        }
     }
 
     public synchronized void updateItem(Item item, Seller seller) {
@@ -107,6 +110,10 @@ public class AuctionManager {
         } catch (ItemNotFoundException | InvalidDataException exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
         }
+        Item updatedItem = requireItem(item.getId());
+        if (auctionSubject != null) {
+            auctionSubject.notifyObservers(updatedItem, "ITEM_UPDATED");
+        }
     }
 
     public synchronized void removeItem(String itemId, Seller seller) {
@@ -118,12 +125,17 @@ public class AuctionManager {
         if (!existingItem.getBidHistory().isEmpty()) {
             throw new IllegalStateException("Cannot remove item that already has bids");
         }
+        Item itemToNotify = existingItem;
+
 
         try {
             itemManager.deleteItem(itemId);
             auctionsById.remove(itemId);
         } catch (ItemNotFoundException exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
+        }
+        if (auctionSubject != null) {
+            auctionSubject.notifyObservers(itemToNotify, "ITEM_REMOVED");
         }
     }
 
