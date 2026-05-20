@@ -27,6 +27,7 @@ public class AuthController {
             response.put("user", user.get());
             response.put("role", user.get().getRole());
             response.put("fullName", user.get().getFullName());
+            response.put("approved", user.get().isApproved());
             return response;
         } catch (IllegalArgumentException exception) {
             return ResponsePayload.error(exception.getMessage());
@@ -45,7 +46,10 @@ public class AuthController {
                     payload.getString("confirmPassword"),
                     payload.getString("role")
             );
-            ResponsePayload response = ResponsePayload.ok("Dang ky thanh cong. Hay dang nhap.");
+            String message = "SELLER".equalsIgnoreCase(user.getRole())
+                    ? "Dang ky seller thanh cong. Vui long cho admin duyet truoc khi quan ly san pham."
+                    : "Dang ky thanh cong. Hay dang nhap.";
+            ResponsePayload response = ResponsePayload.ok(message);
             response.put("user", user);
             return response;
         } catch (IllegalArgumentException exception) {

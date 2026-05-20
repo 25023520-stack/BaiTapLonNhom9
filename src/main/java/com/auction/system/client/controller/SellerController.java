@@ -61,8 +61,11 @@ public class SellerController {
     @FXML private Button refreshButton;
     @FXML private Button startAuctionButton;
     @FXML private Button newItemButton;
+    @FXML private Button chooseImageButton;
     @FXML private ImageView imagePreview;
     @FXML private Label imageNameLabel;
+    @FXML private Label accountStatusLabel;
+    @FXML private Label auctionApprovalLabel;
     @FXML private Spinner<Integer> durationHoursSpinner;
 
     private final ObservableList<Item> sellersItem = FXCollections.observableArrayList();
@@ -85,7 +88,7 @@ public class SellerController {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? null
                         : String.format("%s  —  %,.0f ₫  —  %s",
-                        item.getName(), item.getStartPrice(), item.getStatus()));
+                        item.getName(), item.getStartPrice(), describeAuctionState(item)));
             }
         });
 
@@ -97,6 +100,8 @@ public class SellerController {
         startAuctionButton.setDisable(true);
         addButton.setDisable(false);
         durationHoursSpinner.setValueFactory(new IntegerSpinnerValueFactory(1, 168, 1));
+        updateSellerApprovalState();
+        updateAuctionApprovalLabel(null);
 
         refreshItems();
         autoRefresh = new Timeline(new KeyFrame(POLL_INTERVAL, e -> refreshItems()));
@@ -141,7 +146,7 @@ public class SellerController {
                     selectedImageFile == null ? null : encodeImage(selectedImageFile)
             );
         } catch (IOException exception) {
-            showError("Lá»—i", "KhĂ´ng thá»ƒ Ä‘á»c file áº£nh.");
+            showError("Lỗi", "Không thể đọc file ảnh.");
             return;
         }
 
@@ -261,7 +266,7 @@ public class SellerController {
                     sellerItemList.getSelectionModel().select(updatedItem);
                     setChangeButton(updatedItem);
                 }
-                showInfo("Da mo phien dau gia: " + selected.getName());
+                showInfo("Da gui yeu cau mo phien cho admin: " + selected.getName());
                 refreshItems();
             } else {
                 showError("Khong mo duoc phien", resp.getMessage());
@@ -332,6 +337,11 @@ public class SellerController {
 
         runAsync(req, resp -> {
             if (!resp.isSuccess()) return;
+            Boolean approved = resp.getBoolean("approved");
+            if (approved != null) {
+                currentSeller.setApproved(approved);
+                updateSellerApprovalState();
+            }
             Object rawItems = resp.getBody().get("items");
             if (rawItems instanceof List<?> list) {
                 List<Item> items = list.stream()
@@ -343,14 +353,21 @@ public class SellerController {
                     sellersItem.stream()
                             .filter(item -> selectedId.equals(item.getId()))
                             .findFirst()
-                            .ifPresent(item -> sellerItemList.getSelectionModel().select(item));
+                            .ifPresentOrElse(
+                                    item -> sellerItemList.getSelectionModel().select(item),
+                                    () -> setChangeButton(null)
+                            );
                 } else if (preserveDraft) {
-                    nameField.setText(draftName);
-                    descriptionField.setText(draftDescription);
-                    startPriceField.setText(draftStartPrice);
+                    if (!nameField.isFocused()) nameField.setText(draftName);
+                    if (!descriptionField.isFocused()) descriptionField.setText(draftDescription);
+                    if (!startPriceField.isFocused()) startPriceField.setText(draftStartPrice);
                     selectedImageFile = draftImageFile;
                     imagePreview.setImage(draftImage);
                     imageNameLabel.setText(draftImageName);
+                    updateEditorState(null);
+                    updateAuctionApprovalLabel(null);
+                } else {
+                    setChangeButton(sellerItemList.getSelectionModel().getSelectedItem());
                 }
             }
         });
@@ -361,13 +378,11 @@ public class SellerController {
             nameField.clear();
             descriptionField.clear();
             startPriceField.clear();
-            updateButton.setDisable(true);
-            removeButton.setDisable(true);
-            startAuctionButton.setDisable(true);
-            addButton.setDisable(false);
             selectedImageFile = null;
             imageNameLabel.setText("Chua chon anh");
             imagePreview.setImage(null);
+            updateEditorState(null);
+            updateAuctionApprovalLabel(null);
             return;
         }
         nameField.setText(picked.getName());
@@ -376,11 +391,8 @@ public class SellerController {
         selectedImageFile = null;
         imageNameLabel.setText(picked.getImagePath() == null ? "Chua co anh" : picked.getImagePath());
         setImagePreviewFromBase64(picked.getImageBase64());
-        boolean running = picked.getStatus() == AuctionStatus.RUNNING;
-        addButton.setDisable(true);
-        updateButton.setDisable(running);
-        removeButton.setDisable(running);
-        startAuctionButton.setDisable(picked.getStatus() != AuctionStatus.OPEN);
+        updateEditorState(picked);
+        updateAuctionApprovalLabel(picked);
     }
 
     private void runAsync(Payload req, Consumer<ResponsePayload> onResult) {
@@ -395,7 +407,11 @@ public class SellerController {
                 Platform.runLater(() -> onResult.accept(resp));
             } catch (IOException ex) {
                 logger.error("Network error", ex);
-                Platform.runLater(() -> showError("Lỗi mạng", ex.getMessage()));
+                Platform.runLater(() -> {
+                    if (autoRefresh != null) autoRefresh.stop();
+                    Stage stage = (Stage) sellerItemList.getScene().getWindow();
+                    AppContext.goToServerDown(stage);
+                });
             }
         });
         t.setDaemon(true);
@@ -426,11 +442,9 @@ public class SellerController {
         selectedImageFile = null;
         imageNameLabel.setText("Chua chon anh");
         imagePreview.setImage(null);
-        addButton.setDisable(false);
-        updateButton.setDisable(true);
-        removeButton.setDisable(true);
-        startAuctionButton.setDisable(true);
         sellerItemList.getSelectionModel().clearSelection();
+        updateEditorState(null);
+        updateAuctionApprovalLabel(null);
     }
 
     private String encodeImage(File file) throws IOException {
@@ -445,6 +459,68 @@ public class SellerController {
 
         byte[] bytes = Base64.getDecoder().decode(imageBase64);
         imagePreview.setImage(new Image(new ByteArrayInputStream(bytes), 128, 96, true, true));
+    }
+
+    private void updateSellerApprovalState() {
+        boolean approved = currentSeller != null && currentSeller.isApproved();
+        if (accountStatusLabel != null) {
+            accountStatusLabel.setText(approved
+                    ? "Tai khoan seller da duoc duyet. Ban co the tao san pham va gui yeu cau mo phien."
+                    : "Tai khoan seller dang cho admin duyet. Chuc nang quan ly san pham tam thoi bi khoa.");
+        }
+        updateEditorState(sellerItemList == null ? null : sellerItemList.getSelectionModel().getSelectedItem());
+    }
+
+    private void updateEditorState(Item picked) {
+        boolean approved = currentSeller != null && currentSeller.isApproved();
+        boolean hasSelection = picked != null;
+        boolean running = hasSelection && picked.getStatus() == AuctionStatus.RUNNING;
+        boolean pendingApproval = hasPendingAuctionApproval(picked);
+
+        nameField.setDisable(!approved);
+        descriptionField.setDisable(!approved);
+        startPriceField.setDisable(!approved);
+        durationHoursSpinner.setDisable(!approved);
+        newItemButton.setDisable(!approved);
+        chooseImageButton.setDisable(!approved);
+        addButton.setDisable(!approved || hasSelection);
+        updateButton.setDisable(!approved || !hasSelection || running || pendingApproval);
+        removeButton.setDisable(!approved || !hasSelection || running || pendingApproval);
+        startAuctionButton.setDisable(!approved || !hasSelection || picked.getStatus() != AuctionStatus.OPEN || pendingApproval);
+    }
+
+    private void updateAuctionApprovalLabel(Item item) {
+        if (auctionApprovalLabel == null) {
+            return;
+        }
+
+        auctionApprovalLabel.setText(item == null
+                ? "Trang thai phien: Chua chon san pham."
+                : "Trang thai phien: " + describeAuctionState(item));
+    }
+
+    private boolean hasPendingAuctionApproval(Item item) {
+        return item != null
+                && !item.isAuctionApproved()
+                && item.getStatus() == AuctionStatus.OPEN
+                && item.getStartTime() != null
+                && item.getEndTime() != null;
+    }
+
+    private String describeAuctionState(Item item) {
+        if (item == null) {
+            return "Chua co du lieu";
+        }
+        if (item.getStatus() == AuctionStatus.RUNNING) {
+            return "Dang mo";
+        }
+        if (hasPendingAuctionApproval(item)) {
+            return "Cho admin duyet";
+        }
+        if (item.getStatus() == AuctionStatus.FINISHED) {
+            return "Da ket thuc";
+        }
+        return "Chua gui duyet";
     }
 
     private String safeTrim(String s) { return s == null ? "" : s.trim(); }

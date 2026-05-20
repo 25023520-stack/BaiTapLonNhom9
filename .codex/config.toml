@@ -1,0 +1,9 @@
+# Repo-local Codex config. This is loaded only when the project is trusted.
+default_permissions = "workspace"
+
+[permissions.workspace.filesystem]
+":minimal" = "read"
+":tmpdir" = "write"
+
+[permissions.workspace.filesystem.":project_roots"]
+"." = "write"

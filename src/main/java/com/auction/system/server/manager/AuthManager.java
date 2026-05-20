@@ -33,13 +33,16 @@ public class AuthManager {
             String role
     ) {
         validateRegisterInput(fullName, username, email, password, confirmPassword, role);
+        String normalizedRole = role.trim().toUpperCase();
+        String normalizedUsername = username.trim();
+        String normalizedEmail = normalizeEmailForRole(normalizedRole, normalizedUsername, email);
 
         String userId = generateUserId(role);
         User user = createUserByRole(
                 userId,
                 fullName.trim(),
-                username.trim(),
-                email.trim(),
+                normalizedUsername,
+                normalizedEmail,
                 password,
                 role
         );
@@ -63,16 +66,18 @@ public class AuthManager {
         if (isBlank(user.getUserName())) {
             throw new IllegalArgumentException("Username must not be blank");
         }
-        if (isBlank(user.getEmail())) {
+        String normalizedEmail = normalizeEmailForExistingUser(user);
+        if (!(user instanceof Admin) && isBlank(normalizedEmail)) {
             throw new IllegalArgumentException("Email must not be blank");
         }
+        user.setEmail(normalizedEmail);
         if(userDAO.findById(user.getId()) != null) {
             return;
         }
         if(userDAO.existsByUsername(user.getUserName())) {
             return;
         }
-        if(userDAO.existsByEmail(user.getEmail())) {
+        if(!isBlank(user.getEmail()) && userDAO.existsByEmail(user.getEmail())) {
             return;
         }
         String insertedId = userDAO.insertUser(user);
@@ -125,13 +130,14 @@ public class AuthManager {
             String confirmPassword,
             String role
     ) {
+        String normalizedRole = role == null ? "" : role.trim().toUpperCase();
         if (isBlank(fullName)) {
             throw new IllegalArgumentException("Full name must not be blank");
         }
         if (isBlank(username)) {
             throw new IllegalArgumentException("Username must not be blank");
         }
-        if (isBlank(email)) {
+        if (!"ADMIN".equals(normalizedRole) && isBlank(email)) {
             throw new IllegalArgumentException("Email must not be blank");
         }
         if (isBlank(password)) {
@@ -143,7 +149,7 @@ public class AuthManager {
         if (existsByUsername(username)) {
             throw new IllegalArgumentException("Username already exists");
         }
-        if (existsByEmail(email)) {
+        if (!"ADMIN".equals(normalizedRole) && existsByEmail(email)) {
             throw new IllegalArgumentException("Email already exists");
         }
         if (isBlank(role)) {
@@ -158,12 +164,34 @@ public class AuthManager {
     }
 
     private User createUserByRole(String id, String fullName, String username, String email, String password, String role) {
-        return switch (role.trim().toUpperCase()) {
+        User user = switch (role.trim().toUpperCase()) {
             case "ADMIN" -> new Admin(id, fullName, username, email, password);
             case "SELLER" -> new Seller(id, fullName, username, email, password);
             case "BIDDER" -> new Bidder(id, fullName, username, email, password);
             default -> throw new IllegalArgumentException("Role must be ADMIN, SELLER, or BIDDER");
         };
+        if (user instanceof Seller) {
+            user.setApproved(false);
+        }
+        return user;
+    }
+
+    private String normalizeEmailForExistingUser(User user) {
+        if (user instanceof Admin) {
+            return normalizeEmailForRole(user.getRole(), user.getUserName(), user.getEmail());
+        }
+        return user.getEmail() == null ? null : user.getEmail().trim();
+    }
+
+    private String normalizeEmailForRole(String role, String username, String email) {
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            if (!isBlank(email)) {
+                return email.trim();
+            }
+            String safeUsername = isBlank(username) ? "admin" : username.trim().toLowerCase();
+            return safeUsername + "@bootstrap.local";
+        }
+        return email == null ? null : email.trim();
     }
 
     private String generateUserId(String role) {

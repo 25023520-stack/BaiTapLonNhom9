@@ -4,6 +4,9 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -30,6 +33,11 @@ public class Database {
 
     private static final String DB_USER = System.getenv().getOrDefault("DB_USER", "auction_user");
     private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "Auction123");
+    private static final String ADMIN_BOOTSTRAP_ID = getEnvOrDefault("ADMIN_BOOTSTRAP_ID", "ADMIN-DEFAULT");
+    private static final String ADMIN_BOOTSTRAP_FULL_NAME = getEnvOrDefault("ADMIN_BOOTSTRAP_FULL_NAME", "System Admin");
+    private static final String ADMIN_BOOTSTRAP_USERNAME = getEnvOrDefault("ADMIN_BOOTSTRAP_USERNAME", "admin");
+    private static final String ADMIN_BOOTSTRAP_EMAIL = getOptionalEnv("ADMIN_BOOTSTRAP_EMAIL");
+    private static final String ADMIN_BOOTSTRAP_PASSWORD = getOptionalEnv("ADMIN_BOOTSTRAP_PASSWORD");
 
     private static final Database instance = new Database();
 
@@ -54,9 +62,11 @@ public class Database {
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(3);
 
-        config.setConnectionTimeout(10000);
+        config.setConnectionTimeout(30000);
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
+        // 0 = don't fail on startup if DB isn't ready yet; let callers retry
+        config.setInitializationFailTimeout(0);
 
         config.setPoolName("AuctionSystemPool");
 
@@ -83,6 +93,7 @@ public class Database {
                     email VARCHAR(100) UNIQUE NOT NULL,
                     password VARCHAR(255) NOT NULL,
                     role VARCHAR(20) DEFAULT 'BIDDER',
+                    approved BOOLEAN NOT NULL DEFAULT TRUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
                         )
                     ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -101,6 +112,7 @@ public class Database {
                     status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
                     seller_id VARCHAR(100) NOT NULL,
                     highest_bidder_id VARCHAR(100),
+                    auction_approved BOOLEAN NOT NULL DEFAULT FALSE,
                     start_time TIMESTAMP NULL,
                     end_time  TIMESTAMP NULL,
                     CONSTRAINT fk_items_seller
@@ -150,6 +162,10 @@ public class Database {
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createBidsTable);
             }
+            ensureColumn(connection1, "users", "approved", "BOOLEAN NOT NULL DEFAULT TRUE");
+            ensureColumn(connection1, "items", "auction_approved", "BOOLEAN NOT NULL DEFAULT FALSE");
+            backfillApprovalData(connection1);
+            ensureDefaultAdmin(connection1);
             LOGGER.info("Khoi tao database hoan tat.");
         }
         catch (SQLException e) {
@@ -166,6 +182,103 @@ public class Database {
         }
     }
 
+    private void ensureColumn(Connection connection, String tableName, String columnName, String columnDefinition)
+            throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        try (ResultSet columns = metaData.getColumns(connection.getCatalog(), null, tableName, columnName)) {
+            if (columns.next()) {
+                return;
+            }
+        }
 
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate(
+                    "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition
+            );
+        }
+    }
+
+    private void backfillApprovalData(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                    UPDATE users
+                    SET approved = TRUE
+                    WHERE approved IS NULL OR role IN ('ADMIN', 'BIDDER')
+                    """);
+            statement.executeUpdate("""
+                    UPDATE items
+                    SET auction_approved = TRUE
+                    WHERE status IN ('RUNNING', 'FINISHED', 'PAID')
+                    """);
+        }
+    }
+
+    private void ensureDefaultAdmin(Connection connection) throws SQLException {
+        if (isBlank(ADMIN_BOOTSTRAP_PASSWORD)) {
+            LOGGER.info("Skipping bootstrap admin creation because ADMIN_BOOTSTRAP_PASSWORD is not set.");
+            return;
+        }
+        String adminEmail = resolveBootstrapAdminEmail();
+
+        String updateSql = """
+                UPDATE users
+                SET full_name = ?, username = ?, email = ?, password = ?, role = 'ADMIN', approved = TRUE
+                WHERE username = ? OR id = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(updateSql)) {
+            statement.setString(1, ADMIN_BOOTSTRAP_FULL_NAME);
+            statement.setString(2, ADMIN_BOOTSTRAP_USERNAME);
+            statement.setString(3, adminEmail);
+            statement.setString(4, ADMIN_BOOTSTRAP_PASSWORD);
+            statement.setString(5, ADMIN_BOOTSTRAP_USERNAME);
+            statement.setString(6, ADMIN_BOOTSTRAP_ID);
+            if (statement.executeUpdate() > 0) {
+                LOGGER.info("Bootstrap admin account synchronized from environment.");
+                return;
+            }
+        }
+
+        String insertSql = """
+                INSERT INTO users (id, full_name, username, email, password, role, approved)
+                SELECT ?, ?, ?, ?, ?, ?, ?
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM users WHERE username = ?
+                )
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
+            statement.setString(1, ADMIN_BOOTSTRAP_ID);
+            statement.setString(2, ADMIN_BOOTSTRAP_FULL_NAME);
+            statement.setString(3, ADMIN_BOOTSTRAP_USERNAME);
+            statement.setString(4, adminEmail);
+            statement.setString(5, ADMIN_BOOTSTRAP_PASSWORD);
+            statement.setString(6, "ADMIN");
+            statement.setBoolean(7, true);
+            statement.setString(8, ADMIN_BOOTSTRAP_USERNAME);
+            statement.executeUpdate();
+        }
+    }
+
+    private static String getEnvOrDefault(String name, String defaultValue) {
+        String value = System.getenv(name);
+        return isBlank(value) ? defaultValue : value.trim();
+    }
+
+    private static String getOptionalEnv(String name) {
+        String value = System.getenv(name);
+        return isBlank(value) ? null : value.trim();
+    }
+
+    private static String resolveBootstrapAdminEmail() {
+        if (!isBlank(ADMIN_BOOTSTRAP_EMAIL)) {
+            return ADMIN_BOOTSTRAP_EMAIL;
+        }
+        String safeUsername = isBlank(ADMIN_BOOTSTRAP_USERNAME) ? "admin" : ADMIN_BOOTSTRAP_USERNAME.trim().toLowerCase();
+        return safeUsername + "@bootstrap.local";
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
 
 }

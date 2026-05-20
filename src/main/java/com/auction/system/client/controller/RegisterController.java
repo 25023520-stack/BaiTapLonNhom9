@@ -38,9 +38,6 @@ public class RegisterController {
     private TextField txtUsername;
 
     @FXML
-    private TextField txtEmail;
-
-    @FXML
     private PasswordField txtPassword;
 
     @FXML
@@ -61,8 +58,8 @@ public class RegisterController {
     @FXML
     void handleRegister(ActionEvent event) {
         String fullName = txtFullName.getText();
-        String username = txtUsername.getText();
-        String email = txtEmail.getText();
+        String username = txtUsername.getText().trim();
+        String email = username.isEmpty() ? "" : username + "@auction.local";
         String password = txtPassword.getText();
         String confirmPassword = txtConfirmPassword.getText();
         String role = cbRole.getValue();
@@ -85,11 +82,11 @@ public class RegisterController {
 
                 Platform.runLater(() -> handleRegisterResponse(stage, response));
             } catch (IOException | ClassNotFoundException exception) {
+                LOGGER.error("Register failed because the client cannot reach the server", exception);
                 Platform.runLater(() -> {
                     setRegisterDisabled(false);
-                    showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
+                    AppContext.goToServerDown(stage);
                 });
-                LOGGER.error("Register failed because the client cannot reach the server", exception);
             } catch (IllegalArgumentException exception) {
                 Platform.runLater(() -> {
                     setRegisterDisabled(false);
@@ -115,7 +112,6 @@ public class RegisterController {
     private void setRegisterDisabled(boolean disabled) {
         txtFullName.setDisable(disabled);
         txtUsername.setDisable(disabled);
-        txtEmail.setDisable(disabled);
         txtPassword.setDisable(disabled);
         txtConfirmPassword.setDisable(disabled);
         cbRole.setDisable(disabled);

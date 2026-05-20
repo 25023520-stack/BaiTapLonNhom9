@@ -71,44 +71,20 @@
                                     </children>
                                 </VBox>
 
-                                <!-- Username + Email row -->
-                                <GridPane hgap="12">
-                                    <columnConstraints>
-                                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
-                                        <ColumnConstraints hgrow="ALWAYS" percentWidth="50" />
-                                    </columnConstraints>
-                                    <rowConstraints>
-                                        <RowConstraints />
-                                    </rowConstraints>
+                                <!-- Username -->
+                                <VBox spacing="5">
                                     <children>
-                                        <VBox spacing="5" GridPane.columnIndex="0">
+                                        <Label styleClass="input-label" text="Tên đăng nhập" />
+                                        <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
                                             <children>
-                                                <Label styleClass="input-label" text="Tên đăng nhập" />
-                                                <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
-                                                    <children>
-                                                        <Label styleClass="input-icon" text="\@" />
-                                                        <TextField fx:id="txtUsername" onAction="#handleRegister"
-                                                                   promptText="Nhập tài khoản..."
-                                                                   styleClass="input-field" HBox.hgrow="ALWAYS" />
-                                                    </children>
-                                                </HBox>
+                                                <Label styleClass="input-icon" text="\@" />
+                                                <TextField fx:id="txtUsername" onAction="#handleRegister"
+                                                           promptText="Nhập tài khoản..."
+                                                           styleClass="input-field" HBox.hgrow="ALWAYS" />
                                             </children>
-                                        </VBox>
-                                        <VBox spacing="5" GridPane.columnIndex="1">
-                                            <children>
-                                                <Label styleClass="input-label" text="Email" />
-                                                <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
-                                                    <children>
-                                                        <Label styleClass="input-icon" text="✉" />
-                                                        <TextField fx:id="txtEmail" onAction="#handleRegister"
-                                                                   promptText="Nhập email..."
-                                                                   styleClass="input-field" HBox.hgrow="ALWAYS" />
-                                                    </children>
-                                                </HBox>
-                                            </children>
-                                        </VBox>
+                                        </HBox>
                                     </children>
-                                </GridPane>
+                                </VBox>
 
                                 <!-- Password + Confirm row -->
                                 <GridPane hgap="12">

@@ -50,8 +50,8 @@ public class UserDAO extends BaseDAO {
     //thêm user mới vào DB
     public String insertUser(User user) {
         String sql = """
-                INSERT INTO users (id, full_name, username, email, password, role)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO users (id, full_name, username, email, password, role, approved)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = getConnection();
              PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -61,6 +61,7 @@ public class UserDAO extends BaseDAO {
             pstm.setString(4, user.getEmail());
             pstm.setString(5, user.getPassWord());
             pstm.setString(6, user.getRole());
+            pstm.setBoolean(7, user.isApproved());
 
             int rowsAffected = pstm.executeUpdate();
             return rowsAffected > 0 ? user.getId() : null;
@@ -138,13 +139,16 @@ public class UserDAO extends BaseDAO {
         String email = rs.getString("email");
         String password = rs.getString("password");
         String role = rs.getString("role");
+        boolean approved = rs.getBoolean("approved");
 
-        return switch (role.toUpperCase()) {
+        User user = switch (role.toUpperCase()) {
             case "ADMIN" -> new Admin(id, fullname, username, email, password);
             case "SELLER" -> new Seller(id, fullname, username, email, password);
             case "BIDDER" -> new Bidder(id, fullname, username, email, password);
             default -> throw new SQLException("role khong hop le: " + role);
         };
+        user.setApproved(approved);
+        return user;
     }
 
     public boolean updateUser(User user) {
@@ -184,5 +188,17 @@ public class UserDAO extends BaseDAO {
 
         return false;
     }
-}
 
+    public boolean updateApproval(String id, boolean approved) {
+        String sql = "UPDATE users SET approved = ? WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setBoolean(1, approved);
+            pstm.setString(2, id);
+            return pstm.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Loi cap nhat trang thai duyet user: " + e.getMessage());
+        }
+        return false;
+    }
+}

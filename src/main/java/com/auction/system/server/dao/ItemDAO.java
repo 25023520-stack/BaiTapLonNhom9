@@ -12,16 +12,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ItemDAO extends BaseDAO {
+    private final BidDAO bidDAO = new BidDAO();
 
     public boolean insertItem(Item item) {
         String sql = """
                 INSERT INTO items (
                      id, name, description, image_path,
-                     start_price, current_price, status,
+                     start_price, current_price, status, auction_approved,
                      seller_id, highest_bidder_id,
                      start_time, end_time
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = getConnection();
              PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -43,11 +44,12 @@ public class ItemDAO extends BaseDAO {
             pstm.setBigDecimal(6, java.math.BigDecimal.valueOf(currentPrice));
 
             pstm.setString(7, status.name());
-            pstm.setString(8, item.getSellerId());
-            pstm.setString(9, item.getHighestBidderId());
+            pstm.setBoolean(8, item.isAuctionApproved());
+            pstm.setString(9, item.getSellerId());
+            pstm.setString(10, item.getHighestBidderId());
 
-            pstm.setTimestamp(10, toTimestamp(item.getStartTime()));
-            pstm.setTimestamp(11, toTimestamp(item.getEndTime()));
+            pstm.setTimestamp(11, toTimestamp(item.getStartTime()));
+            pstm.setTimestamp(12, toTimestamp(item.getEndTime()));
 
             return pstm.executeUpdate() > 0;
 
@@ -128,8 +130,12 @@ public class ItemDAO extends BaseDAO {
         item.setSellerId(rs.getString("seller_id"));
         item.setImagePath(rs.getString("image_path"));
         item.setHighestBidderId(rs.getString("highest_bidder_id"));
+        item.setAuctionApproved(rs.getBoolean("auction_approved"));
         item.setStartTime(toLocalDateTime(rs.getTimestamp("start_time")));
         item.setEndTime(toLocalDateTime(rs.getTimestamp("end_time")));
+        for (com.auction.system.model.auction.Bid bid : bidDAO.findByItemId(id)) {
+            item.addBid(bid);
+        }
 
      return item;
     }
@@ -199,7 +205,9 @@ public class ItemDAO extends BaseDAO {
             LocalDateTime endTime
     ) throws SQLException {
         String sql = """
-                UPDATE items SET status = ?, start_time = ?, end_time = ? WHERE id = ?
+                UPDATE items
+                SET status = ?, start_time = ?, end_time = ?, auction_approved = TRUE
+                WHERE id = ?
                 """;
 
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -210,6 +218,46 @@ public class ItemDAO extends BaseDAO {
 
             return pstm.executeUpdate() > 0;
         }
+    }
+
+    public boolean requestAuctionApproval(
+            Connection conn,
+            String itemId,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    ) throws SQLException {
+        String sql = """
+                UPDATE items
+                SET status = ?, start_time = ?, end_time = ?, auction_approved = FALSE
+                WHERE id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, AuctionStatus.OPEN.name());
+            pstm.setTimestamp(2, toTimestamp(startTime));
+            pstm.setTimestamp(3, toTimestamp(endTime));
+            pstm.setString(4, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
+    public boolean clearAuctionRequest(String itemId) {
+        String sql = """
+                UPDATE items
+                SET status = ?, start_time = NULL, end_time = NULL, auction_approved = FALSE
+                WHERE id = ?
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, AuctionStatus.OPEN.name());
+            pstm.setString(2, itemId);
+            return pstm.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Loi xoa yeu cau duyet phien dau gia: " + e.getMessage());
+        }
+
+        return false;
     }
 
     public boolean updateAfterBid(

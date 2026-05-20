@@ -8,6 +8,7 @@ public abstract class User implements Serializable {
     private String userName;
     private String email;
     private String passWord;
+    private boolean approved = true;
 
     public User() {}
 
@@ -46,6 +47,10 @@ public abstract class User implements Serializable {
         return passWord;
     }
 
+    public boolean isApproved() {
+        return approved;
+    }
+
     public void setUserName(String userName) {
         this.userName = userName;
     }
@@ -60,6 +65,10 @@ public abstract class User implements Serializable {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
     }
 
     public abstract String getRole();

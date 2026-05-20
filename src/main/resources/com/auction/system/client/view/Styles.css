@@ -416,18 +416,21 @@
 
 /* Seller screen */
 .seller-header,
-.bidder-header {
+.bidder-header,
+.admin-header {
     -fx-background-color: linear-gradient(to right, #002F52, #006BA6 62%, #00A6A6);
     -fx-effect: dropshadow(gaussian, rgba(0, 62, 106, 0.38), 18, 0, 0, 5);
 }
 
 .seller-header-content,
-.bidder-header-content {
+.bidder-header-content,
+.admin-header-content {
     -fx-padding: 18 28 16 28;
 }
 
 .seller-header-title,
-.bidder-header-title {
+.bidder-header-title,
+.admin-header-title {
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 24px;
     -fx-font-weight: 800;
@@ -435,14 +438,16 @@
 }
 
 .seller-header-subtitle,
-.bidder-header-subtitle {
+.bidder-header-subtitle,
+.admin-header-subtitle {
     -fx-text-fill: rgba(255, 255, 255, 0.76);
     -fx-font-size: 12px;
     -fx-font-family: "Segoe UI";
 }
 
 .seller-status-pill,
-.bidder-status-pill {
+.bidder-status-pill,
+.admin-status-pill {
     -fx-background-color: rgba(255, 255, 255, 0.13);
     -fx-background-radius: 999;
     -fx-border-color: rgba(255, 255, 255, 0.25);
@@ -451,7 +456,8 @@
 }
 
 .seller-status-text,
-.bidder-status-text {
+.bidder-status-text,
+.admin-status-text {
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
@@ -459,7 +465,8 @@
 }
 
 .seller-sidebar,
-.bidder-sidebar {
+.bidder-sidebar,
+.admin-sidebar {
     -fx-background-color: linear-gradient(to bottom, #FFFFFF, #F2F8FC);
     -fx-padding: 22 18 22 22;
     -fx-border-color: transparent #C7DFEF transparent transparent;
@@ -467,7 +474,8 @@
 }
 
 .seller-center,
-.bidder-center {
+.bidder-center,
+.admin-center {
     -fx-padding: 22 24 24 24;
 }
 
@@ -502,6 +510,42 @@
     -fx-border-radius: 16;
     -fx-padding: 20 22 20 22;
     -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.14), 18, 0, 0, 5);
+}
+
+.seller-inline-status {
+    -fx-background-color: #EAF3F9;
+    -fx-background-radius: 10;
+    -fx-padding: 8 10 8 10;
+    -fx-text-fill: #1E5A7F;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.admin-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-color: #C7DFEF;
+    -fx-border-radius: 16;
+    -fx-padding: 20 22 20 22;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.14), 18, 0, 0, 5);
+}
+
+.admin-subsection-title {
+    -fx-text-fill: #003E6A;
+    -fx-font-size: 14px;
+    -fx-font-weight: 800;
+    -fx-font-family: "Segoe UI";
+}
+
+.admin-count-badge {
+    -fx-background-color: #DDEDF7;
+    -fx-background-radius: 999;
+    -fx-padding: 4 10 4 10;
+    -fx-text-fill: #004E84;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
 }
 
 .secondary-button {
@@ -645,4 +689,31 @@
     -fx-font-size: 21px;
     -fx-font-weight: 900;
     -fx-font-family: "Segoe UI";
+}
+
+/* ============================================================
+   Server Down Screen
+   ============================================================ */
+
+.server-down-icon {
+    -fx-font-size: 72px;
+    -fx-text-fill: #E07B00;
+    -fx-alignment: center;
+}
+
+.server-down-title {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+    -fx-text-fill: #004E84;
+    -fx-alignment: center;
+}
+
+.server-down-message {
+    -fx-font-size: 14px;
+    -fx-font-family: "Segoe UI";
+    -fx-text-fill: #5E8CAA;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-line-spacing: 4;
 }

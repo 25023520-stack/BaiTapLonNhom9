@@ -1,10 +1,5 @@
 package com.auction.system.server;
 
-import com.auction.system.model.auction.AuctionStatus;
-import com.auction.system.model.item.Item;
-import com.auction.system.model.user.Bidder;
-import com.auction.system.model.user.Seller;
-import com.auction.system.model.user.User;
 import com.auction.system.server.database.Database;
 import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.server.manager.ItemManager;
@@ -15,16 +10,18 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.time.LocalDateTime;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class ServerMain {
     private static final int DEFAULT_PORT = 5050;
     private static final AuctionManager AUCTION_MANAGER = AuctionManager.getInstance();
     private static Thread serverThread;
-    private static boolean demoDataSeeded;
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerMain.class);
 
     public static void main(String[] args) throws Exception {
+        waitForDatabase();
         Database.getInstance().initializeDatabase();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -32,8 +29,7 @@ public class ServerMain {
         }));
 
         ItemManager.getInstance().loadItemsFromDatabase();
-
-        ensureDemoData();
+        purgeLegacyDemoItems();
         logServerAddress(DEFAULT_PORT);
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
         AUCTION_MANAGER.setAuctionSubject(server);
@@ -45,7 +41,9 @@ public class ServerMain {
             return;
         }
 
-        ensureDemoData();
+        Database.getInstance().initializeDatabase();
+        ItemManager.getInstance().loadItemsFromDatabase();
+        purgeLegacyDemoItems();
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
         AUCTION_MANAGER.setAuctionSubject(server);
         serverThread = new Thread(() -> {
@@ -68,53 +66,50 @@ public class ServerMain {
         }
     }
 
-    private static synchronized void ensureDemoData() {
-        if (demoDataSeeded) {
+    private static void waitForDatabase() {
+        int maxAttempts = 20;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try (Connection conn = Database.getInstance().getConnection()) {
+                LOGGER.info("Database connection established (attempt {}).", attempt);
+                return;
+            } catch (SQLException e) {
+                LOGGER.warn("Database not ready yet (attempt {}/{}), retrying in 3s...", attempt, maxAttempts);
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted while waiting for database", ie);
+                }
+            }
+        }
+        throw new RuntimeException("Database did not become ready after " + maxAttempts + " attempts.");
+    }
+
+    private static void purgeLegacyDemoItems() {
+        String[] ids = {"ITEM-1", "ITEM-2", "ITEM-3"};
+        String placeholders = "('ITEM-1','ITEM-2','ITEM-3')";
+        try (Connection conn = Database.getInstance().getConnection()) {
+            try (PreparedStatement s = conn.prepareStatement(
+                    "DELETE FROM bids WHERE item_id IN " + placeholders)) {
+                s.executeUpdate();
+            }
+            try (PreparedStatement s = conn.prepareStatement(
+                    "DELETE FROM auctions WHERE item_id IN " + placeholders)) {
+                s.executeUpdate();
+            }
+        } catch (SQLException e) {
+            LOGGER.warn("Could not purge demo item dependents: {}", e.getMessage());
             return;
         }
-        LOGGER.info("Seeding demo data into the system...");
-
-        Seller seller1 = new Seller("SELLER-10", "Nguyen Van Seller","seller1","nguyenvanseller@example.com", "123456");
-        Seller seller2 = new Seller("SELLER-11", "Tran Thi Seller", "seller2","seller2@example.com", "123456");
-        Bidder bidder1 = new Bidder("BIDDER-12", "Pham Minh An", "bidder1","bidder1@example.com", "123456");
-        Bidder bidder2 = new Bidder("BIDDER-13", "Le Thu Ha", "bidder2","bidder2@example.com", "123456");
-        Bidder bidder3 = new Bidder("BIDDER-14", "Do Quang Huy", "bidder3","bidder3@exmaple.com", "123456");
-
-        registerIfAbsent(seller1);
-        registerIfAbsent(seller2);
-        registerIfAbsent(bidder1);
-        registerIfAbsent(bidder2);
-        registerIfAbsent(bidder3);
-
-        if (AUCTION_MANAGER.findItemById("ITEM-1").isEmpty()) {
-            Item laptop = new Item("ITEM-1", "Laptop Gaming", "Laptop RTX 4060, RAM 16GB, SSD 1TB.", 15000000, 0, AuctionStatus.OPEN);
-            Item phone = new Item("ITEM-2", "IPhone 14", "May cu 99%, pin 90%, phu kien day du.", 11000000, 0, AuctionStatus.OPEN);
-            Item camera = new Item("ITEM-3", "May anh Sony", "Sony A6400 kem lens kit, hoat dong tot.", 13000000, 0, AuctionStatus.OPEN);
-
-            AUCTION_MANAGER.addItem(laptop, seller1);
-            AUCTION_MANAGER.addItem(phone, seller1);
-            AUCTION_MANAGER.addItem(camera, seller2);
-
-            LocalDateTime now = LocalDateTime.now();
-            AUCTION_MANAGER.startAuction("ITEM-1", now.minusHours(1), now.plusHours(6));
-            AUCTION_MANAGER.startAuction("ITEM-2", now.minusMinutes(30), now.plusHours(4));
-            AUCTION_MANAGER.startAuction("ITEM-3", now.minusMinutes(15), now.plusHours(2));
-
-            AUCTION_MANAGER.placeBid("ITEM-1", bidder1, 16000000);
-            AUCTION_MANAGER.placeBid("ITEM-1", bidder2, 16800000);
-            AUCTION_MANAGER.placeBid("ITEM-2", bidder3, 11800000);
-        }
-        LOGGER.info("Demo data seeded successfully.");
-        demoDataSeeded = true;
-    }
-
-    private static void registerIfAbsent(User user) {
-        try {
-            AUCTION_MANAGER.registerUser(user);
-        } catch (IllegalArgumentException ignored) {
-            // The singleton managers may already contain demo accounts if another local server already seeded them.
+        for (String id : ids) {
+            try {
+                ItemManager.getInstance().deleteItem(id);
+            } catch (Exception ignored) {
+                // Item may not exist if already purged on a previous run
+            }
         }
     }
+
     private static void logServerAddress(int port) {
         try {
             // lấy IP thật của máy trên mạng WiFi hiện tại

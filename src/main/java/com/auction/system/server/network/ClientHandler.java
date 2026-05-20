@@ -5,6 +5,7 @@ import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.server.controller.AdminController;
 import com.auction.system.server.controller.AuctionController;
 import com.auction.system.server.controller.AuthController;
 import com.auction.system.server.manager.AuctionManager;
@@ -29,6 +30,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
     private final AuctionManager auctionManager;
     private final AuctionServer auctionServer;
     private final AuctionController auctionController;
+    private final AdminController adminController;
     private final AuthController authController;
     private final PrintWriter writer;
     private final BufferedReader reader;
@@ -43,6 +45,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         this.auctionManager = auctionManager;
         this.auctionServer = auctionServer;
         this.auctionController = new AuctionController();
+        this.adminController = new AdminController();
         this.authController = new AuthController();
         this.writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
@@ -85,8 +88,11 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             case ADD_ITEM -> handleItemMutation(payload, "ITEM_ADDED");
             case UPDATE_ITEM -> handleItemMutation(payload, "ITEM_UPDATED");
             case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
-            case START_AUCTION -> handleItemMutation(payload, "AUCTION_STARTED");
+            case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
             case BID -> handleBid(payload);
+            case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
+            case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
+            case APPROVE_AUCTION -> handleAuctionApproval(payload);
             case DISCONNECT -> {
                 send(ResponsePayload.ok("Disconnected"));
                 close();
@@ -116,6 +122,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         response.put("email", authenticatedUser.getEmail());
         response.put("role", authenticatedUser.getRole());
         response.put("fullName", authenticatedUser.getFullName());
+        response.put("approved", authenticatedUser.isApproved());
         send(response);
         LOGGER.info("User logged in: {}", username);
     }
@@ -161,6 +168,19 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             Object rawItem = response.getBody().get("item");
             if (rawItem instanceof Item updatedItem) {
                 auctionServer.notifyObservers(updatedItem, "BID_PLACED");
+            }
+        }
+    }
+
+    private void handleAuctionApproval(Payload payload) throws IOException {
+        ResponsePayload response = adminController.approveAuction(payload, authenticatedUser);
+        send(response);
+
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            boolean approved = response.getBody().get("approved") instanceof Boolean bool && bool;
+            if (rawItem instanceof Item item) {
+                auctionServer.notifyObservers(item, approved ? "AUCTION_STARTED" : "AUCTION_REQUEST_REJECTED");
             }
         }
     }

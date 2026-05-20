@@ -56,6 +56,11 @@ public class AuctionClient implements Closeable {
         writer.println(GSON.toJson(payload));
     }
 
+    public synchronized Payload request(Payload payload) throws IOException {
+        send(payload);
+        return read();
+    }
+
     public synchronized void startListening(Consumer<Payload> onMessage, Consumer<Exception> onError) {
         if (!connected) {
             throw new IllegalStateException("Client is not connected");

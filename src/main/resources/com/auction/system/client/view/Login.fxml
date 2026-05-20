@@ -53,6 +53,21 @@
                         <VBox styleClass="card-body" spacing="20">
                             <children>
 
+                                <!-- Server IP field -->
+                                <VBox spacing="8">
+                                    <children>
+                                        <Label styleClass="input-label" text="Địa chỉ máy chủ" />
+                                        <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="10">
+                                            <children>
+                                                <Label styleClass="input-icon" text="🌐" />
+                                                <TextField fx:id="txtServerHost" onAction="#handleLogin"
+                                                           promptText="127.0.0.1"
+                                                           styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
                                 <!-- Username field -->
                                 <VBox spacing="8">
                                     <children>

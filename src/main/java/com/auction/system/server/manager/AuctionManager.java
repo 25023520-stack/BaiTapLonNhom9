@@ -207,6 +207,7 @@ public class AuctionManager {
                     item.setStartTime(startTime);
                     item.setEndTime(endTime);
                     item.setStatus(AuctionStatus.RUNNING);
+                    item.setAuctionApproved(true);
 
                     Auction auction = auctionsById.get(itemId);
                     if (auction == null) {
@@ -230,6 +231,48 @@ public class AuctionManager {
             lock.unlock();
         }
 
+    }
+
+    public void requestAuctionApproval(String itemId, Seller seller, LocalDateTime startTime, LocalDateTime endTime) {
+        validateSeller(seller);
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
+        }
+        if (startTime == null || endTime == null) {
+            throw new IllegalArgumentException("Start time and end time must not be null");
+        }
+        if (!endTime.isAfter(startTime)) {
+            throw new IllegalArgumentException("Auction end time must be after start time");
+        }
+
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
+
+        try {
+            Item item = requireItem(itemId);
+            if (!Objects.equals(seller.getId(), item.getSellerId())) {
+                throw new IllegalArgumentException("Seller can only request approval for their own item");
+            }
+            if (item.getStatus() == AuctionStatus.RUNNING) {
+                throw new IllegalStateException("Cannot request approval while auction is running");
+            }
+
+            try (Connection conn = Database.getInstance().getConnection()) {
+                boolean updated = itemDAO.requestAuctionApproval(conn, itemId, startTime, endTime);
+                if (!updated) {
+                    throw new IllegalStateException("Cannot save auction approval request");
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Database error when requesting auction approval", exception);
+            }
+
+            item.setStatus(AuctionStatus.OPEN);
+            item.setAuctionApproved(false);
+            item.setStartTime(startTime);
+            item.setEndTime(endTime);
+        } finally {
+            lock.unlock();
+        }
     }
 
     private void finishAuctionLocked(String itemId) {
@@ -443,6 +486,9 @@ public class AuctionManager {
         Optional<User> existingSeller = authManager.findById(seller.getId());
         if (existingSeller.isEmpty() || !(existingSeller.get() instanceof Seller)) {
             throw new IllegalArgumentException("Seller account is not registered");
+        }
+        if (!existingSeller.get().isApproved()) {
+            throw new IllegalStateException("Seller account is awaiting admin approval");
         }
     }
 

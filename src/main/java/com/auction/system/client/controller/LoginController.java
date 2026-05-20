@@ -5,6 +5,7 @@ import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.model.user.Admin;
 import com.auction.system.model.user.Seller;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -27,6 +28,9 @@ public class LoginController {
     private static final Logger LOGGER = LoggerFactory.getLogger(LoginController.class);
 
     @FXML
+    private TextField txtServerHost;
+
+    @FXML
     private TextField txtUsername;
 
     @FXML
@@ -36,10 +40,17 @@ public class LoginController {
     private Button btnLogin;
 
     @FXML
+    void initialize() {
+        txtServerHost.setText(AppContext.getServerHost());
+    }
+
+    @FXML
     void handleLogin(ActionEvent event) {
+        String host = txtServerHost.getText().trim();
         String username = txtUsername.getText();
         String password = txtPassword.getText();
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        AppContext.setServerHost(host.isEmpty() ? "127.0.0.1" : host);
         setLoginDisabled(true);
 
         Thread loginThread = new Thread(() -> {
@@ -54,11 +65,11 @@ public class LoginController {
 
                 Platform.runLater(() -> handleLoginResponse(stage, response));
             } catch (IOException exception) {
+                LOGGER.error("Login failed because the client cannot reach the server", exception);
                 Platform.runLater(() -> {
                     setLoginDisabled(false);
-                    showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
+                    AppContext.goToServerDown(stage);
                 });
-                LOGGER.error("Login failed because the client cannot reach the server", exception);
             } catch (IllegalArgumentException exception) {
                 Platform.runLater(() -> {
                     setLoginDisabled(false);
@@ -80,7 +91,9 @@ public class LoginController {
         AppContext.setCurrentUserFromMap(response.getBody());
 
         showAlert(Alert.AlertType.INFORMATION, response.getMessage());
-        if (AppContext.getCurrentUser() instanceof Seller) {
+        if (AppContext.getCurrentUser() instanceof Admin) {
+            openAdminScreen(stage);
+        } else if (AppContext.getCurrentUser() instanceof Seller) {
             openSellerScreen(stage);
         } else {
             openBidderScreen(stage);
@@ -88,6 +101,7 @@ public class LoginController {
     }
 
     private void setLoginDisabled(boolean disabled) {
+        txtServerHost.setDisable(disabled);
         txtUsername.setDisable(disabled);
         txtPassword.setDisable(disabled);
         btnLogin.setDisable(disabled);
@@ -114,6 +128,18 @@ public class LoginController {
         } catch (Exception exception) {
             showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh seller.");
             LOGGER.error("Cannot open seller screen", exception);
+        }
+    }
+
+    private void openAdminScreen(Stage stage) {
+        try {
+            Parent adminView = FXMLLoader.load(getClass().getResource("/com/auction/system/client/view/Admin.fxml"));
+            stage.setScene(new Scene(adminView, 1180, 720));
+            stage.setTitle("Admin Workspace");
+            stage.show();
+        } catch (Exception exception) {
+            showAlert(Alert.AlertType.ERROR, "Khong mo duoc man hinh admin.");
+            LOGGER.error("Cannot open admin screen", exception);
         }
     }
 

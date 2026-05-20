@@ -71,4 +71,15 @@ public class Payload implements Serializable {
         }
         return value != null ? Double.parseDouble(String.valueOf(value)) : null;
     }
+
+    public Boolean getBoolean(String key) {
+        Object value = body.get(key);
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        if (value instanceof Number number) {
+            return number.intValue() != 0;
+        }
+        return value != null ? Boolean.parseBoolean(String.valueOf(value)) : null;
+    }
 }

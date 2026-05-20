@@ -117,11 +117,16 @@ public class AuctionController {
                 return ResponsePayload.error("Seller can only start their own item auction");
             }
 
-            auctionManager.startAuction(itemId, LocalDateTime.parse(startTimeText), LocalDateTime.parse(endTimeText));
+            auctionManager.requestAuctionApproval(
+                    itemId,
+                    seller,
+                    LocalDateTime.parse(startTimeText),
+                    LocalDateTime.parse(endTimeText)
+            );
             Item updatedItem = auctionManager.findItemById(itemId).orElse(item);
             attachImageData(updatedItem);
 
-            ResponsePayload response = ResponsePayload.ok("Auction started successfully");
+            ResponsePayload response = ResponsePayload.ok("Auction approval requested successfully");
             response.put("item", updatedItem);
             return response;
         } catch (RuntimeException exception) {
@@ -140,8 +145,13 @@ public class AuctionController {
         List<Item> items = auctionManager.getAllItems().stream()
                 .filter(item -> sellerId.equals(item.getSellerId()))
                 .toList();
+        boolean approved = auctionManager.getAuthManager()
+                .findById(user.getId())
+                .map(User::isApproved)
+                .orElse(user.isApproved());
         ResponsePayload resp = ResponsePayload.ok("Items retrieved");
         resp.put("items", withImageData(items));
+        resp.put("approved", approved);
         return resp;
     }
 

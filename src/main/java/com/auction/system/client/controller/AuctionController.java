@@ -202,11 +202,11 @@ public class AuctionController {
 
         LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(item.getStartTime())) {
-            countdownValue.setText("Bắt đầu sau " + formatRemainingTime(java.time.Duration.between(now, item.getStartTime())));
+            countdownValue.setText("Sắp bắt đầu  •  " + formatRemainingTime(java.time.Duration.between(now, item.getStartTime())));
             return;
         }
         if (now.isBefore(item.getEndTime())) {
-            countdownValue.setText("Kết thúc sau " + formatRemainingTime(java.time.Duration.between(now, item.getEndTime())));
+            countdownValue.setText("Đang diễn ra  •  còn " + formatRemainingTime(java.time.Duration.between(now, item.getEndTime())));
             return;
         }
 
@@ -238,16 +238,29 @@ public class AuctionController {
             return "Chưa có lượt đặt giá nào.";
         }
 
+        LocalDateTime now = LocalDateTime.now();
         StringBuilder builder = new StringBuilder();
-        for (Bid bid : item.getBidHistory()) {
-            builder.append(bid.getTimestamp())
-                    .append(" | ")
-                    .append(bid.getBidder().getId())
-                    .append(" | ")
+        List<Bid> history = item.getBidHistory();
+        for (int i = history.size() - 1; i >= 0; i--) {
+            Bid bid = history.get(i);
+            String bidderName = bid.getBidder() != null ? bid.getBidder().getFullName() : bid.getBidderId();
+            builder.append(bidderName)
+                    .append("  —  đã đặt ")
                     .append(formatCurrency(bid.getAmount()))
+                    .append("  •  ")
+                    .append(formatRelativeTime(bid.getTimestamp(), now))
                     .append(System.lineSeparator());
         }
         return builder.toString();
+    }
+
+    private String formatRelativeTime(LocalDateTime time, LocalDateTime now) {
+        if (time == null) return "vừa xong";
+        long totalSeconds = java.time.Duration.between(time, now).getSeconds();
+        if (totalSeconds < 60) return "vừa xong";
+        if (totalSeconds < 3600) return (totalSeconds / 60) + " phút trước";
+        if (totalSeconds < 86_400) return (totalSeconds / 3600) + " tiếng trước";
+        return (totalSeconds / 86_400) + " ngày trước";
     }
 
     protected void showAlert(Alert.AlertType alertType, String message) {
@@ -280,7 +293,9 @@ public class AuctionController {
 
             showAlert(Alert.AlertType.ERROR, "Dữ liệu sản phẩm từ server không hợp lệ.");
         } catch (IOException exception) {
-            showAlert(Alert.AlertType.ERROR, "Không thể tải danh sách sản phẩm từ server.");
+            Stage stage = (Stage) itemListView.getScene().getWindow();
+            stopTimers();
+            AppContext.goToServerDown(stage);
         }
     }
 
@@ -323,11 +338,16 @@ public class AuctionController {
                             Platform.runLater(() -> handleAuctionUpdate(update));
                         }
                     },
-                    error -> Platform.runLater(() ->
-                            showAlert(Alert.AlertType.ERROR, "Mất kết nối tới server"))
+                    error -> Platform.runLater(() -> {
+                        stopTimers();
+                        Stage stage = (Stage) itemListView.getScene().getWindow();
+                        AppContext.goToServerDown(stage);
+                    })
             );
         } catch (IOException e) {
-            showAlert(Alert.AlertType.ERROR, "Không thể bắt đầu lắng nghe server.");
+            Stage stage = (Stage) itemListView.getScene().getWindow();
+            stopTimers();
+            AppContext.goToServerDown(stage);
         }
     }
 

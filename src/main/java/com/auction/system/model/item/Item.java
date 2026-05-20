@@ -19,6 +19,7 @@ public class Item implements Serializable {
     private AuctionStatus status;
     private String sellerId;
     private String highestBidderId;
+    private boolean auctionApproved;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private final List<Bid> bidHistory = new ArrayList<>();
@@ -116,6 +117,14 @@ public class Item implements Serializable {
 
     public void setHighestBidderId(String highestBidderId) {
         this.highestBidderId = highestBidderId;
+    }
+
+    public boolean isAuctionApproved() {
+        return auctionApproved;
+    }
+
+    public void setAuctionApproved(boolean auctionApproved) {
+        this.auctionApproved = auctionApproved;
     }
 
     public LocalDateTime   getStartTime() {

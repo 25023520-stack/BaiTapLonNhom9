@@ -13,10 +13,11 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
-      interval: 10s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 40s
   server:
     build: .
     container_name: auction_server
@@ -29,6 +30,11 @@ services:
       DB_NAME: auction_db
       DB_USER: auction_user
       DB_PASSWORD: Auction123
+      ADMIN_BOOTSTRAP_ID: ${ADMIN_BOOTSTRAP_ID:-ADMIN-DEFAULT}
+      ADMIN_BOOTSTRAP_FULL_NAME: ${ADMIN_BOOTSTRAP_FULL_NAME:-System Admin}
+      ADMIN_BOOTSTRAP_USERNAME: ${ADMIN_BOOTSTRAP_USERNAME:-admin}
+      ADMIN_BOOTSTRAP_EMAIL: ${ADMIN_BOOTSTRAP_EMAIL:-}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
     ports:
       - "5050:5050"
 volumes:
