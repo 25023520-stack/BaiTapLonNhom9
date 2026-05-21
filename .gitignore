@@ -47,3 +47,6 @@ logs/
 
 # Build artifacts created by shade/plugin tooling
 dependency-reduced-pom.xml
+
+# Claude Code local settings (machine-specific, not for sharing)
+.claude/settings.local.json
