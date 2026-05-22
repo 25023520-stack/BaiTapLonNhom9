@@ -91,6 +91,8 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
             case BID -> handleBid(payload);
             case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
+            case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
+            case APPROVE_DEPOSIT -> send(adminController.approveDeposit(payload, authenticatedUser));
             case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
             case APPROVE_AUCTION -> handleAuctionApproval(payload);
             case DISCONNECT -> {
@@ -123,6 +125,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         response.put("role", authenticatedUser.getRole());
         response.put("fullName", authenticatedUser.getFullName());
         response.put("approved", authenticatedUser.isApproved());
+        response.put("balance", authenticatedUser.getBalance());
         send(response);
         LOGGER.info("User logged in: {}", username);
     }

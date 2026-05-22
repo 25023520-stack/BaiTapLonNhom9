@@ -3,6 +3,8 @@ package com.auction.system.client.controller;
 import com.auction.system.client.context.AppContext;
 import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.payload.BidPayload;
+import com.auction.system.common.payload.Payload;
+import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
@@ -14,6 +16,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 
@@ -31,6 +34,15 @@ public class BidderController extends AuctionController {
 
     @FXML
     private Button bidButton;
+
+    @FXML
+    private Label balanceValue;
+
+    @FXML
+    private TextField depositAmountField;
+
+    @FXML
+    private Button depositButton;
 
     @FXML
     @Override
@@ -68,6 +80,9 @@ public class BidderController extends AuctionController {
             bidderSelector.getSelectionModel().selectFirst();
             bidderSelector.setDisable(true);
             bidAmountField.setDisable(false);
+            balanceValue.setText(formatCurrency(bidder.getBalance()));
+            depositAmountField.setDisable(false);
+            depositButton.setDisable(false);
             return;
         }
 
@@ -75,6 +90,51 @@ public class BidderController extends AuctionController {
         bidderSelector.setDisable(true);
         bidAmountField.setDisable(true);
         bidButton.setDisable(true);
+        balanceValue.setText("-");
+        depositAmountField.setDisable(true);
+        depositButton.setDisable(true);
+    }
+
+    @FXML
+    public void submitDepositRequest() {
+        User currentUser = AppContext.getCurrentUser();
+        if (!(currentUser instanceof Bidder)) {
+            showAlert(Alert.AlertType.WARNING, "Tai khoan hien tai khong phai bidder.");
+            return;
+        }
+
+        double amount;
+        try {
+            amount = Double.parseDouble(depositAmountField.getText().trim());
+        } catch (NumberFormatException exception) {
+            showAlert(Alert.AlertType.ERROR, "So tien nap khong hop le.");
+            return;
+        }
+        if (amount <= 0) {
+            showAlert(Alert.AlertType.ERROR, "So tien nap phai lon hon 0.");
+            return;
+        }
+
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            Payload payload = new Payload(PayloadType.REQUEST_DEPOSIT);
+            payload.put("amount", amount);
+            depositButton.setDisable(true);
+            client.send(payload);
+            ResponsePayload response = readResponse(client);
+            if (!response.isSuccess()) {
+                showAlert(Alert.AlertType.ERROR, response.getMessage());
+                return;
+            }
+
+            // Bidder chi gui yeu cau; so du chi thay doi sau khi admin duyet.
+            depositAmountField.clear();
+            showAlert(Alert.AlertType.INFORMATION, "Da gui yeu cau nap tien cho admin duyet.");
+        } catch (IOException exception) {
+            showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
+        } finally {
+            depositButton.setDisable(false);
+        }
     }
 
     @FXML
@@ -111,7 +171,6 @@ public class BidderController extends AuctionController {
                     "Giá đặt phải lớn hơn giá hiện tại " + formatCurrency(selectedItem.getCurrentPrice()) + ".");
             return;
         }
-
         try {
             AuctionClient client = AppContext.getAuctionClient();
             bidButton.setDisable(true);

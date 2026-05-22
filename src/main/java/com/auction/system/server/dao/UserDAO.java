@@ -2,6 +2,7 @@ package com.auction.system.server.dao;
 
 import com.auction.system.model.user.*;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,8 +51,8 @@ public class UserDAO extends BaseDAO {
     //thêm user mới vào DB
     public String insertUser(User user) {
         String sql = """
-                INSERT INTO users (id, full_name, username, email, password, role, approved)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users (id, full_name, username, email, password, role, approved, balance)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = getConnection();
              PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -62,6 +63,7 @@ public class UserDAO extends BaseDAO {
             pstm.setString(5, user.getPassWord());
             pstm.setString(6, user.getRole());
             pstm.setBoolean(7, user.isApproved());
+            pstm.setBigDecimal(8, BigDecimal.valueOf(user.getBalance()));
 
             int rowsAffected = pstm.executeUpdate();
             return rowsAffected > 0 ? user.getId() : null;
@@ -140,6 +142,7 @@ public class UserDAO extends BaseDAO {
         String password = rs.getString("password");
         String role = rs.getString("role");
         boolean approved = rs.getBoolean("approved");
+        BigDecimal balance = rs.getBigDecimal("balance");
 
         User user = switch (role.toUpperCase()) {
             case "ADMIN" -> new Admin(id, fullname, username, email, password);
@@ -148,6 +151,7 @@ public class UserDAO extends BaseDAO {
             default -> throw new SQLException("role khong hop le: " + role);
         };
         user.setApproved(approved);
+        user.setBalance(balance != null ? balance.doubleValue() : 0);
         return user;
     }
 
@@ -200,5 +204,14 @@ public class UserDAO extends BaseDAO {
             System.err.println("Loi cap nhat trang thai duyet user: " + e.getMessage());
         }
         return false;
+    }
+
+    public boolean addBalance(Connection conn, String userId, double amount) throws SQLException {
+        String sql = "UPDATE users SET balance = balance + ? WHERE id = ? AND role = 'BIDDER'";
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setBigDecimal(1, BigDecimal.valueOf(amount));
+            pstm.setString(2, userId);
+            return pstm.executeUpdate() > 0;
+        }
     }
 }
