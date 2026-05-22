@@ -13,14 +13,16 @@ import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.TimeZone;
 
 public class ServerMain {
     private static final int DEFAULT_PORT = 5050;
     private static final AuctionManager AUCTION_MANAGER = AuctionManager.getInstance();
     private static Thread serverThread;
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerMain.class);
-
+    private static final String DEFAULT_TIMEZONE = "Asia/Bangkok";
     public static void main(String[] args) throws Exception {
+        configureAppTimezone();
         waitForDatabase();
         Database.getInstance().initializeDatabase();
 
@@ -40,7 +42,7 @@ public class ServerMain {
         if (serverThread != null && serverThread.isAlive()) {
             return;
         }
-
+        configureAppTimezone();
         Database.getInstance().initializeDatabase();
         ItemManager.getInstance().loadItemsFromDatabase();
         purgeLegacyDemoItems();
@@ -123,5 +125,10 @@ public class ServerMain {
         } catch (UnknownHostException e) {
             System.out.println("Server started on port " + port + " (could not determine IP)");
         }
+    }
+
+    private static void configureAppTimezone(){
+        String timezoneId = System.getenv().getOrDefault("APP_TIMEZONE", DEFAULT_TIMEZONE);
+        TimeZone.setDefault(TimeZone.getTimeZone(timezoneId));
     }
 }
