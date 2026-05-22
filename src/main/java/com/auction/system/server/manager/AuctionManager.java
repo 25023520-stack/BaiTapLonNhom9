@@ -78,6 +78,8 @@ public class AuctionManager {
         }
 
         item.setSellerId(seller.getId());
+        item.setSellerUsername(seller.getUserName());
+
         item.setStatus(AuctionStatus.OPEN);
         item.setCurrentPrice(item.getStartPrice());
 
@@ -436,6 +438,7 @@ public class AuctionManager {
 
             item.setCurrentPrice(bidAmount);
             item.setHighestBidderId(bidder.getId());
+            item.setHighestBidderUsername(bidder.getUserName());
             item.addBid(bid);
 
             return bid;

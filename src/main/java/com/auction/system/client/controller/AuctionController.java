@@ -155,8 +155,8 @@ public class AuctionController {
         nameValue.setText(item.getName());
         priceValue.setText(formatCurrency(item.getCurrentPrice()));
         statusValue.setText(item.getStatus().name());
-        sellerValue.setText(isBlank(item.getSellerId()) ? "-" : item.getSellerId());
-        leaderValue.setText(isBlank(item.getHighestBidderId()) ? "Chưa có" : item.getHighestBidderId());
+        sellerValue.setText(formatUsername(item.getSellerUsername(), item.getSellerId(), "-"));
+        leaderValue.setText(formatUsername(item.getHighestBidderUsername(), item.getHighestBidderId(), "Chưa có"));
         scheduleValue.setText(formatSchedule(item));
         updateCountdown(item);
         descriptionArea.setText(item.getDescription());
@@ -413,6 +413,21 @@ public class AuctionController {
         } catch (RuntimeException exception) {
             return null;
         }
+    }
+
+    //Nếu có sellerUsername -> hiện @username
+    //Nếu chưa có sellerUsername nhưng có sellerId -> tạm hiện id
+    //Nếu cả hai đều không có -> hiện "-"
+    private String formatUsername(String username, String fallbackId, String emptyText) {
+        if (username != null && !username.isBlank()) {
+            return "@" + username;
+        }
+
+        if (fallbackId != null && !fallbackId.isBlank()) {
+            return fallbackId;
+        }
+
+        return emptyText;
     }
 
     private boolean isBlank(String value) {
