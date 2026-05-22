@@ -9,6 +9,8 @@ public abstract class User implements Serializable {
     private String email;
     private String passWord;
     private boolean approved = true;
+    // So du hien tai cua tai khoan, dung de bidder tham gia dau gia sau khi admin duyet nap tien.
+    private double balance;
 
     public User() {}
 
@@ -51,6 +53,10 @@ public abstract class User implements Serializable {
         return approved;
     }
 
+    public double getBalance() {
+        return balance;
+    }
+
     public void setUserName(String userName) {
         this.userName = userName;
     }
@@ -69,6 +75,10 @@ public abstract class User implements Serializable {
 
     public void setApproved(boolean approved) {
         this.approved = approved;
+    }
+
+    public void setBalance(double balance) {
+        this.balance = balance;
     }
 
     public abstract String getRole();

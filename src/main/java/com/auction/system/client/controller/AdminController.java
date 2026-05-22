@@ -8,6 +8,7 @@ import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Admin;
+import com.auction.system.model.user.DepositRequest;
 import com.auction.system.model.user.User;
 import com.google.gson.Gson;
 import javafx.animation.Animation;
@@ -52,8 +53,10 @@ public class AdminController {
     @FXML private Label adminNameLabel;
     @FXML private Label sellerCountLabel;
     @FXML private Label auctionCountLabel;
+    @FXML private Label depositCountLabel;
     @FXML private ListView<User> sellerListView;
     @FXML private ListView<Item> auctionListView;
+    @FXML private ListView<DepositRequest> depositListView;
     @FXML private Label sellerNameValue;
     @FXML private Label sellerUsernameValue;
     @FXML private Label sellerEmailValue;
@@ -67,9 +70,15 @@ public class AdminController {
     @FXML private Button approveSellerButton;
     @FXML private Button approveAuctionButton;
     @FXML private Button rejectAuctionButton;
+    @FXML private Label depositBidderValue;
+    @FXML private Label depositAmountValue;
+    @FXML private Label depositCreatedValue;
+    @FXML private Label depositStatusValue;
+    @FXML private Button approveDepositButton;
 
     private final ObservableList<User> pendingSellers = FXCollections.observableArrayList();
     private final ObservableList<Item> pendingAuctions = FXCollections.observableArrayList();
+    private final ObservableList<DepositRequest> pendingDeposits = FXCollections.observableArrayList();
     private Timeline autoRefresh;
 
     @FXML
@@ -86,6 +95,7 @@ public class AdminController {
         configureLists();
         clearSellerDetails();
         clearAuctionDetails();
+        clearDepositDetails();
         refreshDashboard();
 
         autoRefresh = new Timeline(new KeyFrame(REFRESH_INTERVAL, event -> refreshDashboard()));
@@ -109,6 +119,11 @@ public class AdminController {
     }
 
     @FXML
+    public void approveDeposit() {
+        updateDepositApproval();
+    }
+
+    @FXML
     public void refreshDashboard() {
         String selectedSellerId = sellerListView.getSelectionModel().getSelectedItem() == null
                 ? null
@@ -116,6 +131,9 @@ public class AdminController {
         String selectedItemId = auctionListView.getSelectionModel().getSelectedItem() == null
                 ? null
                 : auctionListView.getSelectionModel().getSelectedItem().getId();
+        String selectedDepositId = depositListView.getSelectionModel().getSelectedItem() == null
+                ? null
+                : depositListView.getSelectionModel().getSelectedItem().getId();
 
         runAsync(new Payload(PayloadType.ADMIN_DASHBOARD), response -> {
             if (!response.isSuccess()) {
@@ -125,11 +143,14 @@ public class AdminController {
 
             pendingSellers.setAll(readUsers(response.getBody().get("pendingSellers")));
             pendingAuctions.setAll(readItems(response.getBody().get("pendingAuctions")));
+            pendingDeposits.setAll(readDeposits(response.getBody().get("pendingDeposits")));
             sellerCountLabel.setText(String.valueOf(pendingSellers.size()));
             auctionCountLabel.setText(String.valueOf(pendingAuctions.size()));
+            depositCountLabel.setText(String.valueOf(pendingDeposits.size()));
 
             restoreSellerSelection(selectedSellerId);
             restoreAuctionSelection(selectedItemId);
+            restoreDepositSelection(selectedDepositId);
         });
     }
 
@@ -178,6 +199,19 @@ public class AdminController {
         });
         auctionListView.getSelectionModel().selectedItemProperty()
                 .addListener((obs, oldValue, newValue) -> showAuctionDetails(newValue));
+
+        depositListView.setItems(pendingDeposits);
+        depositListView.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(DepositRequest request, boolean empty) {
+                super.updateItem(request, empty);
+                setText(empty || request == null
+                        ? null
+                        : request.getBidderName() + "  |  " + formatCurrency(request.getAmount()));
+            }
+        });
+        depositListView.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldValue, newValue) -> showDepositDetails(newValue));
     }
 
     private void updateSellerApproval(boolean approved) {
@@ -224,6 +258,29 @@ public class AdminController {
         });
     }
 
+    private void updateDepositApproval() {
+        // Client admin chi gui len id request can duyet.
+        // Viec cong tien va khoa transaction nam o server de dam bao bao mat va nhat quan du lieu.
+        DepositRequest selectedRequest = depositListView.getSelectionModel().getSelectedItem();
+        if (selectedRequest == null) {
+            showError("Nap tien", "Ban chua chon yeu cau nap tien.");
+            return;
+        }
+
+        Payload payload = new Payload(PayloadType.APPROVE_DEPOSIT);
+        payload.put("requestId", selectedRequest.getId());
+
+        runAsync(payload, response -> {
+            if (!response.isSuccess()) {
+                showError("Nap tien", response.getMessage());
+                return;
+            }
+
+            showInfo(response.getMessage());
+            refreshDashboard();
+        });
+    }
+
     private void restoreSellerSelection(String sellerId) {
         if (sellerId == null) {
             sellerListView.getSelectionModel().clearSelection();
@@ -262,6 +319,25 @@ public class AdminController {
                 );
     }
 
+    private void restoreDepositSelection(String requestId) {
+        if (requestId == null) {
+            depositListView.getSelectionModel().clearSelection();
+            clearDepositDetails();
+            return;
+        }
+
+        pendingDeposits.stream()
+                .filter(request -> requestId.equals(request.getId()))
+                .findFirst()
+                .ifPresentOrElse(
+                        request -> depositListView.getSelectionModel().select(request),
+                        () -> {
+                            depositListView.getSelectionModel().clearSelection();
+                            clearDepositDetails();
+                        }
+                );
+    }
+
     private void showSellerDetails(User seller) {
         if (seller == null) {
             clearSellerDetails();
@@ -291,6 +367,19 @@ public class AdminController {
         rejectAuctionButton.setDisable(false);
     }
 
+    private void showDepositDetails(DepositRequest request) {
+        if (request == null) {
+            clearDepositDetails();
+            return;
+        }
+
+        depositBidderValue.setText(request.getBidderName() + " (" + request.getBidderId() + ")");
+        depositAmountValue.setText(formatCurrency(request.getAmount()));
+        depositCreatedValue.setText(request.getCreatedAt() == null ? "-" : DATE_TIME_FORMATTER.format(request.getCreatedAt()));
+        depositStatusValue.setText(request.getStatus());
+        approveDepositButton.setDisable(false);
+    }
+
     private void clearSellerDetails() {
         sellerNameValue.setText("-");
         sellerUsernameValue.setText("-");
@@ -308,6 +397,14 @@ public class AdminController {
         itemImageView.setImage(null);
         approveAuctionButton.setDisable(true);
         rejectAuctionButton.setDisable(true);
+    }
+
+    private void clearDepositDetails() {
+        depositBidderValue.setText("-");
+        depositAmountValue.setText("-");
+        depositCreatedValue.setText("-");
+        depositStatusValue.setText("-");
+        approveDepositButton.setDisable(true);
     }
 
     private void setItemImage(Item item) {
@@ -355,6 +452,17 @@ public class AdminController {
                 .toList();
     }
 
+    private List<DepositRequest> readDeposits(Object rawRequests) {
+        if (!(rawRequests instanceof List<?> list)) {
+            return List.of();
+        }
+
+        return list.stream()
+                .map(this::toDepositRequest)
+                .filter(request -> request != null)
+                .toList();
+    }
+
     @SuppressWarnings("unchecked")
     private User toUser(Object rawUser) {
         if (rawUser instanceof User user) {
@@ -378,6 +486,24 @@ public class AdminController {
         } catch (RuntimeException exception) {
             return null;
         }
+    }
+
+    private DepositRequest toDepositRequest(Object rawRequest) {
+        if (rawRequest instanceof DepositRequest request) {
+            return request;
+        }
+        if (rawRequest == null) {
+            return null;
+        }
+        try {
+            return GSON.fromJson(GSON.toJson(rawRequest), DepositRequest.class);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private String formatCurrency(double amount) {
+        return String.format("%,.0f VND", amount);
     }
 
     private void runAsync(Payload payload, Consumer<ResponsePayload> onResult) {
