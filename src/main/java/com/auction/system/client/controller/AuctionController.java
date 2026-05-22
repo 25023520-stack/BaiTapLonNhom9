@@ -6,6 +6,7 @@ import com.auction.system.common.json.GsonProvider;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
 import com.google.gson.Gson;
@@ -92,7 +93,7 @@ public class AuctionController {
                     setText(null);
                     return;
                 }
-                setText(item.getName() + " | " + formatCurrency(item.getCurrentPrice()) + " | " + item.getStatus());
+                setText(item.getName() + " | " + formatCurrency(item.getCurrentPrice()) + " | " + displayStatus(item));
             }
         });
         itemListView.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showItemDetails(newItem));
@@ -154,7 +155,7 @@ public class AuctionController {
 
         nameValue.setText(item.getName());
         priceValue.setText(formatCurrency(item.getCurrentPrice()));
-        statusValue.setText(item.getStatus().name());
+        statusValue.setText(displayStatus(item).name());
         sellerValue.setText(isBlank(item.getSellerId()) ? "-" : item.getSellerId());
         leaderValue.setText(isBlank(item.getHighestBidderId()) ? "Chưa có" : item.getHighestBidderId());
         scheduleValue.setText(formatSchedule(item));
@@ -189,6 +190,8 @@ public class AuctionController {
             Item selectedItem = itemListView.getSelectionModel().getSelectedItem();
             updateCountdown(selectedItem);
             updateAuctionActions(selectedItem);
+            // re-render list cells so an expired RUNNING item shows FINISHED before the server confirms
+            itemListView.refresh();
         }));
         countdownTimer.setCycleCount(Timeline.INDEFINITE);
         countdownTimer.play();
@@ -211,6 +214,18 @@ public class AuctionController {
         }
 
         countdownValue.setText("Đã kết thúc");
+        // Server chưa kịp gửi AUCTION_FINISHED — cập nhật status trên UI ngay để tránh hiển thị sai
+        statusValue.setText(displayStatus(item).name());
+    }
+
+    // Khi RUNNING nhưng đã quá end time, hiển thị FINISHED ngay trên UI trong lúc chờ server xác nhận
+    private AuctionStatus displayStatus(Item item) {
+        if (item.getStatus() == AuctionStatus.RUNNING
+                && item.getEndTime() != null
+                && LocalDateTime.now().isAfter(item.getEndTime())) {
+            return AuctionStatus.FINISHED;
+        }
+        return item.getStatus();
     }
 
     private String formatRemainingTime(java.time.Duration duration) {
