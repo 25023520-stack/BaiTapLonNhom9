@@ -125,7 +125,7 @@ public class AuctionDAO extends BaseDAO {
             String itemId
     ) throws SQLException {
         String sql = """
-                SELECT id FROM auctions 
+                SELECT id FROM auctions
                 WHERE item_id = ?
                 LIMIT 1
                 """;
@@ -141,9 +141,40 @@ public class AuctionDAO extends BaseDAO {
         }
 
         return null;
-
     }
 
+    public List<String> findExpiredRunningItemIds() throws SQLException {
+        String sql = """
+                SELECT item_id FROM auctions
+                WHERE status = 'RUNNING' AND end_time < NOW()
+                """;
 
+        List<String> result = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql);
+             ResultSet rs = pstm.executeQuery()) {
+            while (rs.next()) {
+                result.add(rs.getString("item_id"));
+            }
+        }
+        return result;
+    }
 
+    public boolean updateStatusAndClearWinner(
+            Connection conn,
+            String itemId,
+            AuctionStatus status
+    ) throws SQLException {
+        String sql = """
+                UPDATE auctions
+                SET status = ?, winner_id = NULL, final_price = 0
+                WHERE item_id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, status.name());
+            pstm.setString(2, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
 }

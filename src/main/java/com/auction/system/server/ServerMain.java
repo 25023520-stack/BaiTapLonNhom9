@@ -4,6 +4,7 @@ import com.auction.system.server.database.Database;
 import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.server.manager.ItemManager;
 import com.auction.system.server.network.AuctionServer;
+import com.auction.system.server.scheduler.AuctionScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -35,6 +36,10 @@ public class ServerMain {
         logServerAddress(DEFAULT_PORT);
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
         AUCTION_MANAGER.setAuctionSubject(server);
+
+        AuctionScheduler scheduler = new AuctionScheduler(AUCTION_MANAGER);
+        scheduler.start();
+
         server.start();
     }
 
@@ -48,6 +53,7 @@ public class ServerMain {
         purgeLegacyDemoItems();
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
         AUCTION_MANAGER.setAuctionSubject(server);
+        new AuctionScheduler(AUCTION_MANAGER).start();
         serverThread = new Thread(() -> {
             try {
                 server.start();
