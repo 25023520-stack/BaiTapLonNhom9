@@ -29,6 +29,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -67,11 +68,15 @@ public class SellerController {
     @FXML private Label accountStatusLabel;
     @FXML private Label auctionApprovalLabel;
     @FXML private Spinner<Integer> durationHoursSpinner;
+    @FXML private VBox auctionInfoBox;
+    @FXML private Label currentBidLabel;
+    @FXML private Label timeRemainingLabel;
 
     private final ObservableList<Item> sellersItem = FXCollections.observableArrayList();
     private Seller currentSeller;
     private Timeline autoRefresh;
     private File selectedImageFile;
+    private Timeline countdownTimer;
 
     @FXML
     public void initialize() {
@@ -298,6 +303,9 @@ public class SellerController {
         if (autoRefresh != null) {
             autoRefresh.stop();
         }
+        if (countdownTimer != null) {
+            countdownTimer.stop();
+        }
 
         try {
             AppContext.logout();
@@ -383,6 +391,7 @@ public class SellerController {
             imagePreview.setImage(null);
             updateEditorState(null);
             updateAuctionApprovalLabel(null);
+            startCountdown(null);
             return;
         }
         nameField.setText(picked.getName());
@@ -393,6 +402,7 @@ public class SellerController {
         setImagePreviewFromBase64(picked.getImageBase64());
         updateEditorState(picked);
         updateAuctionApprovalLabel(picked);
+        startCountdown(picked);
     }
 
     private void runAsync(Payload req, Consumer<ResponsePayload> onResult) {
@@ -535,5 +545,42 @@ public class SellerController {
         Alert a = new Alert(AlertType.ERROR, msg);
         a.setHeaderText(header);
         a.showAndWait();
+    }
+    // THÊM MỚI: đếm ngược thời gian còn lại và hiển thị giá cao nhất
+    private void startCountdown(Item item) {
+        if (countdownTimer != null) countdownTimer.stop();
+        if (item == null || item.getStatus() != AuctionStatus.RUNNING
+                || item.getEndTime() == null) {
+            if (auctionInfoBox != null) {
+                auctionInfoBox.setVisible(false);
+                auctionInfoBox.setManaged(false);
+            }
+            return;
+        }
+
+        auctionInfoBox.setVisible(true);
+        auctionInfoBox.setManaged(true);
+
+        // Cập nhật giá cao nhất
+        double highestPrice = item.getCurrentPrice() > 0
+                ? item.getCurrentPrice() : item.getStartPrice();
+        currentBidLabel.setText(String.format("%,.0f ₫", highestPrice));
+
+        // Đếm ngược mỗi giây
+        countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.Duration remaining = java.time.Duration.between(now, item.getEndTime());
+            if (remaining.isNegative() || remaining.isZero()) {
+                timeRemainingLabel.setText("Đã kết thúc");
+                countdownTimer.stop();
+            } else {
+                long h = remaining.toHours();
+                long m = remaining.toMinutesPart();
+                long s = remaining.toSecondsPart();
+                timeRemainingLabel.setText(String.format("%02d:%02d:%02d", h, m, s));
+            }
+        }));
+        countdownTimer.setCycleCount(Animation.INDEFINITE);
+        countdownTimer.play();
     }
 }

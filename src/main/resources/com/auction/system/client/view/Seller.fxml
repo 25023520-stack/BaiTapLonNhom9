@@ -130,6 +130,25 @@
                                 <Label styleClass="input-label" text="Thời lượng phiên" />
                                 <Spinner fx:id="durationHoursSpinner" editable="true" prefWidth="120.0" styleClass="combo-field" />
                                 <Label styleClass="seller-page-subtitle" text="giờ" />
+
+                                <Region HBox.hgrow="ALWAYS" />
+
+                                <VBox spacing="20.0" fx:id="auctionInfoBox" visible="false" managed="false" translateX="-80.0">
+                                    <children>
+                                        <VBox spacing="4.0" translateX="-20.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Giá cao nhất hiện tại" />
+                                                <Label fx:id="currentBidLabel" styleClass="seller-inline-status" text="—" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" translateX="-20.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Thời gian còn lại" />
+                                                <Label fx:id="timeRemainingLabel" styleClass="seller-inline-status" text="—" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </VBox>
                             </children>
                         </HBox>
 

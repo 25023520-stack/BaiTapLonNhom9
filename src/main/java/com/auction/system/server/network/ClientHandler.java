@@ -98,8 +98,28 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             case DISCONNECT -> {
                 send(ResponsePayload.ok("Disconnected"));
                 close();
+        try {
+            switch (type) {
+                case LOGIN -> handleLogin(payload);
+                case REGISTER -> handleRegister(payload);
+                case LIST_ITEMS -> handleListItems();
+                case LIST_ITEMS_BY_SELLER -> send(auctionController.listItemsBySeller(payload, authenticatedUser));
+                case ADD_ITEM -> handleItemMutation(payload, "ITEM_ADDED");
+                case UPDATE_ITEM -> handleItemMutation(payload, "ITEM_UPDATED");
+                case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
+                case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
+                case BID -> handleBid(payload);
+                case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
+                case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
+                case APPROVE_AUCTION -> handleAuctionApproval(payload);
+                case DISCONNECT -> {
+                    send(ResponsePayload.ok("Disconnected"));
+                    close();
+                }
+                default -> send(ResponsePayload.error("Unsupported payload type: " + type));
             }
-            default -> send(ResponsePayload.error("Unsupported payload type: " + type));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            send(ResponsePayload.error(e.getMessage()));
         }
     }
 

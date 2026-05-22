@@ -50,6 +50,12 @@ public class LoginController {
         String username = txtUsername.getText();
         String password = txtPassword.getText();
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            showAlert(Alert.AlertType.WARNING, "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
+            return;
+        }
+
         AppContext.setServerHost(host.isEmpty() ? "127.0.0.1" : host);
         setLoginDisabled(true);
 

@@ -8,6 +8,7 @@ services:
       MYSQL_USER: auction_user
       MYSQL_PASSWORD: Auction123
       MYSQL_ROOT_PASSWORD: root123
+      TZ: Asia/Bangkok
     ports:
       - "3306:3306"
     volumes:
@@ -30,6 +31,8 @@ services:
       DB_NAME: auction_db
       DB_USER: auction_user
       DB_PASSWORD: Auction123
+      APP_TIMEZONE: Asia/Bangkok
+      TZ: Asia/Bangkok
       ADMIN_BOOTSTRAP_ID: ${ADMIN_BOOTSTRAP_ID:-ADMIN-DEFAULT}
       ADMIN_BOOTSTRAP_FULL_NAME: ${ADMIN_BOOTSTRAP_FULL_NAME:-System Admin}
       ADMIN_BOOTSTRAP_USERNAME: ${ADMIN_BOOTSTRAP_USERNAME:-admin}

@@ -4,6 +4,7 @@ import com.auction.system.server.database.Database;
 import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.server.manager.ItemManager;
 import com.auction.system.server.network.AuctionServer;
+import com.auction.system.server.scheduler.AuctionScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.IOException;
@@ -13,14 +14,16 @@ import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.TimeZone;
 
 public class ServerMain {
     private static final int DEFAULT_PORT = 5050;
     private static final AuctionManager AUCTION_MANAGER = AuctionManager.getInstance();
     private static Thread serverThread;
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerMain.class);
-
+    private static final String DEFAULT_TIMEZONE = "Asia/Bangkok";
     public static void main(String[] args) throws Exception {
+        configureAppTimezone();
         waitForDatabase();
         Database.getInstance().initializeDatabase();
 
@@ -33,6 +36,10 @@ public class ServerMain {
         logServerAddress(DEFAULT_PORT);
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
         AUCTION_MANAGER.setAuctionSubject(server);
+
+        AuctionScheduler scheduler = new AuctionScheduler(AUCTION_MANAGER);
+        scheduler.start();
+
         server.start();
     }
 
@@ -40,12 +47,13 @@ public class ServerMain {
         if (serverThread != null && serverThread.isAlive()) {
             return;
         }
-
+        configureAppTimezone();
         Database.getInstance().initializeDatabase();
         ItemManager.getInstance().loadItemsFromDatabase();
         purgeLegacyDemoItems();
         AuctionServer server = new AuctionServer(DEFAULT_PORT, AUCTION_MANAGER);
         AUCTION_MANAGER.setAuctionSubject(server);
+        new AuctionScheduler(AUCTION_MANAGER).start();
         serverThread = new Thread(() -> {
             try {
                 server.start();
@@ -123,5 +131,10 @@ public class ServerMain {
         } catch (UnknownHostException e) {
             System.out.println("Server started on port " + port + " (could not determine IP)");
         }
+    }
+
+    private static void configureAppTimezone(){
+        String timezoneId = System.getenv().getOrDefault("APP_TIMEZONE", DEFAULT_TIMEZONE);
+        TimeZone.setDefault(TimeZone.getTimeZone(timezoneId));
     }
 }
