@@ -150,8 +150,6 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
 
         default -> send(ResponsePayload.error("Unsupported payload type: " + type));
     }
-} catch (IllegalArgumentException | IllegalStateException e) {
-    send(ResponsePayload.error(e.getMessage()));
 }
     }
 
