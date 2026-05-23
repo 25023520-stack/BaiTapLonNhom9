@@ -12,23 +12,28 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.shape.Rectangle?>
 
-<BorderPane prefHeight="700.0" prefWidth="1120.0" styleClass="main-background" stylesheets="@Styles.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.SellerController">
+<BorderPane minHeight="600.0" minWidth="900.0" prefHeight="700.0" prefWidth="1120.0" styleClass="main-background" stylesheets="@Styles.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.SellerController">
 
     <top>
         <VBox spacing="0.0" styleClass="seller-header">
             <children>
                 <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="seller-header-content">
                     <children>
-                        <ImageView fitHeight="42.0" fitWidth="42.0" preserveRatio="true" styleClass="brand-logo">
-                            <image>
-                                <Image url="@assets/dai-hoc-cong-nghe-logo.png" />
-                            </image>
-                        </ImageView>
-                        <VBox spacing="2.0">
+                        <StackPane minHeight="64.0" minWidth="64.0" prefHeight="64.0" prefWidth="64.0" styleClass="bidder-logo-frame">
+                            <children>
+                                <ImageView fitHeight="52.0" fitWidth="52.0" preserveRatio="true" smooth="true">
+                                    <image>
+                                        <Image url="@assets/logouetnentrang.jpg" />
+                                    </image>
+                                </ImageView>
+                            </children>
+                        </StackPane>
+                        <VBox alignment="CENTER_LEFT" spacing="2.0">
                             <children>
                                 <Label styleClass="seller-header-title" text="AuctionHub Seller" />
                                 <Label styleClass="seller-header-subtitle" text="Quản lý sản phẩm đấu giá của bạn" />

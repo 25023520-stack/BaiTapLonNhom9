@@ -15,16 +15,16 @@
             <children>
                 <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="bidder-header-content">
                     <children>
-                        <StackPane minHeight="48.0" minWidth="48.0" prefHeight="48.0" prefWidth="48.0" styleClass="bidder-logo-frame">
+                        <StackPane minHeight="64.0" minWidth="64.0" prefHeight="64.0" prefWidth="64.0" styleClass="bidder-logo-frame">
                             <children>
-                                <ImageView fitHeight="38.0" fitWidth="38.0" pickOnBounds="true" preserveRatio="true">
+                                <ImageView fitHeight="52.0" fitWidth="52.0" pickOnBounds="true" preserveRatio="true" smooth="true">
                                     <image>
-                                        <Image url="@assets/dai-hoc-cong-nghe-logo.png" />
+                                        <Image url="@assets/logouetnentrang.jpg" />
                                     </image>
                                 </ImageView>
                             </children>
                         </StackPane>
-                        <VBox spacing="2.0">
+                        <VBox alignment="CENTER_LEFT" spacing="2.0">
                             <children>
                                 <Label styleClass="bidder-header-title" text="AuctionHub Bidder" />
                                 <Label styleClass="bidder-header-subtitle" text="Theo dõi phiên đấu giá và đặt giá trực tiếp" />
@@ -40,7 +40,7 @@
                         <Button mnemonicParsing="false" onAction="#handleLogout" styleClass="logout-button" text="Đăng xuất" />
                     </children>
                 </HBox>
-                <Rectangle fill="#FFFFFF" height="1.0" opacity="0.20" width="1080.0" />
+                <Rectangle fill="#FFFFFF" height="1.0" opacity="0.20" width="1120.0" />
             </children>
         </VBox>
     </top>

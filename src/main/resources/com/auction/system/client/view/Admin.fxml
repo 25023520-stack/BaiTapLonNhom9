@@ -15,8 +15,8 @@
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.shape.Rectangle?>
 
-<BorderPane prefHeight="720.0" prefWidth="1180.0" styleClass="main-background" stylesheets="@Styles.css"
-            xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+<BorderPane minHeight="600.0" minWidth="900.0" prefHeight="720.0" prefWidth="1120.0" styleClass="main-background" stylesheets="@Styles.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.auction.system.client.controller.AdminController">
 
     <top>
@@ -49,7 +49,7 @@
                         <Button mnemonicParsing="false" onAction="#handleLogout" styleClass="logout-button" text="Đăng xuất" />
                     </children>
                 </HBox>
-                <Rectangle fill="#FFFFFF" height="1.0" opacity="0.20" width="1180.0" />
+                <Rectangle fill="#FFFFFF" height="1.0" opacity="0.20" width="1120.0" />
             </children>
         </VBox>
     </top>
