@@ -155,7 +155,16 @@
                         </VBox>
                         <VBox spacing="8.0" styleClass="bidder-detail-card" VBox.vgrow="ALWAYS">
                             <children>
-                                <Label styleClass="bidder-panel-title" text="Lịch sử đấu giá" />
+                                <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                    <children>
+                                        <Label styleClass="bidder-panel-title" text="Lịch sử đấu giá" />
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Button mnemonicParsing="false"
+                                                onAction="#showBidHistoryDialog"
+                                                styleClass="secondary-button"
+                                                text="Xem lớn" />
+                                    </children>
+                                </HBox>
                                 <TextArea fx:id="bidHistoryArea" prefHeight="180.0" prefRowCount="12" styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
@@ -257,6 +266,19 @@
                                                     onAction="#submitAutoBid"
                                                     styleClass="auction-bid-button"
                                                     text="Bật đấu giá tự động" />
+
+                                            <Label styleClass="input-label" text="Trạng thái auto-bid" />
+                                            <Label fx:id="autoBidStatusValue"
+                                                   styleClass="bidder-page-subtitle"
+                                                   text="Chưa bật"
+                                                   wrapText="true" />
+
+                                            <Button fx:id="cancelAutoBidButton"
+                                                    maxWidth="1.7976931348623157E308"
+                                                    mnemonicParsing="false"
+                                                    onAction="#cancelAutoBid"
+                                                    styleClass="secondary-button"
+                                                    text="Hủy đấu giá tự động" />
                                         </children>
                                     </VBox>
                                 </children>

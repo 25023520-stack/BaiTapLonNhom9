@@ -3,6 +3,7 @@ package com.auction.system.server.controller;
 import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
@@ -21,9 +22,9 @@ public class AuctionController {
     private final AuctionManager auctionManager = AuctionManager.getInstance();
     private static final Path ITEM_UPLOAD_DIR = Path.of("data", "uploads", "items");
 
-    public ResponsePayload listItems() {
+    public ResponsePayload listItems(User user) {
         ResponsePayload response = ResponsePayload.ok("Items retrieved");
-        response.put("items", withImageData(auctionManager.getAllItems()));
+        response.put("items", withClientData(auctionManager.getAllItems(), user));
         return response;
     }
 
@@ -199,7 +200,7 @@ public class AuctionController {
             response.put("amount", bid.getAmount());
             response.put("balance", latestBidder.getBalance());
             auctionManager.findItemById(itemId).ifPresent(item -> {
-                attachImageData(item);
+                attachClientData(item, authenticatedUser);
                 response.put("item", item);
             });
             return response;
@@ -231,7 +232,7 @@ public class AuctionController {
 
         try {
             Item item = auctionManager.setAutoBid(itemId, bidder, maxBid, incrementAmount);
-            attachImageData(item);
+            attachClientData(item, authenticatedUser);
 
             ResponsePayload response = ResponsePayload.ok("Auto-bid enabled successfully");
             response.put("item", item);
@@ -299,7 +300,7 @@ public class AuctionController {
 
         try {
             Item item = auctionManager.cancelAutoBid(itemId, bidder);
-            attachImageData(item);
+            attachClientData(item, authenticatedUser);
 
             ResponsePayload response = ResponsePayload.ok("Auto-bid canceled successfully");
             response.put("item", item);
@@ -312,6 +313,39 @@ public class AuctionController {
     private List<Item> withImageData(List<Item> items) {
         items.forEach(this::attachImageData);
         return items;
+    }
+
+    private List<Item> withClientData(List<Item> items, User user) {
+        items.forEach(item -> attachClientData(item, user));
+        return items;
+    }
+
+    private void attachClientData(Item item, User user) {
+        attachImageData(item);
+        attachAutoBidData(item, user);
+    }
+
+    private void attachAutoBidData(Item item, User user) {
+        if (item == null) {
+            return;
+        }
+
+        item.setCurrentUserAutoBidActive(false);
+        item.setCurrentUserAutoBidMaxBid(0);
+        item.setCurrentUserAutoBidIncrementAmount(0);
+
+        if (!(user instanceof Bidder bidder)) {
+            return;
+        }
+
+        AutoBid autoBid = auctionManager.findActiveAutoBid(item.getId(), bidder.getId());
+        if (autoBid == null) {
+            return;
+        }
+
+        item.setCurrentUserAutoBidActive(true);
+        item.setCurrentUserAutoBidMaxBid(autoBid.getMaxBid());
+        item.setCurrentUserAutoBidIncrementAmount(autoBid.getIncrementAmount());
     }
 
     private void attachImageData(Item item) {

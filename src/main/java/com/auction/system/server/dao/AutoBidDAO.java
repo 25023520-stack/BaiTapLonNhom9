@@ -21,8 +21,7 @@ public class AutoBidDAO extends BaseDAO {
                     id = VALUES(id),
                     max_bid = VALUES(max_bid),
                     increment_amount = VALUES(increment_amount),
-                    active = VALUES(active),
-                    created_at = VALUES(created_at)
+                    active = VALUES(active)
                 """;
 
         try (Connection conn = getConnection();
@@ -73,6 +72,34 @@ public class AutoBidDAO extends BaseDAO {
         return autoBids;
     }
 
+    public AutoBid findActiveByItemAndBidder(String itemId, String bidderId) {
+        String sql = """
+                SELECT *
+                FROM auto_bids
+                WHERE item_id = ?
+                  AND bidder_id = ?
+                  AND active = TRUE
+                LIMIT 1
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+
+            pstm.setString(1, itemId);
+            pstm.setString(2, bidderId);
+
+            try (ResultSet rs = pstm.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToAutoBid(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Loi lay auto-bid cua bidder: " + e.getMessage());
+        }
+
+        return null;
+    }
+
     //tắt autobid của 1 bidder cho 1 item (khi bidder đặt trực tiếp hoặc khi item hết hạn)
     //dùng trong trường hợp hủy đấu giá
     public boolean deactivate(String itemId, String bidderId) {
@@ -92,6 +119,50 @@ public class AutoBidDAO extends BaseDAO {
             return pstm.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Loi tat auto-bid: " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    public boolean deactivateByItemId(String itemId) {
+        String sql = """
+                UPDATE auto_bids
+                SET active = FALSE
+                WHERE item_id = ?
+                  AND active = TRUE
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+
+            pstm.setString(1, itemId);
+            pstm.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Loi tat tat ca auto-bid cua item: " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    public boolean deactivateExhausted(String itemId, double currentPrice) {
+        String sql = """
+                UPDATE auto_bids
+                SET active = FALSE
+                WHERE item_id = ?
+                  AND active = TRUE
+                  AND max_bid <= ?
+                """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+
+            pstm.setString(1, itemId);
+            pstm.setBigDecimal(2, BigDecimal.valueOf(currentPrice));
+            pstm.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            System.err.println("Loi tat auto-bid het kha nang: " + e.getMessage());
         }
 
         return false;
