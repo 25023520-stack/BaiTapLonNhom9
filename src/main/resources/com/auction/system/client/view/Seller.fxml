@@ -122,13 +122,35 @@
                         <HBox alignment="CENTER_LEFT" spacing="14.0">
                             <children>
                                 <ImageView fx:id="imagePreview" fitHeight="96.0" fitWidth="128.0" preserveRatio="true" styleClass="seller-image-preview" />
-                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                <VBox maxWidth="420.0" prefWidth="360.0" spacing="8.0">
                                     <children>
                                         <Label styleClass="input-label" text="Ảnh sản phẩm" />
                                         <Label fx:id="imageNameLabel" styleClass="seller-page-subtitle" text="Chưa chọn ảnh" wrapText="true" />
                                         <Button fx:id="chooseImageButton" mnemonicParsing="false" onAction="#chooseImage" styleClass="secondary-button" text="Chọn ảnh" />
                                     </children>
                                 </VBox>
+                                <HBox fx:id="auctionInfoBox" alignment="CENTER_LEFT" managed="false" spacing="38.0" translateX="50.0" translateY="42.0" visible="false">
+                                    <children>
+                                        <VBox spacing="4.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Thời gian còn lại" />
+                                                <Label fx:id="timeRemainingLabel" styleClass="seller-inline-status" text="—" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Người bid cao nhất" />
+                                                <Label fx:id="highestBidderLabel" styleClass="seller-inline-status" text="Chua co" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Giá cao nhất hiện tại" />
+                                                <Label fx:id="currentBidLabel" styleClass="seller-inline-status" text="—" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
                             </children>
                         </HBox>
 
@@ -137,31 +159,6 @@
                                 <Label styleClass="input-label" text="Thời lượng phiên" />
                                 <Spinner fx:id="durationHoursSpinner" editable="true" prefWidth="120.0" styleClass="combo-field" />
                                 <Label styleClass="seller-page-subtitle" text="giờ" />
-
-                                <Region HBox.hgrow="ALWAYS" />
-
-                                <VBox spacing="20.0" fx:id="auctionInfoBox" visible="false" managed="false" translateX="-80.0">
-                                    <children>
-                                        <VBox spacing="4.0" translateX="-20.0">
-                                            <children>
-                                                <Label styleClass="input-label" text="Giá cao nhất hiện tại" />
-                                                <Label fx:id="currentBidLabel" styleClass="seller-inline-status" text="—" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4.0" translateX="-20.0">
-                                            <children>
-                                                <Label styleClass="input-label" text="Nguoi bid cao nhat" />
-                                                <Label fx:id="highestBidderLabel" styleClass="seller-inline-status" text="Chua co" />
-                                            </children>
-                                        </VBox>
-                                        <VBox spacing="4.0" translateX="-20.0">
-                                            <children>
-                                                <Label styleClass="input-label" text="Thời gian còn lại" />
-                                                <Label fx:id="timeRemainingLabel" styleClass="seller-inline-status" text="—" />
-                                            </children>
-                                        </VBox>
-                                    </children>
-                                </VBox>
                             </children>
                         </HBox>
 

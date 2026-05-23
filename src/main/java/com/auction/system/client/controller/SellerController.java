@@ -29,6 +29,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -78,7 +79,7 @@ public class SellerController {
     @FXML private DatePicker endDatePicker;
     @FXML private Spinner<Integer> endHourSpinner;
     @FXML private Spinner<Integer> endMinuteSpinner;
-    @FXML private VBox auctionInfoBox;
+    @FXML private HBox auctionInfoBox;
     @FXML private Label currentBidLabel;
     @FXML private Label highestBidderLabel;
     @FXML private Label timeRemainingLabel;
@@ -672,12 +673,8 @@ public class SellerController {
                 ? item.getCurrentPrice() : item.getStartPrice();
         currentBidLabel.setText(String.format("%,.0f ₫", highestPrice));
         if (highestBidderLabel != null) {
-            // Ghi chu: uu tien hien thi username de seller nhin nhanh ai dang dan dau.
-            // Neu item cu chua co username thi fallback ve bidderId thay vi de trong.
+            // Ghi chu: seller chi can thay ten bidder dang dan dau, khong hien thi ID noi bo.
             String highestBidder = safeTrim(item.getHighestBidderUsername());
-            if (highestBidder.isEmpty()) {
-                highestBidder = safeTrim(item.getHighestBidderId());
-            }
             highestBidderLabel.setText(highestBidder.isEmpty() ? "Chua co" : highestBidder);
         }
 
