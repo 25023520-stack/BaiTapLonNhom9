@@ -58,8 +58,16 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         try {
             String line;
             while (connected && (line = reader.readLine()) != null) {
-                Payload payload = GSON.fromJson(line, Payload.class);
-                handle(payload);
+                try {
+                    Payload payload = GSON.fromJson(line, Payload.class);
+                    handle(payload);
+                } catch (RuntimeException exception) {
+                    // Ghi chu: moi request tu client phai duoc co lap loi.
+                    // Neu mot request bid/payload loi ma de exception thoat khoi loop nay,
+                    // socket se bi dong va client se bi day sang man "May chu khong kha dung".
+                    LOGGER.error("Failed to handle client payload: {}", exception.getMessage(), exception);
+                    send(ResponsePayload.error("Server cannot process this request: " + exception.getMessage()));
+                }
             }
         } catch (IOException e) {
             if (connected) {
@@ -74,6 +82,11 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
     }
 
     private void handle(Payload payload) throws IOException {
+        if (payload == null) {
+            send(ResponsePayload.error("Payload is required"));
+            return;
+        }
+
         PayloadType type = payload.getType();
         if (type == null) {
             send(ResponsePayload.error("Payload type is required"));
@@ -82,6 +95,34 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
 
 
         try {
+            switch (type) {
+                case LOGIN -> handleLogin(payload);
+                case REGISTER -> handleRegister(payload);
+                case LIST_ITEMS -> handleListItems();
+                case LIST_ITEMS_BY_SELLER -> send(auctionController.listItemsBySeller(payload, authenticatedUser));
+                case ADD_ITEM -> handleItemMutation(payload, "ITEM_ADDED");
+                case UPDATE_ITEM -> handleItemMutation(payload, "ITEM_UPDATED");
+                case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
+                case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
+                case BID -> handleBid(payload);
+                case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
+                case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
+                case APPROVE_DEPOSIT -> send(adminController.approveDeposit(payload, authenticatedUser));
+                case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
+                case APPROVE_AUCTION -> handleAuctionApproval(payload);
+                case DISCONNECT -> {
+                    send(ResponsePayload.ok("Disconnected"));
+                    close();
+                }
+                default -> send(ResponsePayload.error("Unsupported payload type: " + type));
+            }
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            send(ResponsePayload.error(e.getMessage()));
+        } catch (RuntimeException e) {
+            // Ghi chu: day la lop chan cuoi cho nghiep vu server.
+            // Muc tieu la tra loi loi ve client thay vi lam roi ket noi socket.
+            LOGGER.error("Unexpected server error while handling {}: {}", type, e.getMessage(), e);
+            send(ResponsePayload.error("Server error while handling " + type + ": " + e.getMessage()));
     switch (type) {
         case LOGIN -> handleLogin(payload);
         case REGISTER -> handleRegister(payload);
