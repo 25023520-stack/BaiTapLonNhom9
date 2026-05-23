@@ -356,6 +356,115 @@ public class AuctionManager {x
         }
     }
 
+    public void markAsPaid(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
+        }
+
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
+
+        try {
+            Item item = requireItem(itemId);
+
+            if (item.getStatus() != AuctionStatus.FINISHED) {
+                throw new IllegalStateException("Only FINISHED auctions can be marked as PAID");
+            }
+
+            try (Connection conn = Database.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    boolean itemUpdated = itemDAO.updateStatus(conn, itemId, AuctionStatus.PAID);
+                    if (!itemUpdated) throw new SQLException("Cannot update item status to PAID");
+
+                    boolean auctionUpdated = auctionDAO.updateStatus(conn, itemId, AuctionStatus.PAID);
+                    if (!auctionUpdated) throw new SQLException("Cannot update auction status to PAID");
+
+                    conn.commit();
+
+                    item.setStatus(AuctionStatus.PAID);
+                    Auction auction = auctionsById.get(itemId);
+                    if (auction != null) auction.setStatus(AuctionStatus.PAID);
+
+                    if (auctionSubject != null) {
+                        auctionSubject.notifyObservers(item, "AUCTION_PAID");
+                    }
+
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw new IllegalStateException("Cannot mark auction as paid: " + e.getMessage(), e);
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+
+            } catch (SQLException e) {
+                throw new IllegalStateException("Database error when marking auction as paid", e);
+            }
+
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void cancelAuction(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
+        }
+
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
+
+        try {
+            Item item = requireItem(itemId);
+
+            AuctionStatus current = item.getStatus();
+            if (current == AuctionStatus.FINISHED || current == AuctionStatus.PAID || current == AuctionStatus.CANCELED) {
+                throw new IllegalStateException("Cannot cancel an auction with status: " + current);
+            }
+
+            try (Connection conn = Database.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    boolean itemUpdated = itemDAO.updateStatus(conn, itemId, AuctionStatus.CANCELED);
+                    if (!itemUpdated) throw new SQLException("Cannot update item status to CANCELED");
+
+                    boolean auctionUpdated;
+                    if (current == AuctionStatus.RUNNING) {
+                        // clear winner/price since the auction did not complete normally
+                        auctionUpdated = auctionDAO.updateStatusAndClearWinner(conn, itemId, AuctionStatus.CANCELED);
+                    } else {
+                        auctionUpdated = auctionDAO.updateStatus(conn, itemId, AuctionStatus.CANCELED);
+                    }
+                    if (!auctionUpdated) throw new SQLException("Cannot update auction status to CANCELED");
+
+                    conn.commit();
+
+                    item.setStatus(AuctionStatus.CANCELED);
+                    Auction auction = auctionsById.get(itemId);
+                    if (auction != null) auction.setStatus(AuctionStatus.CANCELED);
+
+                    if (auctionSubject != null) {
+                        auctionSubject.notifyObservers(item, "AUCTION_CANCELED");
+                    }
+
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw new IllegalStateException("Cannot cancel auction: " + e.getMessage(), e);
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+
+            } catch (SQLException e) {
+                throw new IllegalStateException("Database error when canceling auction", e);
+            }
+
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public Bid placeBid(String itemId, Bidder bidder, double bidAmount) {
         if (itemId == null || itemId.isBlank()) {
             throw new IllegalArgumentException("Item id must not be empty");

@@ -22,14 +22,14 @@ public class Database {
     private static final String  DB_HOST =  System.getenv().getOrDefault("DB_HOST", "localhost" ) ;
     private static final String DB_PORT = System.getenv().getOrDefault("DB_PORT", "3306");
     private static final String DB_NAME = System.getenv().getOrDefault("DB_NAME", "auction_db");
-
+    private static final String APP_TIMEZONE = System.getenv().getOrDefault("APP_TIMEZONE", "Asia/Bangkok");
     private static final String DB_URL =
             "jdbc:mysql://" + DB_HOST + ":" +DB_PORT + "/" + DB_NAME
             + "?useSSL=false"
             + "&allowPublicKeyRetrieval=true"
             + "&useUnicode=true"
             + "&characterEncoding=UTF-8"
-            + "&serverTimezone=Asia/Bangkok";
+            + "&serverTimezone=" + APP_TIMEZONE;
 
     private static final String DB_USER = System.getenv().getOrDefault("DB_USER", "auction_user");
     private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "Auction123");
@@ -94,6 +94,7 @@ public class Database {
                     password VARCHAR(255) NOT NULL,
                     role VARCHAR(20) DEFAULT 'BIDDER',
                     approved BOOLEAN NOT NULL DEFAULT TRUE,
+                    balance DECIMAL(15,2) NOT NULL DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
                         )
                     ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -184,8 +185,31 @@ public class Database {
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createAutoBidsTable);
             }
-
+          
+            String createDepositRequestsTable = """
+                    /* Bang luu yeu cau nap tien: bidder khong duoc tu cong tien,
+                       admin phai duyet thi balance moi thay doi. */
+                    CREATE TABLE IF NOT EXISTS deposit_requests (
+                    id VARCHAR(100) PRIMARY KEY,
+                    bidder_id VARCHAR(100) NOT NULL,
+                    amount DECIMAL(15,2) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    reviewed_at TIMESTAMP NULL,
+                    reviewed_by VARCHAR(100),
+                    CONSTRAINT fk_deposit_bidder
+                        FOREIGN KEY (bidder_id) REFERENCES users(id),
+                    CONSTRAINT fk_deposit_admin
+                        FOREIGN KEY (reviewed_by) REFERENCES users(id)
+                    )
+                    ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            try(Statement stmt = connection1.createStatement()) {
+                stmt.executeUpdate(createDepositRequestsTable);
+            }
+          
             ensureColumn(connection1, "users", "approved", "BOOLEAN NOT NULL DEFAULT TRUE");
+            ensureColumn(connection1, "users", "balance", "DECIMAL(15,2) NOT NULL DEFAULT 0");
             ensureColumn(connection1, "items", "auction_approved", "BOOLEAN NOT NULL DEFAULT FALSE");
             backfillApprovalData(connection1);
             ensureDefaultAdmin(connection1);
@@ -225,7 +249,7 @@ public class Database {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate("""
                     UPDATE users
-                    SET approved = TRUE
+                    SET approved = TRUE, balance = COALESCE(balance, 0)
                     WHERE approved IS NULL OR role IN ('ADMIN', 'BIDDER')
                     """);
             statement.executeUpdate("""
@@ -245,7 +269,7 @@ public class Database {
 
         String updateSql = """
                 UPDATE users
-                SET full_name = ?, username = ?, email = ?, password = ?, role = 'ADMIN', approved = TRUE
+                SET full_name = ?, username = ?, email = ?, password = ?, role = 'ADMIN', approved = TRUE, balance = 0
                 WHERE username = ? OR id = ?
                 """;
         try (PreparedStatement statement = connection.prepareStatement(updateSql)) {
@@ -262,8 +286,8 @@ public class Database {
         }
 
         String insertSql = """
-                INSERT INTO users (id, full_name, username, email, password, role, approved)
-                SELECT ?, ?, ?, ?, ?, ?, ?
+                INSERT INTO users (id, full_name, username, email, password, role, approved, balance)
+                SELECT ?, ?, ?, ?, ?, ?, ?, ?
                 WHERE NOT EXISTS (
                     SELECT 1 FROM users WHERE username = ?
                 )
@@ -277,7 +301,8 @@ public class Database {
             statement.setString(5, ADMIN_BOOTSTRAP_PASSWORD);
             statement.setString(6, "ADMIN");
             statement.setBoolean(7, true);
-            statement.setString(8, ADMIN_BOOTSTRAP_USERNAME);
+            statement.setBigDecimal(8, java.math.BigDecimal.ZERO);
+            statement.setString(9, ADMIN_BOOTSTRAP_USERNAME);
             statement.executeUpdate();
         }
     }

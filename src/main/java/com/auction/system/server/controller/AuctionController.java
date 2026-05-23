@@ -176,11 +176,22 @@ public class AuctionController {
         }
 
         try {
-            Bid bid = auctionManager.placeBid(itemId, bidder, amount);
+            Bidder latestBidder = auctionManager.getAuthManager()
+                    .findById(bidder.getId())
+                    .filter(Bidder.class::isInstance)
+                    .map(Bidder.class::cast)
+                    .orElse(bidder);
+            if (latestBidder.getBalance() < amount) {
+                return ResponsePayload.error("Bidder balance is not enough for this bid");
+            }
+
+            // Server doc lai so du moi nhat tu database de bidder khong can dang xuat sau khi admin duyet nap tien.
+            Bid bid = auctionManager.placeBid(itemId, latestBidder, amount);
             ResponsePayload response = ResponsePayload.ok("Bid accepted");
             response.put("bid", bid);
             response.put("itemId", itemId);
             response.put("amount", bid.getAmount());
+            response.put("balance", latestBidder.getBalance());
             auctionManager.findItemById(itemId).ifPresent(item -> {
                 attachImageData(item);
                 response.put("item", item);

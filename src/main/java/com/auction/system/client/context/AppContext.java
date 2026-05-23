@@ -92,6 +92,7 @@ public final class AppContext {
         String email = getString(userMap, "email");
         String role = getString(userMap, "role");
         boolean approved = getBoolean(userMap, "approved");
+        double balance = getDouble(userMap, "balance");
 
         User user = switch (role.toUpperCase()) {
             case "ADMIN"  -> new Admin(id, fullName, username, email, "");
@@ -99,6 +100,7 @@ public final class AppContext {
             default       -> new Bidder(id, fullName, username, email, "");
         };
         user.setApproved(approved);
+        user.setBalance(balance);
         return user;
     }
 
@@ -116,6 +118,21 @@ public final class AppContext {
             return number.intValue() != 0;
         }
         return value != null && Boolean.parseBoolean(String.valueOf(value));
+    }
+
+    private static double getDouble(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value == null) {
+            return 0;
+        }
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
     }
 
     public static synchronized void setServerHost(String host) {

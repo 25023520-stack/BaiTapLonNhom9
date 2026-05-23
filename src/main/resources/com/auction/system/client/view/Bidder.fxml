@@ -167,6 +167,22 @@
 
                         <Rectangle fill="#DDEDF7" height="1.0" width="300.0" />
 
+                        <VBox spacing="8.0" styleClass="bidder-wallet-panel">
+                            <children>
+                                <Label styleClass="bidder-panel-title" text="Số dư tài khoản" />
+                                <Label fx:id="balanceValue" styleClass="bidder-price-value" text="-" wrapText="true" />
+                                <Label styleClass="input-label" text="Yêu cầu nạp tiền" />
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                    <children>
+                                        <Label styleClass="input-icon" text="VND" />
+                                        <TextField fx:id="depositAmountField" promptText="Nhập số tiền muốn nạp" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+                                <Button fx:id="depositButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false"
+                                        onAction="#submitDepositRequest" styleClass="secondary-button" text="Gửi yêu cầu nạp" />
+                            </children>
+                        </VBox>
+
                         <Label styleClass="input-label" text="Người đấu giá" />
                         <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
                             <children>
