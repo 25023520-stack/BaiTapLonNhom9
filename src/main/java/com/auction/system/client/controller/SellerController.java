@@ -40,7 +40,9 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -51,6 +53,7 @@ public class SellerController {
     private static final Logger logger = LoggerFactory.getLogger(SellerController.class);
     private static final Duration POLL_INTERVAL = Duration.seconds(3);
     private static final Gson GSON = GsonProvider.get();
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     @FXML private ListView<Item> sellerItemList;
     @FXML private TextField nameField;
@@ -68,6 +71,12 @@ public class SellerController {
     @FXML private Label accountStatusLabel;
     @FXML private Label auctionApprovalLabel;
     @FXML private Spinner<Integer> durationHoursSpinner;
+    @FXML private DatePicker startDatePicker;
+    @FXML private Spinner<Integer> startHourSpinner;
+    @FXML private Spinner<Integer> startMinuteSpinner;
+    @FXML private DatePicker endDatePicker;
+    @FXML private Spinner<Integer> endHourSpinner;
+    @FXML private Spinner<Integer> endMinuteSpinner;
     @FXML private VBox auctionInfoBox;
     @FXML private Label currentBidLabel;
     @FXML private Label timeRemainingLabel;
@@ -104,7 +113,7 @@ public class SellerController {
         removeButton.setDisable(true);
         startAuctionButton.setDisable(true);
         addButton.setDisable(false);
-        durationHoursSpinner.setValueFactory(new IntegerSpinnerValueFactory(1, 168, 1));
+        configureScheduleInputs();
         updateSellerApprovalState();
         updateAuctionApprovalLabel(null);
 
@@ -258,10 +267,19 @@ public class SellerController {
         }
 
         Payload req = new Payload(PayloadType.START_AUCTION);
-        int durationHours = durationHoursSpinner.getValue();
+        LocalDateTime startTime = readScheduleTime(startDatePicker, startHourSpinner, startMinuteSpinner, "bat dau");
+        LocalDateTime endTime = readScheduleTime(endDatePicker, endHourSpinner, endMinuteSpinner, "ket thuc");
+        if (startTime == null || endTime == null) {
+            return;
+        }
+        if (!endTime.isAfter(startTime)) {
+            showError("Thoi gian khong hop le", "Thoi diem ket thuc phai sau thoi diem bat dau.");
+            return;
+        }
+
         req.put("id", selected.getId());
-        req.put("startTime", LocalDateTime.now().toString());
-        req.put("endTime", LocalDateTime.now().plusHours(durationHours).toString());
+        req.put("startTime", startTime.toString());
+        req.put("endTime", endTime.toString());
 
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
@@ -491,6 +509,7 @@ public class SellerController {
         descriptionField.setDisable(!approved);
         startPriceField.setDisable(!approved);
         durationHoursSpinner.setDisable(!approved);
+        setScheduleInputsDisabled(!approved);
         newItemButton.setDisable(!approved);
         chooseImageButton.setDisable(!approved);
         addButton.setDisable(!approved || hasSelection);
@@ -534,6 +553,75 @@ public class SellerController {
     }
 
     private String safeTrim(String s) { return s == null ? "" : s.trim(); }
+
+    private void configureScheduleInputs() {
+        LocalDateTime nowInVietnam = LocalDateTime.now(VIETNAM_ZONE);
+
+        durationHoursSpinner.setValueFactory(new IntegerSpinnerValueFactory(1, 168, 1));
+        startHourSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 23, nowInVietnam.getHour()));
+        startMinuteSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 59, nowInVietnam.getMinute()));
+        endHourSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 23, nowInVietnam.plusHours(1).getHour()));
+        endMinuteSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 59, nowInVietnam.getMinute()));
+
+        startHourSpinner.setEditable(true);
+        startMinuteSpinner.setEditable(true);
+        endHourSpinner.setEditable(true);
+        endMinuteSpinner.setEditable(true);
+        startDatePicker.setValue(nowInVietnam.toLocalDate());
+        endDatePicker.setValue(nowInVietnam.plusHours(1).toLocalDate());
+
+        durationHoursSpinner.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
+        startDatePicker.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
+        startHourSpinner.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
+        startMinuteSpinner.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
+    }
+
+    private void applyDurationSuggestion() {
+        LocalDate startDate = startDatePicker.getValue();
+        Integer startHour = startHourSpinner.getValue();
+        Integer startMinute = startMinuteSpinner.getValue();
+        Integer durationHours = durationHoursSpinner.getValue();
+        if (startDate == null || startHour == null || startMinute == null || durationHours == null) {
+            return;
+        }
+
+        // Ghi chu: seller co the chon truc tiep thoi diem ket thuc.
+        // Spinner thoi luong chi dung de goi y nhanh endTime theo gio Viet Nam tu startTime da chon.
+        LocalDateTime suggestedEnd = startDate.atTime(startHour, startMinute).plusHours(durationHours);
+        endDatePicker.setValue(suggestedEnd.toLocalDate());
+        endHourSpinner.getValueFactory().setValue(suggestedEnd.getHour());
+        endMinuteSpinner.getValueFactory().setValue(suggestedEnd.getMinute());
+    }
+
+    private LocalDateTime readScheduleTime(
+            DatePicker datePicker,
+            Spinner<Integer> hourSpinner,
+            Spinner<Integer> minuteSpinner,
+            String label
+    ) {
+        if (datePicker.getValue() == null) {
+            showError("Thieu thoi gian", "Vui long chon ngay " + label + " phien dau gia.");
+            return null;
+        }
+
+        try {
+            int hour = hourSpinner.getValue();
+            int minute = minuteSpinner.getValue();
+            return datePicker.getValue().atTime(hour, minute);
+        } catch (RuntimeException exception) {
+            showError("Thoi gian khong hop le", "Gio/phut " + label + " phien dau gia khong hop le.");
+            return null;
+        }
+    }
+
+    private void setScheduleInputsDisabled(boolean disabled) {
+        startDatePicker.setDisable(disabled);
+        startHourSpinner.setDisable(disabled);
+        startMinuteSpinner.setDisable(disabled);
+        endDatePicker.setDisable(disabled);
+        endHourSpinner.setDisable(disabled);
+        endMinuteSpinner.setDisable(disabled);
+    }
 
     private void showInfo(String msg) {
         Alert a = new Alert(AlertType.INFORMATION, msg);

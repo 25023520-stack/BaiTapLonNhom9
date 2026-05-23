@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Spinner?>
@@ -147,6 +148,40 @@
                                                 <Label fx:id="timeRemainingLabel" styleClass="seller-inline-status" text="—" />
                                             </children>
                                         </VBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="14.0">
+                            <children>
+                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="input-label" text="Thời điểm bắt đầu" />
+                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                            <children>
+                                                <DatePicker fx:id="startDatePicker" prefWidth="145.0" styleClass="combo-field" />
+                                                <Spinner fx:id="startHourSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                <Label styleClass="seller-page-subtitle" text="giờ" />
+                                                <Spinner fx:id="startMinuteSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                <Label styleClass="seller-page-subtitle" text="phút" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="input-label" text="Thời điểm kết thúc" />
+                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                            <children>
+                                                <DatePicker fx:id="endDatePicker" prefWidth="145.0" styleClass="combo-field" />
+                                                <Spinner fx:id="endHourSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                <Label styleClass="seller-page-subtitle" text="giờ" />
+                                                <Spinner fx:id="endMinuteSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                <Label styleClass="seller-page-subtitle" text="phút" />
+                                            </children>
+                                        </HBox>
                                     </children>
                                 </VBox>
                             </children>
