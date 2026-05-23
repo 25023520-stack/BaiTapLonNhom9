@@ -2,6 +2,7 @@ package com.auction.system.server.dao;
 
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
+import com.auction.system.model.user.User;
 
 import java.math.BigDecimal;
 
@@ -13,6 +14,7 @@ import java.util.List;
 
 public class ItemDAO extends BaseDAO {
     private final BidDAO bidDAO = new BidDAO();
+    private final UserDAO userDAO = new UserDAO();
 
     public boolean insertItem(Item item) {
         String sql = """
@@ -130,6 +132,8 @@ public class ItemDAO extends BaseDAO {
         item.setSellerId(rs.getString("seller_id"));
         item.setImagePath(rs.getString("image_path"));
         item.setHighestBidderId(rs.getString("highest_bidder_id"));
+        item.setSellerUsername(findUsernameById(item.getSellerId()));
+        item.setHighestBidderUsername(findUsernameById(item.getHighestBidderId()));
         item.setAuctionApproved(rs.getBoolean("auction_approved"));
         item.setStartTime(toLocalDateTime(rs.getTimestamp("start_time")));
         item.setEndTime(toLocalDateTime(rs.getTimestamp("end_time")));
@@ -302,6 +306,15 @@ public class ItemDAO extends BaseDAO {
 
             return pstm.executeUpdate() > 0;
         }
+    }
+
+    private String findUsernameById(String userId) {
+        if(userId == null || userId.isBlank()) {
+            return null;
+        }
+
+        User user = userDAO.findById(userId);
+        return user == null ? null : user.getUserName();
     }
 
 

@@ -163,6 +163,29 @@ public class Database {
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createBidsTable);
             }
+
+            String createAutoBidsTable = """
+                    CREATE TABLE IF NOT EXISTS auto_bids (
+                    id VARCHAR(100) PRIMARY KEY,
+                    item_id VARCHAR(100) NOT NULL,
+                    bidder_id VARCHAR(100) NOT NULL,
+                    max_bid DECIMAL(15,2) NOT NULL,
+                    increment_amount DECIMAL(15,2) NOT NULL,
+                    active BOOLEAN NOT NULL DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_auto_bids_item
+                        FOREIGN KEY (item_id) REFERENCES items(id),
+                    CONSTRAINT fk_auto_bids_bidder
+                        FOREIGN KEY (bidder_id) REFERENCES users(id),
+                    CONSTRAINT uq_auto_bid_item_bidder
+                        UNIQUE (item_id, bidder_id)
+                    )
+                    ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            try(Statement stmt = connection1.createStatement()) {
+                stmt.executeUpdate(createAutoBidsTable);
+            }
+          
             String createDepositRequestsTable = """
                     /* Bang luu yeu cau nap tien: bidder khong duoc tu cong tien,
                        admin phai duyet thi balance moi thay doi. */
@@ -184,6 +207,7 @@ public class Database {
             try(Statement stmt = connection1.createStatement()) {
                 stmt.executeUpdate(createDepositRequestsTable);
             }
+          
             ensureColumn(connection1, "users", "approved", "BOOLEAN NOT NULL DEFAULT TRUE");
             ensureColumn(connection1, "users", "balance", "DECIMAL(15,2) NOT NULL DEFAULT 0");
             ensureColumn(connection1, "items", "auction_approved", "BOOLEAN NOT NULL DEFAULT FALSE");

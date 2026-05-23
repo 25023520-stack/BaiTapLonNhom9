@@ -93,6 +93,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             return;
         }
 
+
         try {
             switch (type) {
                 case LOGIN -> handleLogin(payload);
@@ -122,7 +123,36 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             // Muc tieu la tra loi loi ve client thay vi lam roi ket noi socket.
             LOGGER.error("Unexpected server error while handling {}: {}", type, e.getMessage(), e);
             send(ResponsePayload.error("Server error while handling " + type + ": " + e.getMessage()));
+    switch (type) {
+        case LOGIN -> handleLogin(payload);
+        case REGISTER -> handleRegister(payload);
+        case LIST_ITEMS -> handleListItems();
+        case LIST_ITEMS_BY_SELLER -> send(auctionController.listItemsBySeller(payload, authenticatedUser));
+        case ADD_ITEM -> handleItemMutation(payload, "ITEM_ADDED");
+        case UPDATE_ITEM -> handleItemMutation(payload, "ITEM_UPDATED");
+        case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
+        case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
+        case BID -> handleBid(payload);
+
+        case AUTO_BID_SET -> handleAutoBidSet(payload);
+        case AUTO_BID_CANCEL -> handleAutoBidCancel(payload);
+
+        case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
+        case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
+        case APPROVE_DEPOSIT -> send(adminController.approveDeposit(payload, authenticatedUser));
+        case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
+        case APPROVE_AUCTION -> handleAuctionApproval(payload);
+
+        case DISCONNECT -> {
+            send(ResponsePayload.ok("Disconnected"));
+            close();
         }
+
+        default -> send(ResponsePayload.error("Unsupported payload type: " + type));
+    }
+} catch (IllegalArgumentException | IllegalStateException e) {
+    send(ResponsePayload.error(e.getMessage()));
+}
     }
 
     private void handleLogin(Payload payload) throws IOException {
@@ -197,6 +227,40 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         }
     }
 
+    private void handleAutoBidSet(Payload payload) throws IOException {
+        if (!(authenticatedUser instanceof Bidder)) {
+            send(ResponsePayload.error("Please login with a bidder account before enabling auto-bid"));
+            return;
+        }
+
+        ResponsePayload response = auctionController.setAutoBid(payload, authenticatedUser);
+        send(response);
+
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item updatedItem) {
+                auctionServer.notifyObservers(updatedItem, "AUTO_BID_SET");
+            }
+        }
+    }
+
+    private void handleAutoBidCancel(Payload payload) throws IOException {
+        if (!(authenticatedUser instanceof Bidder)) {
+            send(ResponsePayload.error("Please login with a bidder account before canceling auto-bid"));
+            return;
+        }
+
+        ResponsePayload response = auctionController.cancelAutoBid(payload, authenticatedUser);
+        send(response);
+
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item updatedItem) {
+                auctionServer.notifyObservers(updatedItem, "AUTO_BID_CANCEL");
+            }
+        }
+    }
+
     private void handleAuctionApproval(Payload payload) throws IOException {
         ResponsePayload response = adminController.approveAuction(payload, authenticatedUser);
         send(response);
@@ -240,4 +304,5 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         socket.close();
         LOGGER.info("Client disconnected: {}", socket.getInetAddress());
     }
+
 }

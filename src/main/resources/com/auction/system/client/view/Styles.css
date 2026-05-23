@@ -725,3 +725,22 @@
     -fx-alignment: center;
     -fx-line-spacing: 4;
 }
+
+.auction-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+}
+
+.auction-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.auction-textarea .scroll-pane {
+    -fx-hbar-policy: NEVER;
+    -fx-vbar-policy: AS_NEEDED;
+}
+
+.auction-textarea .scroll-pane .scroll-bar:vertical {
+    -fx-pref-width: 8px;
+}
