@@ -415,6 +415,11 @@ public class AuctionController {
                 itemListView.getSelectionModel().select(updatedItem);
             }
         }
+
+        onAuctionEvent(updatedItem, eventType);
+    }
+
+    protected void onAuctionEvent(Item item, String eventType) {
     }
 
     private Item toItem(Object rawItem) {

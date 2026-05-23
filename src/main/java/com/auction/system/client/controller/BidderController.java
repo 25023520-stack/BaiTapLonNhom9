@@ -16,6 +16,8 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -285,6 +287,68 @@ public class BidderController extends AuctionController {
         } catch (RuntimeException exception) {
             updateAuctionActions(selectedItem);
             showAlert(Alert.AlertType.ERROR, exception.getMessage());
+        }
+    }
+
+    @Override
+    protected void onAuctionEvent(Item item, String eventType) {
+        if (!"AUCTION_FINISHED".equals(eventType)) return;
+
+        User currentUser = AppContext.getCurrentUser();
+        if (!(currentUser instanceof Bidder bidder)) return;
+        if (!bidder.getId().equals(item.getHighestBidderId())) return;
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Bạn đã thắng đấu giá!");
+        alert.setHeaderText("Chúc mừng! Bạn đã thắng phiên đấu giá: " + item.getName());
+        alert.setContentText("Giá cuối cùng: " + formatCurrency(item.getCurrentPrice()) + "\nBạn có muốn thanh toán không?");
+
+        ButtonType payButton = new ButtonType("Thanh toán", ButtonBar.ButtonData.YES);
+        ButtonType declineButton = new ButtonType("Từ chối", ButtonBar.ButtonData.NO);
+        alert.getButtonTypes().setAll(payButton, declineButton);
+
+        alert.showAndWait().ifPresent(result -> {
+            if (result == payButton) {
+                submitPayment(item.getId());
+            } else {
+                submitDecline(item.getId());
+            }
+        });
+    }
+
+    private void submitPayment(String itemId) {
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            Payload payload = new Payload(PayloadType.MARK_AS_PAID);
+            payload.put("itemId", itemId);
+            client.send(payload);
+            ResponsePayload response = readResponse(client);
+            if (!response.isSuccess()) {
+                showAlert(Alert.AlertType.ERROR, response.getMessage());
+            } else {
+                showAlert(Alert.AlertType.INFORMATION, "Thanh toán thành công!");
+                loadItems();
+            }
+        } catch (IOException e) {
+            showAlert(Alert.AlertType.ERROR, "Không thể kết nối tới server.");
+        }
+    }
+
+    private void submitDecline(String itemId) {
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            Payload payload = new Payload(PayloadType.DECLINE_WIN);
+            payload.put("itemId", itemId);
+            client.send(payload);
+            ResponsePayload response = readResponse(client);
+            if (!response.isSuccess()) {
+                showAlert(Alert.AlertType.ERROR, response.getMessage());
+            } else {
+                showAlert(Alert.AlertType.INFORMATION, "Bạn đã từ chối thanh toán. Phiên đấu giá đã bị hủy.");
+                loadItems();
+            }
+        } catch (IOException e) {
+            showAlert(Alert.AlertType.ERROR, "Không thể kết nối tới server.");
         }
     }
 

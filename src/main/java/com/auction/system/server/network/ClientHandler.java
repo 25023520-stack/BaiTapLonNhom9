@@ -105,11 +105,15 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
                 case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
                 case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
                 case BID -> handleBid(payload);
+                case AUTO_BID_SET -> handleAutoBidSet(payload);
+                case AUTO_BID_CANCEL -> handleAutoBidCancel(payload);
                 case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
                 case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
                 case APPROVE_DEPOSIT -> send(adminController.approveDeposit(payload, authenticatedUser));
                 case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
                 case APPROVE_AUCTION -> handleAuctionApproval(payload);
+                case MARK_AS_PAID -> handleMarkAsPaid(payload);
+                case DECLINE_WIN -> handleDeclineWin(payload);
                 case DISCONNECT -> {
                     send(ResponsePayload.ok("Disconnected"));
                     close();
@@ -119,38 +123,9 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         } catch (IllegalArgumentException | IllegalStateException e) {
             send(ResponsePayload.error(e.getMessage()));
         } catch (RuntimeException e) {
-            // Ghi chu: day la lop chan cuoi cho nghiep vu server.
-            // Muc tieu la tra loi loi ve client thay vi lam roi ket noi socket.
             LOGGER.error("Unexpected server error while handling {}: {}", type, e.getMessage(), e);
             send(ResponsePayload.error("Server error while handling " + type + ": " + e.getMessage()));
-    switch (type) {
-        case LOGIN -> handleLogin(payload);
-        case REGISTER -> handleRegister(payload);
-        case LIST_ITEMS -> handleListItems();
-        case LIST_ITEMS_BY_SELLER -> send(auctionController.listItemsBySeller(payload, authenticatedUser));
-        case ADD_ITEM -> handleItemMutation(payload, "ITEM_ADDED");
-        case UPDATE_ITEM -> handleItemMutation(payload, "ITEM_UPDATED");
-        case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
-        case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
-        case BID -> handleBid(payload);
-
-        case AUTO_BID_SET -> handleAutoBidSet(payload);
-        case AUTO_BID_CANCEL -> handleAutoBidCancel(payload);
-
-        case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
-        case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
-        case APPROVE_DEPOSIT -> send(adminController.approveDeposit(payload, authenticatedUser));
-        case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
-        case APPROVE_AUCTION -> handleAuctionApproval(payload);
-
-        case DISCONNECT -> {
-            send(ResponsePayload.ok("Disconnected"));
-            close();
         }
-
-        default -> send(ResponsePayload.error("Unsupported payload type: " + type));
-    }
-}
     }
 
     private void handleLogin(Payload payload) throws IOException {
@@ -255,6 +230,36 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             Object rawItem = response.getBody().get("item");
             if (rawItem instanceof Item updatedItem) {
                 auctionServer.notifyObservers(updatedItem, "AUTO_BID_CANCEL");
+            }
+        }
+    }
+
+    private void handleMarkAsPaid(Payload payload) throws IOException {
+        if (!(authenticatedUser instanceof Bidder)) {
+            send(ResponsePayload.error("Only bidders can pay for won items"));
+            return;
+        }
+        ResponsePayload response = auctionController.markAsPaid(payload, authenticatedUser);
+        send(response);
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item item) {
+                auctionServer.notifyObservers(item, "AUCTION_PAID");
+            }
+        }
+    }
+
+    private void handleDeclineWin(Payload payload) throws IOException {
+        if (!(authenticatedUser instanceof Bidder)) {
+            send(ResponsePayload.error("Only bidders can decline a win"));
+            return;
+        }
+        ResponsePayload response = auctionController.declineWin(payload, authenticatedUser);
+        send(response);
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item item) {
+                auctionServer.notifyObservers(item, "AUCTION_CANCELED");
             }
         }
     }

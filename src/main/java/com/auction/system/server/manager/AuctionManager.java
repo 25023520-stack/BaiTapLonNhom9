@@ -407,6 +407,64 @@ public class AuctionManager {
         }
     }
 
+    public void winnerDecline(String itemId, String bidderId) {
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
+        }
+
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
+
+        try {
+            Item item = requireItem(itemId);
+
+            if (item.getStatus() != AuctionStatus.FINISHED) {
+                throw new IllegalStateException("Only FINISHED auctions can be declined");
+            }
+
+            if (!Objects.equals(bidderId, item.getHighestBidderId())) {
+                throw new IllegalArgumentException("Only the auction winner can decline payment");
+            }
+
+            try (Connection conn = Database.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    boolean itemUpdated = itemDAO.updateStatus(conn, itemId, AuctionStatus.CANCELED);
+                    if (!itemUpdated) throw new SQLException("Cannot update item status to CANCELED");
+
+                    boolean auctionUpdated = auctionDAO.updateStatusAndClearWinner(conn, itemId, AuctionStatus.CANCELED);
+                    if (!auctionUpdated) throw new SQLException("Cannot update auction status to CANCELED");
+
+                    conn.commit();
+
+                    item.setStatus(AuctionStatus.CANCELED);
+                    item.setHighestBidderId(null);
+                    item.setHighestBidderUsername(null);
+
+                    Auction auction = auctionsById.get(itemId);
+                    if (auction != null) auction.setStatus(AuctionStatus.CANCELED);
+
+                    if (auctionSubject != null) {
+                        auctionSubject.notifyObservers(item, "AUCTION_CANCELED");
+                    }
+
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw new IllegalStateException("Cannot decline win: " + e.getMessage(), e);
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+
+            } catch (SQLException e) {
+                throw new IllegalStateException("Database error when declining win", e);
+            }
+
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public void cancelAuction(String itemId) {
         if (itemId == null || itemId.isBlank()) {
             throw new IllegalArgumentException("Item id must not be empty");

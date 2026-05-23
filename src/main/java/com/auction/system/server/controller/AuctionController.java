@@ -235,6 +235,51 @@ public class AuctionController {
         }
     }
 
+    public ResponsePayload markAsPaid(Payload payload, User authenticatedUser) {
+        if (!(authenticatedUser instanceof Bidder bidder)) {
+            return ResponsePayload.error("Only bidders can pay for won items");
+        }
+        String itemId = payload.getString("itemId");
+        if (itemId == null || itemId.isBlank()) {
+            return ResponsePayload.error("Item id is required");
+        }
+        try {
+            Item item = auctionManager.findItemById(itemId)
+                    .orElseThrow(() -> new IllegalArgumentException("Item does not exist"));
+            if (!bidder.getId().equals(item.getHighestBidderId())) {
+                return ResponsePayload.error("Only the auction winner can pay");
+            }
+            auctionManager.markAsPaid(itemId);
+            Item updatedItem = auctionManager.findItemById(itemId).orElse(item);
+            attachImageData(updatedItem);
+            ResponsePayload resp = ResponsePayload.ok("Payment confirmed successfully");
+            resp.put("item", updatedItem);
+            return resp;
+        } catch (RuntimeException e) {
+            return ResponsePayload.error(e.getMessage());
+        }
+    }
+
+    public ResponsePayload declineWin(Payload payload, User authenticatedUser) {
+        if (!(authenticatedUser instanceof Bidder bidder)) {
+            return ResponsePayload.error("Only bidders can decline a win");
+        }
+        String itemId = payload.getString("itemId");
+        if (itemId == null || itemId.isBlank()) {
+            return ResponsePayload.error("Item id is required");
+        }
+        try {
+            auctionManager.winnerDecline(itemId, bidder.getId());
+            Item updatedItem = auctionManager.findItemById(itemId).orElse(null);
+            if (updatedItem != null) attachImageData(updatedItem);
+            ResponsePayload resp = ResponsePayload.ok("Win declined. The auction has been canceled.");
+            if (updatedItem != null) resp.put("item", updatedItem);
+            return resp;
+        } catch (RuntimeException e) {
+            return ResponsePayload.error(e.getMessage());
+        }
+    }
+
     public ResponsePayload cancelAutoBid(Payload payload, User authenticatedUser) {
         if (!(authenticatedUser instanceof Bidder bidder)) {
             return ResponsePayload.error("Please login with a bidder account before canceling auto-bid");
