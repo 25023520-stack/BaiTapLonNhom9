@@ -24,16 +24,16 @@
             <children>
                 <HBox alignment="CENTER_LEFT" spacing="18.0" styleClass="admin-header-content">
                     <children>
-                        <StackPane minHeight="48.0" minWidth="48.0" prefHeight="48.0" prefWidth="48.0" styleClass="bidder-logo-frame">
+                        <StackPane minHeight="64.0" minWidth="64.0" prefHeight="64.0" prefWidth="64.0" styleClass="bidder-logo-frame">
                             <children>
-                                <ImageView fitHeight="38.0" fitWidth="38.0" preserveRatio="true">
+                                <ImageView fitHeight="52.0" fitWidth="52.0" preserveRatio="true" smooth="true">
                                     <image>
-                                        <Image url="@assets/dai-hoc-cong-nghe-logo.png" />
+                                        <Image url="@assets/logouetnentrang.jpg" />
                                     </image>
                                 </ImageView>
                             </children>
                         </StackPane>
-                        <VBox spacing="2.0">
+                        <VBox alignment="CENTER_LEFT" spacing="2.0">
                             <children>
                                 <Label styleClass="admin-header-title" text="AuctionHub Admin" />
                                 <Label styleClass="admin-header-subtitle" text="Duyệt seller mới và yêu cầu mở phiên đấu giá" />
@@ -55,171 +55,262 @@
     </top>
 
     <left>
-        <VBox prefWidth="360.0" spacing="16.0" styleClass="admin-sidebar">
+        <VBox prefWidth="220.0" spacing="12.0" styleClass="admin-sidebar">
             <children>
                 <VBox spacing="5.0">
                     <children>
                         <Label styleClass="seller-section-title" text="Hàng chờ admin" />
-                        <Label styleClass="seller-page-subtitle" text="Theo dõi các seller mới và những phiên đang chờ phê duyệt." wrapText="true" />
+                        <Label styleClass="seller-page-subtitle"
+                               text="Theo dõi các seller mới và những phiên đang chờ phê duyệt."
+                               wrapText="true" />
                     </children>
                 </VBox>
 
-                <HBox alignment="CENTER_LEFT" spacing="8.0">
-                    <children>
-                        <Label styleClass="admin-subsection-title" text="Seller chờ duyệt" />
-                        <Label fx:id="sellerCountLabel" styleClass="admin-count-badge" text="0" />
-                    </children>
-                </HBox>
-                <ListView fx:id="sellerListView" styleClass="auction-list-view" VBox.vgrow="ALWAYS" />
+                <!-- Nút 1: Seller chờ duyệt -->
+                <Button fx:id="btnShowSellers" maxWidth="1.7976931348623157E308"
+                        mnemonicParsing="false" onAction="#showSellerQueue"
+                        styleClass="queue-tab-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <children>
+                                <Label styleClass="admin-subsection-title" text="Seller chờ duyệt"
+                                       mouseTransparent="true" />
+                                <Region HBox.hgrow="ALWAYS" mouseTransparent="true" />
+                                <Label fx:id="sellerCountLabel" styleClass="admin-count-badge"
+                                       text="0" mouseTransparent="true" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
 
-                <HBox alignment="CENTER_LEFT" spacing="8.0">
-                    <children>
-                        <Label styleClass="admin-subsection-title" text="Phiên chờ duyệt" />
-                        <Label fx:id="auctionCountLabel" styleClass="admin-count-badge" text="0" />
-                    </children>
-                </HBox>
-                <ListView fx:id="auctionListView" styleClass="auction-list-view" VBox.vgrow="ALWAYS" />
+                <!-- Nút 2: Phiên chờ duyệt -->
+                <Button fx:id="btnShowAuctions" maxWidth="1.7976931348623157E308"
+                        mnemonicParsing="false" onAction="#showAuctionQueue"
+                        styleClass="queue-tab-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <children>
+                                <Label styleClass="admin-subsection-title" text="Phiên chờ duyệt"
+                                       mouseTransparent="true" />
+                                <Region HBox.hgrow="ALWAYS" mouseTransparent="true" />
+                                <Label fx:id="auctionCountLabel" styleClass="admin-count-badge"
+                                       text="0" mouseTransparent="true" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
 
-                <HBox alignment="CENTER_LEFT" spacing="8.0">
-                    <children>
-                        <Label styleClass="admin-subsection-title" text="Nạp tiền cho bidder" />
-                        <Label fx:id="depositCountLabel" styleClass="admin-count-badge" text="0" />
-                    </children>
-                </HBox>
-                <ListView fx:id="depositListView" prefHeight="135.0" styleClass="auction-list-view" />
+                <!-- Nút 3: Nạp tiền -->
+                <Button fx:id="btnShowDeposits" maxWidth="1.7976931348623157E308"
+                        mnemonicParsing="false" onAction="#showDepositQueue"
+                        styleClass="queue-tab-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <children>
+                                <Label styleClass="admin-subsection-title" text="Nạp tiền cho bidder"
+                                       mouseTransparent="true" />
+                                <Region HBox.hgrow="ALWAYS" mouseTransparent="true" />
+                                <Label fx:id="depositCountLabel" styleClass="admin-count-badge"
+                                       text="0" mouseTransparent="true" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
 
-                <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#refreshDashboard" styleClass="secondary-button" text="Làm mới dashboard" />
+                <Region VBox.vgrow="ALWAYS" />
+
+                <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false"
+                        onAction="#refreshDashboard" styleClass="secondary-button"
+                        text="Làm mới dashboard" />
             </children>
         </VBox>
     </left>
 
     <center>
-        <HBox spacing="18.0" styleClass="admin-center">
+        <HBox spacing="6.0" styleClass="admin-center">
             <children>
-                <VBox spacing="16.0" styleClass="admin-card" HBox.hgrow="ALWAYS">
+
+                <!-- CỘT TRÁI: Danh sách chờ duyệt (ẩn/hiện theo tab) -->
+                <VBox prefWidth="220.0" spacing="0.0" styleClass="admin-list-panel">
                     <children>
-                        <VBox spacing="4.0">
+                        <!-- ListView Seller -->
+                        <VBox fx:id="sellerListContainer" spacing="8.0"
+                              styleClass="admin-card"
+                              VBox.vgrow="ALWAYS" visible="false" managed="false">
                             <children>
-                                <Label styleClass="seller-page-title" text="Chi tiết seller" />
-                                <Label styleClass="seller-page-subtitle" text="Admin đang đăng nhập:" />
-                                <Label fx:id="adminNameLabel" styleClass="seller-inline-status" text="Admin" />
+                                <Label styleClass="admin-list-header" text="Danh sách seller chờ duyệt" />
+                                <ListView fx:id="sellerListView" styleClass="auction-list-view"
+                                          VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
-
-                        <VBox spacing="10.0">
+                        <!-- ListView Phiên -->
+                        <VBox fx:id="auctionListContainer" spacing="8.0"
+                              styleClass="admin-card"
+                              VBox.vgrow="ALWAYS" visible="false" managed="false">
                             <children>
-                                <Label styleClass="input-label" text="Họ tên" />
-                                <Label fx:id="sellerNameValue" styleClass="auction-info-value" text="-" wrapText="true" />
-                                <Label styleClass="input-label" text="Tên đăng nhập" />
-                                <Label fx:id="sellerUsernameValue" styleClass="auction-info-value" text="-" wrapText="true" />
-                                <Label styleClass="input-label" text="Email" />
-                                <Label fx:id="sellerEmailValue" styleClass="auction-info-value" text="-" wrapText="true" />
-                                <Label styleClass="input-label" text="Trạng thái" />
-                                <Label fx:id="sellerStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                <Label styleClass="admin-list-header" text="Danh sách phiên chờ duyệt" />
+                                <ListView fx:id="auctionListView" styleClass="auction-list-view"
+                                          VBox.vgrow="ALWAYS" />
                             </children>
                         </VBox>
-
-                        <Region VBox.vgrow="ALWAYS" />
-
-                        <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                        <!-- ListView Nạp tiền -->
+                        <VBox fx:id="depositListContainer" spacing="8.0"
+                              styleClass="admin-card"
+                              VBox.vgrow="ALWAYS" visible="false" managed="false">
                             <children>
-                                <Button fx:id="approveSellerButton" mnemonicParsing="false" onAction="#approveSeller" styleClass="primary-button" text="Duyệt seller" />
+                                <Label styleClass="admin-list-header" text="Yêu cầu nạp tiền chờ duyệt" />
+                                <ListView fx:id="depositListView" styleClass="auction-list-view"
+                                          VBox.vgrow="ALWAYS" />
                             </children>
-                        </HBox>
+                        </VBox>
                     </children>
                 </VBox>
 
-                <VBox spacing="16.0" styleClass="admin-card" HBox.hgrow="ALWAYS">
+                <!-- CỘT PHẢI: Chi tiết (3 card, chỉ 1 hiện tại một thời điểm) -->
+                <StackPane HBox.hgrow="ALWAYS">
                     <children>
-                        <VBox spacing="4.0">
-                            <children>
-                                <Label styleClass="seller-page-title" text="Chi tiết yêu cầu mở phiên" />
-                                <Label styleClass="seller-page-subtitle" text="Kiểm tra thời gian dự kiến, người bán và nội dung sản phẩm trước khi phê duyệt." wrapText="true" />
-                            </children>
-                        </VBox>
 
-                        <HBox alignment="CENTER_LEFT" spacing="14.0">
+                        <!-- CARD 1: Chi tiết Seller -->
+                        <VBox fx:id="sellerDetailPane" spacing="16.0" styleClass="admin-card"
+                              visible="true" managed="true">
                             <children>
-                                <StackPane minHeight="72.0" minWidth="72.0" prefHeight="72.0" prefWidth="72.0" styleClass="bidder-item-icon-box">
+                                <VBox spacing="4.0">
                                     <children>
-                                        <ImageView fx:id="itemImageView" fitHeight="72.0" fitWidth="72.0" preserveRatio="true" />
-                                    </children>
-                                </StackPane>
-                                <VBox spacing="5.0" HBox.hgrow="ALWAYS">
-                                    <children>
-                                        <Label styleClass="input-label" text="Tên sản phẩm" />
-                                        <Label fx:id="itemNameValue" styleClass="bidder-item-name" text="-" wrapText="true" />
+                                        <Label styleClass="seller-page-title" text="Chi tiết seller" />
+                                        <Label styleClass="seller-page-subtitle" text="Admin đang đăng nhập:" />
+                                        <Label fx:id="adminNameLabel" styleClass="seller-inline-status" text="Admin" />
                                     </children>
                                 </VBox>
-                            </children>
-                        </HBox>
-
-                        <HBox spacing="18.0">
-                            <children>
-                                <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                <VBox spacing="10.0">
                                     <children>
-                                        <Label styleClass="input-label" text="Seller ID" />
-                                        <Label fx:id="itemSellerValue" styleClass="auction-info-value" text="-" wrapText="true" />
-                                        <Label styleClass="input-label" text="Lịch đấu giá" />
-                                        <Label fx:id="itemScheduleValue" styleClass="auction-info-value" text="-" wrapText="true" />
-                                    </children>
-                                </VBox>
-                                <VBox spacing="10.0" HBox.hgrow="ALWAYS">
-                                    <children>
+                                        <Label styleClass="input-label" text="Họ tên" />
+                                        <Label fx:id="sellerNameValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                        <Label styleClass="input-label" text="Tên đăng nhập" />
+                                        <Label fx:id="sellerUsernameValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                        <Label styleClass="input-label" text="Email" />
+                                        <Label fx:id="sellerEmailValue" styleClass="auction-info-value" text="-" wrapText="true" />
                                         <Label styleClass="input-label" text="Trạng thái" />
-                                        <Label fx:id="itemStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                        <Label fx:id="sellerStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
                                     </children>
                                 </VBox>
-                            </children>
-                        </HBox>
-
-                        <VBox spacing="8.0" VBox.vgrow="ALWAYS">
-                            <children>
-                                <Label styleClass="input-label" text="Mô tả sản phẩm" />
-                                <TextArea fx:id="itemDescriptionArea" prefRowCount="10" styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
+                                <Region VBox.vgrow="ALWAYS" />
+                                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                                    <children>
+                                        <Button fx:id="approveSellerButton" mnemonicParsing="false"
+                                                onAction="#approveSeller" styleClass="primary-button"
+                                                text="Duyệt seller" />
+                                    </children>
+                                </HBox>
                             </children>
                         </VBox>
 
-                        <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                        <!-- CARD 2: Chi tiết Phiên -->
+                        <VBox fx:id="auctionDetailPane" spacing="16.0" styleClass="admin-card"
+                              visible="false" managed="false">
                             <children>
-                                <Button fx:id="rejectAuctionButton" mnemonicParsing="false" onAction="#rejectAuction" styleClass="danger-button" text="Từ chối yêu cầu" />
-                                <Button fx:id="approveAuctionButton" mnemonicParsing="false" onAction="#approveAuction" styleClass="primary-button" text="Duyệt và mở phiên" />
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <Label styleClass="seller-page-title" text="Chi tiết yêu cầu mở phiên" />
+                                        <Label styleClass="seller-page-subtitle"
+                                               text="Kiểm tra thời gian dự kiến, người bán và nội dung sản phẩm trước khi phê duyệt."
+                                               wrapText="true" />
+                                    </children>
+                                </VBox>
+                                <HBox alignment="CENTER_LEFT" spacing="14.0">
+                                    <children>
+                                        <StackPane minHeight="72.0" minWidth="72.0" prefHeight="72.0"
+                                                   prefWidth="72.0" styleClass="bidder-item-icon-box">
+                                            <children>
+                                                <ImageView fx:id="itemImageView" fitHeight="72.0"
+                                                           fitWidth="72.0" preserveRatio="true" />
+                                            </children>
+                                        </StackPane>
+                                        <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Tên sản phẩm" />
+                                                <Label fx:id="itemNameValue" styleClass="bidder-item-name"
+                                                       text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <HBox spacing="18.0">
+                                    <children>
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Seller ID" />
+                                                <Label fx:id="itemSellerValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                <Label styleClass="input-label" text="Lịch đấu giá" />
+                                                <Label fx:id="itemScheduleValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Trạng thái" />
+                                                <Label fx:id="itemStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="input-label" text="Mô tả sản phẩm" />
+                                        <TextArea fx:id="itemDescriptionArea" prefRowCount="10"
+                                                  styleClass="auction-textarea" wrapText="true"
+                                                  VBox.vgrow="ALWAYS" />
+                                    </children>
+                                </VBox>
+                                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                                    <children>
+                                        <Button fx:id="rejectAuctionButton" mnemonicParsing="false"
+                                                onAction="#rejectAuction" styleClass="danger-button"
+                                                text="Từ chối yêu cầu" />
+                                        <Button fx:id="approveAuctionButton" mnemonicParsing="false"
+                                                onAction="#approveAuction" styleClass="primary-button"
+                                                text="Duyệt và mở phiên" />
+                                    </children>
+                                </HBox>
                             </children>
-                        </HBox>
+                        </VBox>
+
+                        <!-- CARD 3: Chi tiết Nạp tiền -->
+                        <VBox fx:id="depositDetailPane" spacing="16.0" styleClass="admin-card"
+                              visible="false" managed="false">
+                            <children>
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <Label styleClass="seller-page-title" text="Yêu cầu nạp tiền" />
+                                        <Label styleClass="seller-page-subtitle"
+                                               text="Bidder gửi yêu cầu nạp tiền, admin duyệt thủ công để cộng vào số dư."
+                                               wrapText="true" />
+                                    </children>
+                                </VBox>
+                                <VBox spacing="10.0">
+                                    <children>
+                                        <Label styleClass="input-label" text="Bidder" />
+                                        <Label fx:id="depositBidderValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                        <Label styleClass="input-label" text="Số tiền nạp" />
+                                        <Label fx:id="depositAmountValue" styleClass="bidder-price-value" text="-" wrapText="true" />
+                                        <Label styleClass="input-label" text="Thời gian gửi" />
+                                        <Label fx:id="depositCreatedValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                        <Label styleClass="input-label" text="Trạng thái" />
+                                        <Label fx:id="depositStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                    </children>
+                                </VBox>
+                                <Region VBox.vgrow="ALWAYS" />
+                                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                                    <children>
+                                        <Button fx:id="approveDepositButton" mnemonicParsing="false"
+                                                onAction="#approveDeposit" styleClass="primary-button"
+                                                text="Duyệt nạp tiền" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
                     </children>
-                </VBox>
+                </StackPane>
 
-                <VBox spacing="16.0" styleClass="admin-card" HBox.hgrow="ALWAYS">
-                    <children>
-                        <VBox spacing="4.0">
-                            <children>
-                                <Label styleClass="seller-page-title" text="Yêu cầu nạp tiền" />
-                                <Label styleClass="seller-page-subtitle" text="Bidder gửi yêu cầu nạp tiền, admin duyệt thủ công để cộng vào số dư." wrapText="true" />
-                            </children>
-                        </VBox>
-
-                        <VBox spacing="10.0">
-                            <children>
-                                <Label styleClass="input-label" text="Bidder" />
-                                <Label fx:id="depositBidderValue" styleClass="auction-info-value" text="-" wrapText="true" />
-                                <Label styleClass="input-label" text="Số tiền nạp" />
-                                <Label fx:id="depositAmountValue" styleClass="bidder-price-value" text="-" wrapText="true" />
-                                <Label styleClass="input-label" text="Thời gian gửi" />
-                                <Label fx:id="depositCreatedValue" styleClass="auction-info-value" text="-" wrapText="true" />
-                                <Label styleClass="input-label" text="Trạng thái" />
-                                <Label fx:id="depositStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
-                            </children>
-                        </VBox>
-
-                        <Region VBox.vgrow="ALWAYS" />
-
-                        <HBox alignment="CENTER_RIGHT" spacing="10.0">
-                            <children>
-                                <Button fx:id="approveDepositButton" mnemonicParsing="false" onAction="#approveDeposit" styleClass="primary-button" text="Duyệt nạp tiền" />
-                            </children>
-                        </HBox>
-                    </children>
-                </VBox>
             </children>
         </HBox>
     </center>

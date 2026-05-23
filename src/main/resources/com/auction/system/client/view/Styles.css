@@ -588,7 +588,7 @@
 
 /* Bidder screen */
 .bidder-logo-frame {
-    -fx-background-color: rgba(255, 255, 255, 0.16);
+    -fx-background-color: #FFFFFF;
     -fx-background-radius: 16;
     -fx-border-color: rgba(255, 255, 255, 0.32);
     -fx-border-radius: 16;
@@ -743,4 +743,42 @@
 
 .auction-textarea .scroll-pane .scroll-bar:vertical {
     -fx-pref-width: 8px;
+}
+
+.queue-tab-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-padding: 10 14 10 14;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.queue-tab-button:hover {
+    -fx-background-color: rgba(59, 130, 246, 0.08);
+    -fx-border-color: transparent;
+}
+
+.queue-tab-button-active {
+    -fx-background-color: rgba(37, 99, 235, 0.12);
+    -fx-border-color: transparent;
+    -fx-text-fill: #2563eb;
+}
+
+.admin-list-panel {
+    -fx-padding: 0 8 0 0;
+}
+
+.admin-list-header {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #64748b;
+    -fx-padding: 8 4 4 4;
+    -fx-text-transform: uppercase;
+    /* JavaFX không hỗ trợ text-transform, dùng text hoa trực tiếp */
+}
+
+.admin-list-panel > .admin-card {
+    -fx-padding: 12 10 12 10;
 }

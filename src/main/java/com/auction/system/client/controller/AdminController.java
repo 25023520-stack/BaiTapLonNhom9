@@ -31,6 +31,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.slf4j.Logger;
@@ -75,6 +76,15 @@ public class AdminController {
     @FXML private Label depositCreatedValue;
     @FXML private Label depositStatusValue;
     @FXML private Button approveDepositButton;
+    @FXML private Button btnShowSellers;
+    @FXML private Button btnShowAuctions;
+    @FXML private Button btnShowDeposits;
+    @FXML private VBox sellerListContainer;
+    @FXML private VBox auctionListContainer;
+    @FXML private VBox depositListContainer;
+    @FXML private VBox sellerDetailPane;
+    @FXML private VBox auctionDetailPane;
+    @FXML private VBox depositDetailPane;
 
     private final ObservableList<User> pendingSellers = FXCollections.observableArrayList();
     private final ObservableList<Item> pendingAuctions = FXCollections.observableArrayList();
@@ -96,6 +106,7 @@ public class AdminController {
         clearSellerDetails();
         clearAuctionDetails();
         clearDepositDetails();
+        initTabs();
         refreshDashboard();
 
         autoRefresh = new Timeline(new KeyFrame(REFRESH_INTERVAL, event -> refreshDashboard()));
@@ -542,4 +553,34 @@ public class AdminController {
         alert.setHeaderText(header);
         alert.showAndWait();
     }
+
+    private void initTabs() {
+        showTab(sellerListContainer, sellerDetailPane, btnShowSellers);
+    }
+
+    private void showTab(VBox listContainer, VBox detail, Button activeBtn) {
+        // Ẩn hết container
+        sellerListContainer.setVisible(false);  sellerListContainer.setManaged(false);
+        auctionListContainer.setVisible(false); auctionListContainer.setManaged(false);
+        depositListContainer.setVisible(false); depositListContainer.setManaged(false);
+
+        // Ẩn hết detail pane
+        sellerDetailPane.setVisible(false);  sellerDetailPane.setManaged(false);
+        auctionDetailPane.setVisible(false); auctionDetailPane.setManaged(false);
+        depositDetailPane.setVisible(false); depositDetailPane.setManaged(false);
+
+        // Reset active style
+        btnShowSellers.getStyleClass().remove("queue-tab-button-active");
+        btnShowAuctions.getStyleClass().remove("queue-tab-button-active");
+        btnShowDeposits.getStyleClass().remove("queue-tab-button-active");
+
+        // Hiện cái được chọn
+        listContainer.setVisible(true);  listContainer.setManaged(true);
+        detail.setVisible(true);         detail.setManaged(true);
+        activeBtn.getStyleClass().add("queue-tab-button-active");
+    }
+
+    @FXML private void showSellerQueue()  { showTab(sellerListContainer, sellerDetailPane, btnShowSellers); }
+    @FXML private void showAuctionQueue() { showTab(auctionListContainer, auctionDetailPane, btnShowAuctions); }
+    @FXML private void showDepositQueue() { showTab(depositListContainer, depositDetailPane, btnShowDeposits); }
 }
