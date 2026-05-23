@@ -80,6 +80,7 @@ public class SellerController {
     @FXML private Spinner<Integer> endMinuteSpinner;
     @FXML private VBox auctionInfoBox;
     @FXML private Label currentBidLabel;
+    @FXML private Label highestBidderLabel;
     @FXML private Label timeRemainingLabel;
 
     private final ObservableList<Item> sellersItem = FXCollections.observableArrayList();
@@ -670,6 +671,15 @@ public class SellerController {
         double highestPrice = item.getCurrentPrice() > 0
                 ? item.getCurrentPrice() : item.getStartPrice();
         currentBidLabel.setText(String.format("%,.0f ₫", highestPrice));
+        if (highestBidderLabel != null) {
+            // Ghi chu: uu tien hien thi username de seller nhin nhanh ai dang dan dau.
+            // Neu item cu chua co username thi fallback ve bidderId thay vi de trong.
+            String highestBidder = safeTrim(item.getHighestBidderUsername());
+            if (highestBidder.isEmpty()) {
+                highestBidder = safeTrim(item.getHighestBidderId());
+            }
+            highestBidderLabel.setText(highestBidder.isEmpty() ? "Chua co" : highestBidder);
+        }
 
         // Đếm ngược mỗi giây
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {

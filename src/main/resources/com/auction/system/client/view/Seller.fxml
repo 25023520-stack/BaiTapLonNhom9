@@ -150,6 +150,12 @@
                                         </VBox>
                                         <VBox spacing="4.0" translateX="-20.0">
                                             <children>
+                                                <Label styleClass="input-label" text="Nguoi bid cao nhat" />
+                                                <Label fx:id="highestBidderLabel" styleClass="seller-inline-status" text="Chua co" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" translateX="-20.0">
+                                            <children>
                                                 <Label styleClass="input-label" text="Thời gian còn lại" />
                                                 <Label fx:id="timeRemainingLabel" styleClass="seller-inline-status" text="—" />
                                             </children>
