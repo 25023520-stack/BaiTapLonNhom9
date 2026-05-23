@@ -191,6 +191,62 @@ public class AuctionController {
         }
     }
 
+    public ResponsePayload setAutoBid(Payload payload, User authenticatedUser) {
+        if (!(authenticatedUser instanceof Bidder bidder)) {
+            return ResponsePayload.error("Please login with a bidder account before enabling auto-bid");
+        }
+
+        String itemId = payload.getString("itemId");
+        Double maxBid = payload.getDouble("maxBid");
+        Double incrementAmount = payload.getDouble("incrementAmount");
+
+        if (itemId == null || itemId.isBlank()) {
+            return ResponsePayload.error("Item id is required");
+        }
+
+        if (maxBid == null) {
+            return ResponsePayload.error("Max bid is required");
+        }
+
+        if (incrementAmount == null) {
+            return ResponsePayload.error("Increment amount is required");
+        }
+
+        try {
+            Item item = auctionManager.setAutoBid(itemId, bidder, maxBid, incrementAmount);
+            attachImageData(item);
+
+            ResponsePayload response = ResponsePayload.ok("Auto-bid enabled successfully");
+            response.put("item", item);
+            return response;
+        } catch (RuntimeException exception) {
+            return ResponsePayload.error(exception.getMessage());
+        }
+    }
+
+    public ResponsePayload cancelAutoBid(Payload payload, User authenticatedUser) {
+        if (!(authenticatedUser instanceof Bidder bidder)) {
+            return ResponsePayload.error("Please login with a bidder account before canceling auto-bid");
+        }
+
+        String itemId = payload.getString("itemId");
+
+        if (itemId == null || itemId.isBlank()) {
+            return ResponsePayload.error("Item id is required");
+        }
+
+        try {
+            Item item = auctionManager.cancelAutoBid(itemId, bidder);
+            attachImageData(item);
+
+            ResponsePayload response = ResponsePayload.ok("Auto-bid canceled successfully");
+            response.put("item", item);
+            return response;
+        } catch (RuntimeException exception) {
+            return ResponsePayload.error(exception.getMessage());
+        }
+    }
+
     private List<Item> withImageData(List<Item> items) {
         items.forEach(this::attachImageData);
         return items;

@@ -5,6 +5,7 @@ import com.auction.system.client.network.AuctionClient;
 import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.model.auction.AuctionStatus;
+import com.auction.system.common.payload.AutoBidPayLoad;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.User;
@@ -25,6 +26,15 @@ public class BidderController extends AuctionController {
 
     @FXML
     private ComboBox<Bidder> bidderSelector;
+
+    @FXML
+    private TextField maxBidField;
+
+    @FXML
+    private TextField incrementField;
+
+    @FXML
+    private Button autoBidButton;
 
     @FXML
     private TextField bidAmountField;
@@ -58,6 +68,10 @@ public class BidderController extends AuctionController {
 
         bidButton.setMaxWidth(Double.MAX_VALUE);
         bidButton.setDisable(true);
+
+        autoBidButton.setMaxWidth(Double.MAX_VALUE);
+        autoBidButton.setDisable(true);
+
         configureCurrentUser();
     }
 
@@ -67,7 +81,11 @@ public class BidderController extends AuctionController {
             bidders.setAll(bidder);
             bidderSelector.getSelectionModel().selectFirst();
             bidderSelector.setDisable(true);
+
             bidAmountField.setDisable(false);
+            maxBidField.setDisable(false);
+            incrementField.setDisable(false);
+
             return;
         }
 
@@ -138,27 +156,118 @@ public class BidderController extends AuctionController {
         }
     }
 
+    @FXML
+    public void submitAutoBid() {
+        Item selectedItem = getSelectedItem();
+        if (selectedItem == null) {
+            showAlert(Alert.AlertType.WARNING, "Bạn chưa chọn sản phẩm.");
+            return;
+        }
+
+        User currentUser = AppContext.getCurrentUser();
+        if (!(currentUser instanceof Bidder)) {
+            showAlert(Alert.AlertType.WARNING, "Tài khoản hiện tại không có quyền bật đấu giá tự động.");
+            return;
+        }
+
+        double maxBid;
+        double incrementAmount;
+
+        try {
+            maxBid = Double.parseDouble(maxBidField.getText().trim());
+            incrementAmount = Double.parseDouble(incrementField.getText().trim());
+        } catch (NumberFormatException exception) {
+            showAlert(Alert.AlertType.ERROR, "Giá tối đa và bước tăng giá phải là số hợp lệ.");
+            return;
+        }
+
+        if (selectedItem.getStatus() != AuctionStatus.RUNNING) {
+            showAlert(Alert.AlertType.WARNING, "Phiên đấu giá hiện không mở để bật đấu giá tự động.");
+            return;
+        }
+
+        if (maxBid <= selectedItem.getCurrentPrice()) {
+            showAlert(Alert.AlertType.WARNING,
+                    "Giá tối đa phải lớn hơn giá hiện tại " + formatCurrency(selectedItem.getCurrentPrice()) + ".");
+            return;
+        }
+
+        if (incrementAmount <= 0) {
+            showAlert(Alert.AlertType.ERROR, "Bước tăng giá phải lớn hơn 0.");
+            return;
+        }
+
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            autoBidButton.setDisable(true);
+
+            client.send(new AutoBidPayLoad(selectedItem.getId(), maxBid, incrementAmount));
+            ResponsePayload response = readResponse(client);
+
+            if (!response.isSuccess()) {
+                updateAuctionActions(selectedItem);
+                showAlert(Alert.AlertType.ERROR, response.getMessage());
+                return;
+            }
+
+            loadItems();
+
+            Item refreshedItem = findItemById(selectedItem.getId());
+            selectItem(refreshedItem);
+            showItemDetails(refreshedItem);
+
+            maxBidField.clear();
+            incrementField.clear();
+
+            showAlert(Alert.AlertType.INFORMATION, "Đã bật đấu giá tự động.");
+        } catch (IOException exception) {
+            updateAuctionActions(selectedItem);
+            showAlert(Alert.AlertType.ERROR, "Không thể kết nối tới server.");
+        } catch (RuntimeException exception) {
+            updateAuctionActions(selectedItem);
+            showAlert(Alert.AlertType.ERROR, exception.getMessage());
+        }
+    }
+
     @Override
     protected void updateAuctionActions(Item item) {
         User currentUser = AppContext.getCurrentUser();
-        boolean canBid = currentUser instanceof Bidder
+
+        boolean isBidder = currentUser instanceof Bidder;
+        boolean canBid = isBidder
                 && item != null
                 && item.getStatus() == AuctionStatus.RUNNING
                 && isWithinBiddingWindow(item);
+
         bidButton.setDisable(!canBid);
-        bidAmountField.setDisable(!(currentUser instanceof Bidder));
+        autoBidButton.setDisable(!canBid);
+
+        bidAmountField.setDisable(!isBidder);
+        maxBidField.setDisable(!isBidder);
+        incrementField.setDisable(!isBidder);
+
         if (canBid) {
             bidAmountField.setPromptText("Giá phải lớn hơn " + formatCurrency(item.getCurrentPrice()));
-        } else if (currentUser instanceof Bidder && item != null && item.getStartTime() != null
+            maxBidField.setPromptText("Giá tối đa lớn hơn " + formatCurrency(item.getCurrentPrice()));
+            incrementField.setPromptText("Bước tăng mỗi lần");
+        } else if (isBidder && item != null && item.getStartTime() != null
                 && LocalDateTime.now().isBefore(item.getStartTime())) {
             bidAmountField.setPromptText("Phiên đấu giá chưa bắt đầu");
-        } else if (currentUser instanceof Bidder && item != null && item.getEndTime() != null
+            maxBidField.setPromptText("Phiên đấu giá chưa bắt đầu");
+            incrementField.setPromptText("Phiên đấu giá chưa bắt đầu");
+        } else if (isBidder && item != null && item.getEndTime() != null
                 && !LocalDateTime.now().isBefore(item.getEndTime())) {
             bidAmountField.setPromptText("Phiên đấu giá đã kết thúc");
-        } else if (currentUser instanceof Bidder) {
+            maxBidField.setPromptText("Phiên đấu giá đã kết thúc");
+            incrementField.setPromptText("Phiên đấu giá đã kết thúc");
+        } else if (isBidder) {
             bidAmountField.setPromptText("Phiên này không mở để đặt giá");
+            maxBidField.setPromptText("Phiên này không mở để auto-bid");
+            incrementField.setPromptText("Phiên này không mở để auto-bid");
         } else {
             bidAmountField.setPromptText("Chỉ tài khoản bidder mới đặt giá được");
+            maxBidField.setPromptText("Chỉ tài khoản bidder mới dùng auto-bid");
+            incrementField.setPromptText("Chỉ tài khoản bidder mới dùng auto-bid");
         }
     }
 }

@@ -90,6 +90,8 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
             case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
             case BID -> handleBid(payload);
+            case AUTO_BID_SET -> handleAutoBidSet(payload);
+            case AUTO_BID_CANCEL -> handleAutoBidCancel(payload);
             case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
             case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
             case APPROVE_AUCTION -> handleAuctionApproval(payload);
@@ -172,6 +174,40 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         }
     }
 
+    private void handleAutoBidSet(Payload payload) throws IOException {
+        if (!(authenticatedUser instanceof Bidder)) {
+            send(ResponsePayload.error("Please login with a bidder account before enabling auto-bid"));
+            return;
+        }
+
+        ResponsePayload response = auctionController.setAutoBid(payload, authenticatedUser);
+        send(response);
+
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item updatedItem) {
+                auctionServer.notifyObservers(updatedItem, "AUTO_BID_SET");
+            }
+        }
+    }
+
+    private void handleAutoBidCancel(Payload payload) throws IOException {
+        if (!(authenticatedUser instanceof Bidder)) {
+            send(ResponsePayload.error("Please login with a bidder account before canceling auto-bid"));
+            return;
+        }
+
+        ResponsePayload response = auctionController.cancelAutoBid(payload, authenticatedUser);
+        send(response);
+
+        if (response.isSuccess()) {
+            Object rawItem = response.getBody().get("item");
+            if (rawItem instanceof Item updatedItem) {
+                auctionServer.notifyObservers(updatedItem, "AUTO_BID_CANCEL");
+            }
+        }
+    }
+
     private void handleAuctionApproval(Payload payload) throws IOException {
         ResponsePayload response = adminController.approveAuction(payload, authenticatedUser);
         send(response);
@@ -215,4 +251,5 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         socket.close();
         LOGGER.info("Client disconnected: {}", socket.getInetAddress());
     }
+
 }
