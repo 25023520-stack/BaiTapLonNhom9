@@ -10,6 +10,8 @@ public enum PayloadType {
     REMOVE_ITEM,
     START_AUCTION,
     BID,
+    AUTO_BID_SET,
+    AUTO_BID_CANCEL,
     ADMIN_DASHBOARD,
     REQUEST_DEPOSIT,
     APPROVE_DEPOSIT,

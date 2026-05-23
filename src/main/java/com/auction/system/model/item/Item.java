@@ -18,7 +18,9 @@ public class Item implements Serializable {
     private double startPrice, currentPrice;
     private AuctionStatus status;
     private String sellerId;
+    private String sellerUsername;
     private String highestBidderId;
+    private String highestBidderUsername;
     private boolean auctionApproved;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -150,4 +152,22 @@ public class Item implements Serializable {
     public void addBid(Bid bid) {
         bidHistory.add(bid);
     }
+
+    public String getSellerUsername() {
+        return sellerUsername;
+    }
+
+    public void setSellerUsername(String sellerUsername) {
+        this.sellerUsername = sellerUsername;
+    }
+
+    public String getHighestBidderUsername() {
+        return highestBidderUsername;
+    }
+
+    public void setHighestBidderUsername(String highestBidderUsername) {
+        this.highestBidderUsername = highestBidderUsername;
+    }
 }
+
+

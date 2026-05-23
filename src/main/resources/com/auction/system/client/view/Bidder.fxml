@@ -199,9 +199,58 @@
                             </children>
                         </HBox>
 
-                        <Button fx:id="bidButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false"
-                                onAction="#submitBid" styleClass="auction-bid-button" text="Đặt giá" />
+                        <Button fx:id="bidButton"
+                                maxWidth="1.7976931348623157E308"
+                                mnemonicParsing="false"
+                                onAction="#submitBid"
+                                styleClass="auction-bid-button"
+                                text="Đặt giá" />
 
+                        <Rectangle fill="#DDEDF7" height="1.0" width="300.0" />
+
+                        <VBox spacing="8.0">
+                            <children>
+                                <VBox spacing="3.0">
+                                    <children>
+                                        <Label styleClass="bidder-panel-title" text="Đấu giá tự động" />
+                                        <Label styleClass="bidder-page-subtitle"
+                                               text="Đặt giá tối đa và bước tăng để hệ thống tự trả giá thay bạn."
+                                               wrapText="true" />
+                                    </children>
+                                </VBox>
+
+                                <Label styleClass="input-label" text="Giá tối đa" />
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                    <children>
+                                        <Label styleClass="input-icon" text="MAX" />
+                                        <TextField fx:id="maxBidField"
+                                                   promptText="Nhập giá tối đa"
+                                                   styleClass="input-field"
+                                                   HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+
+                                <Label styleClass="input-label" text="Bước tăng giá" />
+
+                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                    <children>
+                                        <Label styleClass="input-icon" text="+VND" />
+                                        <TextField fx:id="incrementField"
+                                                   promptText="Nhập bước tăng mỗi lần"
+                                                   styleClass="input-field"
+                                                   HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+
+                                <Button fx:id="autoBidButton"
+                                        maxWidth="1.7976931348623157E308"
+                                        mnemonicParsing="false"
+                                        onAction="#submitAutoBid"
+                                        styleClass="auction-bid-button"
+                                        text="Bật đấu giá tự động" />
+                            </children>
+                        </VBox>
                         <VBox spacing="8.0" VBox.vgrow="ALWAYS">
                             <children>
                                 <Label styleClass="bidder-panel-title" text="Lịch sử đấu giá" />
