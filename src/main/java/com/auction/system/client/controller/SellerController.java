@@ -69,6 +69,7 @@ public class SellerController {
     @FXML private ImageView imagePreview;
     @FXML private Label imageNameLabel;
     @FXML private Label accountStatusLabel;
+    @FXML private Label sellerBalanceLabel;
     @FXML private Label auctionApprovalLabel;
     @FXML private Spinner<Integer> durationHoursSpinner;
     @FXML private DatePicker startDatePicker;
@@ -102,7 +103,7 @@ public class SellerController {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? null
                         : String.format("%s  —  %,.0f ₫  —  %s",
-                        item.getName(), item.getStartPrice(), describeAuctionState(item)));
+                        item.getName(), item.getCurrentPrice(), describeAuctionState(item)));
             }
         });
 
@@ -115,6 +116,7 @@ public class SellerController {
         addButton.setDisable(false);
         configureScheduleInputs();
         updateSellerApprovalState();
+        updateSellerBalanceLabel();
         updateAuctionApprovalLabel(null);
 
         refreshItems();
@@ -368,6 +370,12 @@ public class SellerController {
                 currentSeller.setApproved(approved);
                 updateSellerApprovalState();
             }
+            Double sellerBalance = resp.getDouble("sellerBalance");
+            if (sellerBalance != null) {
+                // Ghi chu: server la nguon du lieu chinh cho so du seller sau khi phien ban thanh cong.
+                currentSeller.setBalance(sellerBalance);
+                updateSellerBalanceLabel();
+            }
             Object rawItems = resp.getBody().get("items");
             if (rawItems instanceof List<?> list) {
                 List<Item> items = list.stream()
@@ -497,6 +505,15 @@ public class SellerController {
                     : "Tai khoan seller dang cho admin duyet. Chuc nang quan ly san pham tam thoi bi khoa.");
         }
         updateEditorState(sellerItemList == null ? null : sellerItemList.getSelectionModel().getSelectedItem());
+    }
+
+    private void updateSellerBalanceLabel() {
+        if (sellerBalanceLabel == null) {
+            return;
+        }
+
+        double balance = currentSeller == null ? 0 : currentSeller.getBalance();
+        sellerBalanceLabel.setText(String.format("So du seller: %,.0f VND", balance));
     }
 
     private void updateEditorState(Item picked) {

@@ -149,9 +149,15 @@ public class AuctionController {
                 .findById(user.getId())
                 .map(User::isApproved)
                 .orElse(user.isApproved());
+        // Ghi chu: tra kem so du moi nhat de man Seller khong phai goi them request rieng.
+        double sellerBalance = auctionManager.getAuthManager()
+                .findById(user.getId())
+                .map(User::getBalance)
+                .orElse(user.getBalance());
         ResponsePayload resp = ResponsePayload.ok("Items retrieved");
         resp.put("items", withImageData(items));
         resp.put("approved", approved);
+        resp.put("sellerBalance", sellerBalance);
         return resp;
     }
 
