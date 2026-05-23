@@ -12,6 +12,7 @@ import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.model.user.User;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.server.observer.AuctionObserver;
+import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.item.Item;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
@@ -164,7 +165,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
     }
 
     private void handleListItems() throws IOException {
-        send(auctionController.listItems());
+        send(auctionController.listItems(authenticatedUser));
     }
 
     private void handleItemMutation(Payload payload, String eventType) throws IOException {
@@ -281,11 +282,35 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
     public void onAuctionUpdated(Item item, String eventType) {
         if (!connected || closed) return;
 
+        attachAutoBidDataForCurrentUser(item);
         ResponsePayload update = ResponsePayload.auctionUpdate("Auction updated");
         update.put("itemId", item.getId());
         update.put("item", item);
         update.put("eventType", eventType);  // "BID_PLACED", "AUCTION_STARTED", "AUCTION_FINISHED"
         send(update);
+    }
+
+    private void attachAutoBidDataForCurrentUser(Item item) {
+        if (item == null) {
+            return;
+        }
+
+        item.setCurrentUserAutoBidActive(false);
+        item.setCurrentUserAutoBidMaxBid(0);
+        item.setCurrentUserAutoBidIncrementAmount(0);
+
+        if (!(authenticatedUser instanceof Bidder bidder)) {
+            return;
+        }
+
+        AutoBid autoBid = auctionManager.findActiveAutoBid(item.getId(), bidder.getId());
+        if (autoBid == null) {
+            return;
+        }
+
+        item.setCurrentUserAutoBidActive(true);
+        item.setCurrentUserAutoBidMaxBid(autoBid.getMaxBid());
+        item.setCurrentUserAutoBidIncrementAmount(autoBid.getIncrementAmount());
     }
 
     public synchronized void send(Payload payload){

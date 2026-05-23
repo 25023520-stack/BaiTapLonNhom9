@@ -41,6 +41,9 @@ public class Bid implements Serializable {
     public LocalDateTime getTimestamp() {
         return timestamp;
     }
+    public String getBidType() {
+        return bidId != null && bidId.startsWith("AUTO-BID-TRANSACTION-") ? "AUTO" : "MANUAL";
+    }
     public String toString() {
         return "Bid" + "BidId: " + bidId + ", Bidder: " + bidder.getFullName() + ", Amount: " + amount + ", Timestamp: " + timestamp;
     }
