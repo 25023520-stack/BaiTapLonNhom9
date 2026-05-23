@@ -1,11 +1,11 @@
 package com.auction.system.common.payload;
 
-public class AutoBidPayLoad extends Payload {
-    public AutoBidPayLoad() {
+public class AutoBidPayload extends Payload {
+    public AutoBidPayload() {
         super(PayloadType.AUTO_BID_SET);
     }
 
-    public AutoBidPayLoad(String itemId,
+    public AutoBidPayload(String itemId,
                           double maxBid,
                           double incrementAmount) {
         this();
@@ -14,8 +14,8 @@ public class AutoBidPayLoad extends Payload {
         setIncrementAmount(incrementAmount);
     }
 
-    public static AutoBidPayLoad cancel(String itemId) {
-        AutoBidPayLoad payload = new AutoBidPayLoad();
+    public static AutoBidPayload cancel(String itemId) {
+        AutoBidPayload payload = new AutoBidPayload();
         payload.setType(PayloadType.AUTO_BID_CANCEL);
         payload.setItemId(itemId);
         return payload;

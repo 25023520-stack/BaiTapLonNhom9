@@ -7,7 +7,7 @@ import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.model.auction.AuctionStatus;
-import com.auction.system.common.payload.AutoBidPayLoad;
+import com.auction.system.common.payload.AutoBidPayload;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.User;
@@ -260,7 +260,7 @@ public class BidderController extends AuctionController {
             AuctionClient client = AppContext.getAuctionClient();
             autoBidButton.setDisable(true);
 
-            client.send(new AutoBidPayLoad(selectedItem.getId(), maxBid, incrementAmount));
+            client.send(new AutoBidPayload(selectedItem.getId(), maxBid, incrementAmount));
             ResponsePayload response = readResponse(client);
 
             if (!response.isSuccess()) {
