@@ -224,4 +224,13 @@ public class UserDAO extends BaseDAO {
             return pstm.executeUpdate() > 0;
         }
     }
+    public boolean deductBidderBalance(Connection conn, String bidderId, double amount) throws SQLException {
+        String sql = "UPDATE users SET balance = balance - ? WHERE id = ? AND role = 'BIDDER' AND balance >= ?";
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setBigDecimal(1, BigDecimal.valueOf(amount));
+            pstm.setString(2, bidderId);
+            pstm.setBigDecimal(3, BigDecimal.valueOf(amount));
+            return pstm.executeUpdate() > 0;
+        }
+    }
 }

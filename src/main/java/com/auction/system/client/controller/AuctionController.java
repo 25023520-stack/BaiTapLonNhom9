@@ -392,12 +392,19 @@ public class AuctionController {
     }
 
     private void handleAuctionUpdate(ResponsePayload update) {
+        String eventType = String.valueOf(update.getBody().get("eventType"));
+        if ("BALANCE_UPDATED".equals(eventType)) {
+            String userId = String.valueOf(update.getBody().get("userId"));
+            Object rawBalance = update.getBody().get("newBalance");
+            double newBalance = rawBalance instanceof Number n ? n.doubleValue() : 0;
+            onBalanceUpdated(userId, newBalance);
+            return;
+        }
         Object rawItem = update.getBody().get("item");
         Item updatedItem = toItem(rawItem);
         if (updatedItem == null) {
             return;
         }
-        String eventType = String.valueOf(update.getBody().get("eventType"));
 
         if ("ITEM_ADDED".equals(eventType)) {
             boolean exists = items.stream().anyMatch(i -> Objects.equals(i.getId(), updatedItem.getId()));
@@ -444,6 +451,8 @@ public class AuctionController {
     }
 
     protected void onAuctionEvent(Item item, String eventType) {
+    }
+    protected void onBalanceUpdated(String userId, double newBalance) {
     }
 
     private Item toItem(Object rawItem) {

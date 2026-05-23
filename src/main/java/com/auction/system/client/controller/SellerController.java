@@ -125,6 +125,7 @@ public class SellerController {
         autoRefresh = new Timeline(new KeyFrame(POLL_INTERVAL, e -> refreshItems()));
         autoRefresh.setCycleCount(Animation.INDEFINITE);
         autoRefresh.play();
+        startRealtimeListener();
     }
 
     @FXML
@@ -694,5 +695,37 @@ public class SellerController {
         }));
         countdownTimer.setCycleCount(Animation.INDEFINITE);
         countdownTimer.play();
+    }
+
+    private void startRealtimeListener() {
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            client.startListening(
+                    payload -> {
+                        if (payload == null || payload.getType() != PayloadType.UPDATE_AUCTION) return;
+                        String eventType = String.valueOf(payload.getBody().get("eventType"));
+                        if ("BALANCE_UPDATED".equals(eventType)) {
+                            String userId = String.valueOf(payload.getBody().get("userId"));
+                            Object rawBalance = payload.getBody().get("newBalance");
+                            double newBalance = rawBalance instanceof Number n ? n.doubleValue() : 0;
+                            if (currentSeller != null && currentSeller.getId().equals(userId)) {
+                                Platform.runLater(() -> {
+                                    currentSeller.setBalance(newBalance);
+                                    updateSellerBalanceLabel();
+                                });
+                            }
+                        }
+                        // Các event khác (BID_PLACED, AUCTION_FINISHED...) SellerController
+                        // không cần xử lý realtime — autoRefresh 3s đã đủ
+                    },
+                    error -> Platform.runLater(() -> {
+                        if (autoRefresh != null) autoRefresh.stop();
+                        Stage stage = (Stage) sellerItemList.getScene().getWindow();
+                        AppContext.goToServerDown(stage);
+                    })
+            );
+        } catch (IOException e) {
+            logger.error("Cannot start realtime listener for seller", e);
+        }
     }
 }

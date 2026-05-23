@@ -319,18 +319,13 @@ public class AuctionManager {
                 if (!auctionUpdated) {
                     throw new SQLException("Cannot update auction status to FINISHED");
                 }
-                if (sold && !userDAO.addSellerBalance(conn, item.getSellerId(), finalPrice)) {
-                    throw new SQLException("Cannot add final price to seller balance");
-                }
+
 
                 conn.commit();
 
                 if (sold) {
                     // Ghi chu: san pham ban thanh cong thi cong tien ve so du seller sau khi commit DB thanh cong.
                     item.setStatus(AuctionStatus.FINISHED);
-                    authManager.findById(item.getSellerId()).ifPresent(seller ->
-                            seller.setBalance(seller.getBalance() + finalPrice)
-                    );
                 } else {
                     item.setStatus(AuctionStatus.OPEN);
                     item.setCurrentPrice(item.getStartPrice());
@@ -410,9 +405,31 @@ public class AuctionManager {
                     boolean auctionUpdated = auctionDAO.updateStatus(conn, itemId, AuctionStatus.PAID);
                     if (!auctionUpdated) throw new SQLException("Cannot update auction status to PAID");
 
+                    // THÊM: trừ tiền bidder khi thanh toán
+                    String bidderId = item.getHighestBidderId();
+                    double finalPrice = item.getCurrentPrice();
+                    if (bidderId != null && !bidderId.isBlank()) {
+                        if (!userDAO.deductBidderBalance(conn, bidderId, finalPrice)) {
+                            throw new SQLException("Cannot deduct balance from bidder");
+                        }
+                        if (!userDAO.addSellerBalance(conn, item.getSellerId(), finalPrice)) {
+                            throw new SQLException("Cannot add final price to seller balance");
+                        }
+                    }
+
                     conn.commit();
 
                     item.setStatus(AuctionStatus.PAID);
+
+                    // THÊM: cập nhật bidder balance trong RAM
+                    if (bidderId != null) {
+                        authManager.findById(bidderId).ifPresent(bidder ->
+                                bidder.setBalance(bidder.getBalance() - finalPrice)
+                        );
+                        authManager.findById(item.getSellerId()).ifPresent(seller ->
+                                seller.setBalance(seller.getBalance() + finalPrice)
+                        );
+                    }
                     autoBidDAO.deactivateByItemId(itemId);
                     Auction auction = auctionsById.get(itemId);
                     if (auction != null) auction.setStatus(AuctionStatus.PAID);

@@ -14,6 +14,7 @@ import com.auction.system.model.user.Bidder;
 import com.auction.system.server.observer.AuctionObserver;
 import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.item.Item;
+import com.auction.system.server.manager.AuthManager;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +111,16 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
                 case AUTO_BID_CANCEL -> handleAutoBidCancel(payload);
                 case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
                 case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
-                case APPROVE_DEPOSIT -> send(adminController.approveDeposit(payload, authenticatedUser));
+                case APPROVE_DEPOSIT -> {
+                    ResponsePayload depositResp = adminController.approveDeposit(payload, authenticatedUser);
+                    send(depositResp);
+                    if (depositResp.isSuccess()) {
+                        Object rawBidder = depositResp.getBody().get("bidder");
+                        if (rawBidder instanceof User bidder) {
+                            auctionServer.notifyBalanceUpdated(bidder.getId(), bidder.getBalance());
+                        }
+                    }
+                }
                 case APPROVE_SELLER -> send(adminController.approveSeller(payload, authenticatedUser));
                 case APPROVE_AUCTION -> handleAuctionApproval(payload);
                 case MARK_AS_PAID -> handleMarkAsPaid(payload);
@@ -246,6 +256,18 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             Object rawItem = response.getBody().get("item");
             if (rawItem instanceof Item item) {
                 auctionServer.notifyObservers(item, "AUCTION_PAID");
+                String sellerId = item.getSellerId();
+                if (sellerId != null) {
+                    AuthManager.getInstance().findById(sellerId).ifPresent(seller ->
+                            auctionServer.notifyBalanceUpdated(seller.getId(), seller.getBalance())
+                    );
+                }
+                String bidderId = item.getHighestBidderId();
+                if (bidderId != null) {
+                    AuthManager.getInstance().findById(bidderId).ifPresent(bidder ->
+                            auctionServer.notifyBalanceUpdated(bidder.getId(), bidder.getBalance())
+                    );
+                }
             }
         }
     }
@@ -311,6 +333,17 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         item.setCurrentUserAutoBidActive(true);
         item.setCurrentUserAutoBidMaxBid(autoBid.getMaxBid());
         item.setCurrentUserAutoBidIncrementAmount(autoBid.getIncrementAmount());
+    }
+
+    @Override
+    public void onBalanceUpdated(String userId, double newBalance) {
+        if (!connected || closed) return;
+
+        ResponsePayload update = ResponsePayload.auctionUpdate("Balance updated");
+        update.put("eventType", "BALANCE_UPDATED");
+        update.put("userId", userId);
+        update.put("newBalance", newBalance);
+        send(update);
     }
 
     public synchronized void send(Payload payload){

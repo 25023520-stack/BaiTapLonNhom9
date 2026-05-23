@@ -121,6 +121,13 @@ public class AuctionServer implements AuctionSubject{
         }
     }
 
+    @Override
+    public void notifyBalanceUpdated(String userId, double newBalance) {
+        for (AuctionObserver observer : observers) {
+            observer.onBalanceUpdated(userId, newBalance);
+        }
+    }
+
     private void clearClientOnlyData(Item item) {
         if (item == null) {
             return;

@@ -459,4 +459,11 @@ public class BidderController extends AuctionController {
                         + " | Bước: " + formatCurrency(item.getCurrentUserAutoBidIncrementAmount())
         );
     }
+    @Override
+    protected void onBalanceUpdated(String userId, double newBalance) {
+        User currentUser = AppContext.getCurrentUser();
+        if (currentUser == null || !currentUser.getId().equals(userId)) return;
+        currentUser.setBalance(newBalance);
+        balanceValue.setText(formatCurrency(newBalance));
+    }
 }
