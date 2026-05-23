@@ -14,6 +14,7 @@ import com.auction.system.server.dao.AutoBidDAO;
 import com.auction.system.server.dao.ItemDAO;
 import com.auction.system.server.dao.BidDAO;
 import com.auction.system.server.dao.AuctionDAO;
+import com.auction.system.server.dao.UserDAO;
 import com.auction.system.server.database.Database;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +49,7 @@ public class AuctionManager {
     private final AuctionDAO auctionDAO = new AuctionDAO();
     private final BidDAO bidDAO = new BidDAO();
     private final AutoBidDAO autoBidDAO = new AutoBidDAO();
+    private final UserDAO userDAO = new UserDAO();
 
     private com.auction.system.server.observer.AuctionSubject auctionSubject;
 
@@ -292,41 +294,68 @@ public class AuctionManager {
             conn.setAutoCommit(false);
 
             try {
-                boolean itemUpdated = itemDAO.updateStatus(
-                        conn,
-                        itemId,
-                        AuctionStatus.FINISHED
-                );
-
-                if (!itemUpdated) {
-                    throw new SQLException("Cannot update item status to FINISHED");
+                boolean itemUpdated;
+                boolean sold = winnerId != null && !winnerId.isBlank();
+                if (sold) {
+                    itemUpdated = itemDAO.updateStatus(
+                            conn,
+                            itemId,
+                            AuctionStatus.FINISHED
+                    );
+                } else {
+                    // Ghi chu: phien het gio nhung khong co bidder nao dat gia thi san pham chua duoc ban.
+                    // Dua item ve trang thai OPEN/chua gui duyet de seller co the sua lich va gui duyet lai.
+                    itemUpdated = itemDAO.resetUnsoldAuction(conn, itemId);
                 }
 
-                boolean auctionUpdated = auctionDAO.finishAuction(
-                        conn,
-                        itemId,
-                        winnerId,
-                        finalPrice
-                );
+                if (!itemUpdated) {
+                    throw new SQLException("Cannot update item after finishing auction");
+                }
+
+                boolean auctionUpdated = sold
+                        ? auctionDAO.finishAuction(conn, itemId, winnerId, finalPrice)
+                        : auctionDAO.updateStatusAndClearWinner(conn, itemId, AuctionStatus.CANCELED);
 
                 if (!auctionUpdated) {
                     throw new SQLException("Cannot update auction status to FINISHED");
                 }
+                if (sold && !userDAO.addSellerBalance(conn, item.getSellerId(), finalPrice)) {
+                    throw new SQLException("Cannot add final price to seller balance");
+                }
 
                 conn.commit();
 
+                if (sold) {
+                    // Ghi chu: san pham ban thanh cong thi cong tien ve so du seller sau khi commit DB thanh cong.
+                    item.setStatus(AuctionStatus.FINISHED);
+                    authManager.findById(item.getSellerId()).ifPresent(seller ->
+                            seller.setBalance(seller.getBalance() + finalPrice)
+                    );
+                } else {
+                    item.setStatus(AuctionStatus.OPEN);
+                    item.setCurrentPrice(item.getStartPrice());
+                    item.setHighestBidderId(null);
+                    item.setHighestBidderUsername(null);
+                    item.setAuctionApproved(false);
+                    item.setStartTime(null);
+                    item.setEndTime(null);
+                }
                 // update auction trong RAM
                 item.setStatus(AuctionStatus.FINISHED);
                 autoBidDAO.deactivateByItemId(itemId);
 
                 Auction auction = auctionsById.get(itemId);
                 if (auction != null) {
-                    auction.finishAuction();
+                    if (sold) {
+                        auction.finishAuction();
+                    } else {
+                        auction.setStatus(AuctionStatus.CANCELED);
+                    }
                 }
 
                 //thong bao cho observer
                 if (auctionSubject != null) {
-                    auctionSubject.notifyObservers(item, "AUCTION_FINISHED");
+                    auctionSubject.notifyObservers(item, sold ? "AUCTION_FINISHED" : "AUCTION_UNSOLD_RESET");
                 }
 
             } catch (SQLException e) {

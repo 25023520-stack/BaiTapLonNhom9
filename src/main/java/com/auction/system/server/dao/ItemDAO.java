@@ -264,6 +264,27 @@ public class ItemDAO extends BaseDAO {
         return false;
     }
 
+    public boolean resetUnsoldAuction(Connection conn, String itemId) throws SQLException {
+        // Ghi chu: phien khong co bid nao thi khong tinh la da ban.
+        // Reset item ve OPEN/chua gui duyet de seller co the cap nhat va gui admin duyet lai.
+        String sql = """
+                UPDATE items
+                SET status = ?,
+                    current_price = start_price,
+                    highest_bidder_id = NULL,
+                    start_time = NULL,
+                    end_time = NULL,
+                    auction_approved = FALSE
+                WHERE id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, AuctionStatus.OPEN.name());
+            pstm.setString(2, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
     public boolean updateAfterBid(
             Connection conn,
             String itemId,

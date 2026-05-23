@@ -214,4 +214,14 @@ public class UserDAO extends BaseDAO {
             return pstm.executeUpdate() > 0;
         }
     }
+
+    public boolean addSellerBalance(Connection conn, String sellerId, double amount) throws SQLException {
+        // Ghi chu: seller nhan tien sau khi phien dau gia co winner va giao dich ket thuc thanh cong.
+        String sql = "UPDATE users SET balance = balance + ? WHERE id = ? AND role = 'SELLER'";
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setBigDecimal(1, BigDecimal.valueOf(amount));
+            pstm.setString(2, sellerId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
 }
