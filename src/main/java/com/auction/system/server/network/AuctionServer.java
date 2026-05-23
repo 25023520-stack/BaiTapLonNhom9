@@ -115,8 +115,18 @@ public class AuctionServer implements AuctionSubject{
 
     @Override
     public void notifyObservers(Item item, String eventType) {
+        clearClientOnlyData(item);
         for (AuctionObserver observer : observers) {
             observer.onAuctionUpdated(item, eventType);
         }
+    }
+
+    private void clearClientOnlyData(Item item) {
+        if (item == null) {
+            return;
+        }
+        item.setCurrentUserAutoBidActive(false);
+        item.setCurrentUserAutoBidMaxBid(0);
+        item.setCurrentUserAutoBidIncrementAmount(0);
     }
 }

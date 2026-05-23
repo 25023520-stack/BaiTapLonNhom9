@@ -19,7 +19,6 @@ import com.auction.system.server.database.Database;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.PriorityQueue;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -318,6 +317,7 @@ public class AuctionManager {
 
                 // update auction trong RAM
                 item.setStatus(AuctionStatus.FINISHED);
+                autoBidDAO.deactivateByItemId(itemId);
 
                 Auction auction = auctionsById.get(itemId);
                 if (auction != null) {
@@ -384,6 +384,7 @@ public class AuctionManager {
                     conn.commit();
 
                     item.setStatus(AuctionStatus.PAID);
+                    autoBidDAO.deactivateByItemId(itemId);
                     Auction auction = auctionsById.get(itemId);
                     if (auction != null) auction.setStatus(AuctionStatus.PAID);
 
@@ -441,6 +442,7 @@ public class AuctionManager {
                     item.setStatus(AuctionStatus.CANCELED);
                     item.setHighestBidderId(null);
                     item.setHighestBidderUsername(null);
+                    autoBidDAO.deactivateByItemId(itemId);
 
                     Auction auction = auctionsById.get(itemId);
                     if (auction != null) auction.setStatus(AuctionStatus.CANCELED);
@@ -500,6 +502,7 @@ public class AuctionManager {
                     conn.commit();
 
                     item.setStatus(AuctionStatus.CANCELED);
+                    autoBidDAO.deactivateByItemId(itemId);
                     Auction auction = auctionsById.get(itemId);
                     if (auction != null) auction.setStatus(AuctionStatus.CANCELED);
 
@@ -540,6 +543,10 @@ public class AuctionManager {
 
             if (item.getStatus() != AuctionStatus.RUNNING) {
                 throw new IllegalStateException("Auction is not running");
+            }
+
+            if (Objects.equals(item.getSellerId(), bidder.getId())) {
+                throw new IllegalArgumentException("Seller cannot bid on their own item");
             }
 
             if (item.getEndTime() != null && LocalDateTime.now().isAfter(item.getEndTime())) {
@@ -643,6 +650,10 @@ public class AuctionManager {
                 throw new IllegalStateException("Auction is not running");
             }
 
+            if (Objects.equals(item.getSellerId(), bidder.getId())) {
+                throw new IllegalArgumentException("Seller cannot enable auto-bid on their own item");
+            }
+
             if (item.getEndTime() != null && LocalDateTime.now().isAfter(item.getEndTime())) {
                 finishAuctionLocked(itemId);
                 throw new IllegalStateException("Auction already finished");
@@ -656,13 +667,21 @@ public class AuctionManager {
                 throw new IllegalArgumentException("Increment amount must be greater than 0");
             }
 
+            Bidder latestBidder = authManager.findById(bidder.getId())
+                    .filter(Bidder.class::isInstance)
+                    .map(Bidder.class::cast)
+                    .orElse(bidder);
+            if (latestBidder.getBalance() < maxBid) {
+                throw new IllegalArgumentException("Bidder balance is not enough for this auto-bid max amount");
+            }
+
             String autoBidId = "AUTO-BID-" + UUID.randomUUID();
 
             AutoBid autoBid = new AutoBid(
                     autoBidId,
                     itemId,
-                    bidder.getId(),
-                    bidder.getUserName(),
+                    latestBidder.getId(),
+                    latestBidder.getUserName(),
                     maxBid,
                     incrementAmount
             );
@@ -671,6 +690,8 @@ public class AuctionManager {
             if (!saved) {
                 throw new IllegalStateException("Cannot save auto-bid");
             }
+
+            processAutoBidsLocked(itemId);
 
             return item;
         } finally {
@@ -707,83 +728,77 @@ public class AuctionManager {
     private void processAutoBidsLocked(String itemId) {
         Item item = requireItem(itemId);
 
-        int safetyCounter = 0;
+        autoBidDAO.deactivateExhausted(itemId, item.getCurrentPrice());
 
-        while (safetyCounter++ < 100) {
-            List<AutoBid> activeAutoBids = autoBidDAO.findActiveByItemId(itemId);
+        List<AutoBid> candidates = autoBidDAO.findActiveByItemId(itemId).stream()
+                .filter(autoBid -> autoBid.getBidderId() != null)
+                .filter(autoBid -> !autoBid.getBidderId().equals(item.getSellerId()))
+                .filter(autoBid -> autoBid.getMaxBid() > item.getCurrentPrice())
+                .filter(autoBid -> autoBid.getIncrementAmount() > 0)
+                .sorted(this::compareAutoBidPriority)
+                .toList();
 
-            PriorityQueue<AutoBid> queue = new PriorityQueue<>((a, b) -> {
-                int byMaxBid = Double.compare(b.getMaxBid(), a.getMaxBid());
-                if (byMaxBid != 0) {
-                    return byMaxBid;
-                }
-                LocalDateTime aTime = a.getCreatedAt();
-                LocalDateTime bTime = b.getCreatedAt();
-
-                if(aTime == null && bTime == null) {
-                    return 0;
-                } else if (aTime == null) {
-                    return 1;
-                } else if (bTime == null) {
-                    return -1;
-                } else {
-                    return aTime.compareTo(bTime);
-                }
-            });
-
-            //loc autobid để đưa vào hàng cho
-            for (AutoBid autoBid : activeAutoBids) {
-                if(autoBid.getBidderId() == null) {
-                    continue;
-                }
-
-                if(autoBid.getBidderId().equals(item.getHighestBidderId())) {
-                    continue;
-                }
-
-                if(autoBid.getMaxBid() <= item.getCurrentPrice()) {
-                    continue;
-                }
-
-                if (autoBid.getIncrementAmount() <= 0) {
-                    continue;
-                }
-
-                queue.offer(autoBid);
-            }
-
-            AutoBid selected = queue.poll();
-
-            if (selected == null ) {
-                return;
-            }
-
-            double nextAmount = Math.min(
-                    selected.getMaxBid(),
-                    item.getCurrentPrice() + selected.getIncrementAmount()
-            );
-
-            if (nextAmount <= item.getCurrentPrice() ) {
-                return;
-            }
-
-            User user = authManager.findById(selected. getBidderId())
-                    .orElseThrow(() -> new IllegalStateException("Auto-bid Bidder cannot exist"));
-
-            if (!(user instanceof Bidder autoBidder)) {
-                throw new IllegalStateException("Auto-bid user is not a bidder");
-            }
-
-            placeAutoBidLocked(itemId, item, autoBidder, nextAmount);
-
-            // Notify tất cả clients về auto-bid
-            if (auctionSubject != null) {
-                auctionSubject.notifyObservers(item, "BID_PLACED");
-            }
+        if (candidates.isEmpty()) {
+            return;
         }
 
-        LOGGER.warn("Auto-bid loop reached safety limit for item {}", itemId);
-        return;
+        AutoBid winner = candidates.get(0);
+        AutoBid second = candidates.size() > 1 ? candidates.get(1) : null;
+        if (winner.getBidderId().equals(item.getHighestBidderId()) && second == null) {
+            return;
+        }
+
+        double minimumIncrement = winner.getIncrementAmount();
+        double targetAmount = item.getCurrentPrice() + minimumIncrement;
+        if (second != null) {
+            targetAmount = Math.max(targetAmount, second.getMaxBid() + minimumIncrement);
+        }
+        double nextAmount = Math.min(winner.getMaxBid(), targetAmount);
+
+        if (nextAmount <= item.getCurrentPrice()) {
+            autoBidDAO.deactivate(winner.getItemId(), winner.getBidderId());
+            return;
+        }
+
+        User user = authManager.findById(winner.getBidderId())
+                .orElseThrow(() -> new IllegalStateException("Auto-bid Bidder cannot exist"));
+
+        if (!(user instanceof Bidder autoBidder)) {
+            autoBidDAO.deactivate(winner.getItemId(), winner.getBidderId());
+            throw new IllegalStateException("Auto-bid user is not a bidder");
+        }
+
+        if (autoBidder.getBalance() < nextAmount) {
+            autoBidDAO.deactivate(winner.getItemId(), winner.getBidderId());
+            return;
+        }
+
+        placeAutoBidLocked(itemId, item, autoBidder, nextAmount);
+        autoBidDAO.deactivateExhausted(itemId, item.getCurrentPrice());
+
+        if (auctionSubject != null) {
+            auctionSubject.notifyObservers(item, "BID_PLACED");
+        }
+    }
+
+    private int compareAutoBidPriority(AutoBid a, AutoBid b) {
+        int byMaxBid = Double.compare(b.getMaxBid(), a.getMaxBid());
+        if (byMaxBid != 0) {
+            return byMaxBid;
+        }
+
+        LocalDateTime aTime = a.getCreatedAt();
+        LocalDateTime bTime = b.getCreatedAt();
+        if (aTime == null && bTime == null) {
+            return 0;
+        }
+        if (aTime == null) {
+            return 1;
+        }
+        if (bTime == null) {
+            return -1;
+        }
+        return aTime.compareTo(bTime);
     }
 
     private void placeAutoBidLocked(String itemId, Item item, Bidder bidder, double bidAmount) {
@@ -865,6 +880,13 @@ public class AuctionManager {
         } catch (ItemNotFoundException exception) {
             return Optional.empty();
         }
+    }
+
+    public AutoBid findActiveAutoBid(String itemId, String bidderId) {
+        if (itemId == null || itemId.isBlank() || bidderId == null || bidderId.isBlank()) {
+            return null;
+        }
+        return autoBidDAO.findActiveByItemAndBidder(itemId, bidderId);
     }
 
     synchronized void resetForTest() {

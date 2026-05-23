@@ -24,6 +24,9 @@ public class Item implements Serializable {
     private boolean auctionApproved;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private boolean currentUserAutoBidActive;
+    private double currentUserAutoBidMaxBid;
+    private double currentUserAutoBidIncrementAmount;
     private final List<Bid> bidHistory = new ArrayList<>();
 
     public Item() {}
@@ -153,6 +156,30 @@ public class Item implements Serializable {
         bidHistory.add(bid);
     }
 
+    public boolean isCurrentUserAutoBidActive() {
+        return currentUserAutoBidActive;
+    }
+
+    public void setCurrentUserAutoBidActive(boolean currentUserAutoBidActive) {
+        this.currentUserAutoBidActive = currentUserAutoBidActive;
+    }
+
+    public double getCurrentUserAutoBidMaxBid() {
+        return currentUserAutoBidMaxBid;
+    }
+
+    public void setCurrentUserAutoBidMaxBid(double currentUserAutoBidMaxBid) {
+        this.currentUserAutoBidMaxBid = currentUserAutoBidMaxBid;
+    }
+
+    public double getCurrentUserAutoBidIncrementAmount() {
+        return currentUserAutoBidIncrementAmount;
+    }
+
+    public void setCurrentUserAutoBidIncrementAmount(double currentUserAutoBidIncrementAmount) {
+        this.currentUserAutoBidIncrementAmount = currentUserAutoBidIncrementAmount;
+    }
+
     public String getSellerUsername() {
         return sellerUsername;
     }
@@ -169,5 +196,4 @@ public class Item implements Serializable {
         this.highestBidderUsername = highestBidderUsername;
     }
 }
-
 
