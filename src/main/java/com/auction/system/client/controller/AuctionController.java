@@ -260,7 +260,10 @@ public class AuctionController {
         for (int i = history.size() - 1; i >= 0; i--) {
             Bid bid = history.get(i);
             String bidderName = bid.getBidder() != null ? bid.getBidder().getFullName() : bid.getBidderId();
-            builder.append(bidderName)
+            builder.append("[")
+                    .append(bid.getBidType())
+                    .append("] ")
+                    .append(bidderName)
                     .append("  —  đã đặt ")
                     .append(formatCurrency(bid.getAmount()))
                     .append("  •  ")
@@ -268,6 +271,27 @@ public class AuctionController {
                     .append(System.lineSeparator());
         }
         return builder.toString();
+    }
+
+    @FXML
+    protected void showBidHistoryDialog() {
+        Item selectedItem = getSelectedItem();
+        if (selectedItem == null) {
+            showAlert(Alert.AlertType.WARNING, "Bạn chưa chọn sản phẩm.");
+            return;
+        }
+
+        TextArea historyView = new TextArea(formatBidHistory(selectedItem));
+        historyView.setEditable(false);
+        historyView.setWrapText(true);
+        historyView.setPrefSize(760, 460);
+
+        Alert dialog = new Alert(Alert.AlertType.INFORMATION);
+        dialog.setTitle("Lịch sử đấu giá");
+        dialog.setHeaderText("Lịch sử đấu giá - " + selectedItem.getName());
+        dialog.getDialogPane().setContent(historyView);
+        dialog.setResizable(true);
+        dialog.showAndWait();
     }
 
     private String formatRelativeTime(LocalDateTime time, LocalDateTime now) {

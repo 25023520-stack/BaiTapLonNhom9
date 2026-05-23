@@ -42,6 +42,12 @@ public class BidderController extends AuctionController {
     private Button autoBidButton;
 
     @FXML
+    private Button cancelAutoBidButton;
+
+    @FXML
+    private Label autoBidStatusValue;
+
+    @FXML
     private TextField bidAmountField;
 
     @FXML
@@ -85,6 +91,10 @@ public class BidderController extends AuctionController {
 
         autoBidButton.setMaxWidth(Double.MAX_VALUE);
         autoBidButton.setDisable(true);
+
+        cancelAutoBidButton.setMaxWidth(Double.MAX_VALUE);
+        cancelAutoBidButton.setDisable(true);
+        updateAutoBidStatus(null);
 
         configureCurrentUser();
     }
@@ -208,6 +218,46 @@ public class BidderController extends AuctionController {
             showItemDetails(refreshedItem);
             bidAmountField.clear();
             showAlert(Alert.AlertType.INFORMATION, "Đặt giá thành công.");
+        } catch (IOException exception) {
+            updateAuctionActions(selectedItem);
+            showAlert(Alert.AlertType.ERROR, "Không thể kết nối tới server.");
+        } catch (RuntimeException exception) {
+            updateAuctionActions(selectedItem);
+            showAlert(Alert.AlertType.ERROR, exception.getMessage());
+        }
+    }
+
+    @FXML
+    public void cancelAutoBid() {
+        Item selectedItem = getSelectedItem();
+        if (selectedItem == null) {
+            showAlert(Alert.AlertType.WARNING, "Bạn chưa chọn sản phẩm.");
+            return;
+        }
+
+        User currentUser = AppContext.getCurrentUser();
+        if (!(currentUser instanceof Bidder)) {
+            showAlert(Alert.AlertType.WARNING, "Tài khoản hiện tại không có quyền hủy đấu giá tự động.");
+            return;
+        }
+
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            cancelAutoBidButton.setDisable(true);
+            client.send(AutoBidPayload.cancel(selectedItem.getId()));
+            ResponsePayload response = readResponse(client);
+
+            if (!response.isSuccess()) {
+                updateAuctionActions(selectedItem);
+                showAlert(Alert.AlertType.ERROR, response.getMessage());
+                return;
+            }
+
+            loadItems();
+            Item refreshedItem = findItemById(selectedItem.getId());
+            selectItem(refreshedItem);
+            showItemDetails(refreshedItem);
+            showAlert(Alert.AlertType.INFORMATION, "Đã hủy đấu giá tự động.");
         } catch (IOException exception) {
             updateAuctionActions(selectedItem);
             showAlert(Alert.AlertType.ERROR, "Không thể kết nối tới server.");
@@ -364,10 +414,12 @@ public class BidderController extends AuctionController {
 
         bidButton.setDisable(!canBid);
         autoBidButton.setDisable(!canBid);
+        cancelAutoBidButton.setDisable(!isBidder || item == null || !item.isCurrentUserAutoBidActive());
 
         bidAmountField.setDisable(!isBidder);
         maxBidField.setDisable(!isBidder);
         incrementField.setDisable(!isBidder);
+        updateAutoBidStatus(item);
 
         if (canBid) {
             bidAmountField.setPromptText("Giá phải lớn hơn " + formatCurrency(item.getCurrentPrice()));
@@ -392,5 +444,19 @@ public class BidderController extends AuctionController {
             maxBidField.setPromptText("Chỉ tài khoản bidder mới dùng auto-bid");
             incrementField.setPromptText("Chỉ tài khoản bidder mới dùng auto-bid");
         }
+    }
+
+    private void updateAutoBidStatus(Item item) {
+        if (autoBidStatusValue == null) {
+            return;
+        }
+        if (item == null || !item.isCurrentUserAutoBidActive()) {
+            autoBidStatusValue.setText("Chưa bật");
+            return;
+        }
+        autoBidStatusValue.setText(
+                "Đang bật | Max: " + formatCurrency(item.getCurrentUserAutoBidMaxBid())
+                        + " | Bước: " + formatCurrency(item.getCurrentUserAutoBidIncrementAmount())
+        );
     }
 }
