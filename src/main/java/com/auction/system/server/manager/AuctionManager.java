@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-public class AuctionManager {x
+public class AuctionManager {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AuctionManager.class);
 
     private static final AuctionManager INSTANCE =
