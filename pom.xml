@@ -18,7 +18,7 @@
              Defaults to linux (x86_64). For Linux/ARM build with -Djavafx.platform=linux-aarch64. -->
         <javafx.platform>linux</javafx.platform>
         <kotlin.version>2.3.10</kotlin.version>
-        <jacoco.version>0.8.12</jacoco.version>
+        <jacoco.version>0.8.14</jacoco.version>
         <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
         <checkstyle.version>10.20.1</checkstyle.version>
     </properties>
