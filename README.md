@@ -1,268 +1,211 @@
-# BaiTapLonNhom9
+# Hệ thống đấu giá trực tuyến (Online Auction System) — Nhóm 9
 
-## Cau truc source code
+Ứng dụng đấu giá trực tuyến theo mô hình **client–server**: nhiều người dùng kết nối
+đồng thời tới một máy chủ trung tâm để đăng sản phẩm, đặt giá và theo dõi phiên đấu
+giá theo thời gian thực.
 
-Project duoc to chuc theo huong client-server va tach ro giao dien, nghiep vu, model dung chung:
+## 1. Bài toán và phạm vi
+
+- **Bài toán:** xây dựng sàn đấu giá nhiều người dùng, hỗ trợ 3 vai trò **Admin / Seller / Bidder**.
+- **Phạm vi:**
+  - Seller đăng sản phẩm và gửi yêu cầu mở phiên đấu giá (có lịch bắt đầu/kết thúc).
+  - Admin duyệt tài khoản seller, duyệt phiên đấu giá, duyệt yêu cầu nạp tiền của bidder.
+  - Bidder nạp tiền, đặt giá thủ công hoặc bật **đấu giá tự động (auto-bid)**, thanh toán khi thắng.
+  - Máy chủ tự động bắt đầu/kết thúc phiên theo lịch và quyết định người thắng.
+  - Cập nhật **realtime** tới mọi client đang xem (giá mới, người giữ giá cao nhất, số dư).
+- **Ngoài phạm vi:** thanh toán qua cổng thật (số dư là ví nội bộ trong hệ thống).
+
+## 2. Công nghệ, môi trường và yêu cầu cài đặt
+
+| Thành phần | Lựa chọn |
+|---|---|
+| Ngôn ngữ | Java 25 (tương thích build với JDK 21 LTS) |
+| Giao diện | JavaFX 21 + FXML (mô hình MVC) |
+| Giao tiếp | TCP socket, giao thức JSON dòng-lệnh (Gson) |
+| Cơ sở dữ liệu | MySQL 8 (chạy thật) / H2 (mặc định khi chạy nhanh, lưu ở `data/`) |
+| Connection pool | HikariCP |
+| Logging | SLF4J + Logback |
+| Test | JUnit 5 |
+| Chất lượng mã | Checkstyle + JaCoCo (coverage) tích hợp trong Maven |
+| Đóng gói | Maven + maven-shade-plugin (fat JAR) |
+| Triển khai | Docker / Docker Compose (tùy chọn) |
+
+**Yêu cầu cài đặt:**
+- JDK 21 (LTS) hoặc JDK 25 — phải khớp với phiên bản dùng để build.
+- Maven 3.8+ (chỉ cần trên máy build).
+- (Tùy chọn) Docker Desktop / Docker Engine nếu chạy server bằng Compose.
+- `client.jar` đã đóng gói sẵn JavaFX native cho **Windows, Linux, macOS** nên client chỉ cần JDK, không cần cài thêm.
+
+## 3. Cấu trúc source code
 
 ```text
 src/
   main/
     java/com/auction/system/
-      client/
-        App.java                    # bootstrap client, chon DEMO/SEPARATE mode
-        Launcher.java               # entry point JavaFX
-        context/
-          AppContext.java           # session client, socket client, current user
-        controller/
-          LoginController.java      # controller man hinh dang nhap
-          RegisterController.java   # controller man hinh dang ky
-          AuctionController.java    # controller man hinh dau gia
-        network/
-          AuctionClient.java        # TCP client giao tiep voi server
-      server/
+      client/                       # Frontend JavaFX (MVC)
+        App.java                    # entry point client
+        Launcher.java               # bootstrap JavaFX
+        context/AppContext.java     # session, socket, user hiện tại
+        network/AuctionClient.java  # TCP client tới server
+        controller/                 # Login, Register, Auction, Bidder, Seller, Admin, ServerDown
+      server/                       # Backend
         ServerMain.java             # entry point server
-        controller/
-          AuthController.java       # xu ly request auth
-          AuctionController.java    # xu ly request dau gia
-        manager/
-          AuthManager.java          # nghiep vu tai khoan
-          UserManager.java          # quan ly user
-          ItemManager.java          # quan ly item
-          AuctionManager.java       # nghiep vu dau gia
-        network/
-          AuctionServer.java        # TCP server
-          ClientHandler.java        # xu ly tung client
-        dao/
-          UserDAO.java              # truy cap du lieu user
-        database/
-          Database.java             # ket noi/co so du lieu
-      model/
-        user/                       # User, Admin, Seller, Bidder
+        network/                    # AuctionServer (TCP), ClientHandler
+        controller/                 # Auth, Auction, Admin controller
+        manager/                    # Auth, User, Item, Auction, Admin manager (nghiệp vụ)
+        dao/                        # UserDAO, ItemDAO, AuctionDAO, BidDAO, AutoBidDAO, DepositRequestDAO
+        observer/                   # AuctionSubject, AuctionObserver (realtime)
+        scheduler/AuctionScheduler  # tự động bắt đầu/kết thúc phiên theo lịch
+        database/Database.java      # khởi tạo & kết nối DB
+      model/                        # entity dùng chung
+        user/                       # User, Admin, Seller, Bidder, DepositRequest
         item/                       # Item, Electronics, Art, Vehicle
-        auction/                    # Auction, Bid, AuctionStatus
-      common/
-        payload/                    # payload client-server
-        json/                       # GsonProvider dung chung
-      factory/
-        ItemFactory.java            # Factory Method tao item
-      exception/                    # custom exception
-    resources/com/auction/system/client/view/
-      Login.fxml
-      Register.fxml
-      Auction.fxml
-      Styles.css
-  test/
-    java/com/auction/system/...
+        auction/                    # Auction, Bid, AutoBid, AuctionStatus
+      common/payload/               # giao thức Payload/ResponsePayload client-server
+      common/json/GsonProvider.java
+      factory/ItemFactory.java      # Factory Method tạo item theo loại
+      exception/                    # custom exception nghiệp vụ
+    resources/com/auction/system/client/view/   # *.fxml, Styles.css, assets
+  test/java/com/auction/system/...               # JUnit test cho tầng nghiệp vụ
+config/checkstyle/checkstyle.xml                  # cấu hình Checkstyle
 ```
 
-## Doi chieu voi yeu cau de bai
+**Mẫu thiết kế đã áp dụng:** Singleton (các Manager), Factory Method (`ItemFactory`),
+Observer (`AuctionSubject`/`AuctionObserver` cho cập nhật realtime), DAO (tách truy cập DB), MVC (client JavaFX).
 
-- `client/` + `resources/.../view/`: phan Frontend JavaFX, FXML, MVC.
-- `server/`: phan Backend, manager, controller, TCP socket server.
-- `model/`: cac entity dung chung cho client va server.
-- `common/payload/`: giao thuc truyen du lieu client-server.
-- `factory/`: ap dung Factory Method.
-- `exception/`: custom exception cho nghiep vu.
+## 4. Vị trí các file .jar
 
-## Cach chay
+Sau khi build, JAR nằm trong thư mục `target/`:
 
-## Cau hinh admin bootstrap
-
-- Server khong con hardcode tai khoan admin mac dinh.
-- Neu muon tu dong tao admin khi khoi dong server, dat bien moi truong `ADMIN_BOOTSTRAP_PASSWORD`.
-- Neu tai khoan bootstrap admin da ton tai trong database, server se dong bo lai `username/email/full_name/password` tu cac bien moi truong tren moi lan khoi dong.
-- Cac bien co the dung:
-  - `ADMIN_BOOTSTRAP_USERNAME`
-  - `ADMIN_BOOTSTRAP_PASSWORD`
-  - `ADMIN_BOOTSTRAP_FULL_NAME`
-  - `ADMIN_BOOTSTRAP_ID`
-- `ADMIN_BOOTSTRAP_EMAIL` la tuy chon. Neu bo trong, server tu sinh email noi bo theo mau `<username>@bootstrap.local`.
-- Da co mau trong `.env.example`.
-
-### Chay server rieng
-
-```powershell
-set ADMIN_BOOTSTRAP_PASSWORD=doi-mat-khau-nay
-mvn -DskipTests package
-java -jar target/server.jar
-```
-
-### Chay client JavaFX
-
-```powershell
-mvn --% -DskipTests -Djavafx.run.jvmArgs="-Dauction.client.mode=SEPARATE -Dauction.server.host=127.0.0.1 -Dauction.server.port=5050" javafx:run
-```
-
-Neu muon mo 2 client de test realtime, chay lenh tren trong 2 terminal khac nhau sau khi server da len.
-
-### Chay bang Docker Compose
-
-```powershell
-copy .env.example .env
-```
-
-- Sua `ADMIN_BOOTSTRAP_PASSWORD` trong `.env` truoc khi chay.
-
-```powershell
-docker compose -f docker.yml up --build
-```
-
-## Chay client tren nhieu thiet bi (Windows / Linux / macOS)
-
-`client.jar` duoc build 1 lan duy nhat va chay duoc tren ca 3 he dieu hanh vi no da chua san JavaFX native cho Windows, Linux va macOS.
-
----
-
-### Buoc 1 — Build (chay tren may nao co Maven)
-
-```bash
-mvn -DskipTests package
-```
-
-Ket qua:
-```
+```text
 target/
-  server.jar   # chay tren may chu
-  client.jar   # phan phoi cho tat ca thiet bi client
+  server.jar   # chạy trên máy chủ   (main: com.auction.system.server.ServerMain)
+  client.jar   # phân phối cho client (main: com.auction.system.client.App)
 ```
 
----
+- `mvn -DskipTests package` → `client.jar` chứa JavaFX native của **đúng OS đang build**.
+- `mvn -Pdist -DskipTests package` → `client.jar` **đa nền tảng** (gói sẵn native cho
+  Windows + Linux + macOS Intel/ARM), build 1 lần chạy được trên cả 3 hệ điều hành.
 
-### Buoc 2 — Chay server
+## 5. Hướng dẫn chạy theo thứ tự
 
-Chon **mot** trong cac cach sau tuy he dieu hanh cua may chu:
+### Bước 1 — Build (trên máy có Maven)
 
-**Linux (khuyen dung, dung Docker):**
 ```bash
+# client.jar đa nền tảng (khuyến nghị khi phân phối cho nhiều máy/OS khác nhau)
+mvn -Pdist -DskipTests package
+
+# hoặc build nhanh cho riêng OS hiện tại
+mvn -DskipTests package
+```
+
+### Bước 2 — Chạy **Server trước**
+
+Chọn một trong các cách sau tùy hệ điều hành máy chủ:
+
+```bash
+# Cách A — chạy trực tiếp (H2 nhúng, không cần cài DB)
+java -jar target/server.jar
+
+# Cách B — chạy bằng Docker Compose (kèm MySQL)
+cp .env.example .env        # sửa ADMIN_BOOTSTRAP_PASSWORD trong .env trước khi chạy
 docker compose -f docker.yml up --build
 ```
 
-**Linux (khong dung Docker):**
-```bash
-java -jar target/server.jar
-```
+> **Tài khoản admin:** server không hardcode admin. Đặt biến môi trường
+> `ADMIN_BOOTSTRAP_PASSWORD` (và tùy chọn `ADMIN_BOOTSTRAP_USERNAME`,
+> `ADMIN_BOOTSTRAP_FULL_NAME`, `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_ID`) để
+> tự tạo/đồng bộ tài khoản admin khi khởi động. Mẫu có sẵn trong `.env.example`.
 
-**Windows (Docker Desktop):**
-```powershell
-docker compose -f docker.yml up --build
-```
+Server lắng nghe ở **port 5050**. Log khởi động in ra IP nội bộ của máy chủ.
 
-**Windows (khong dung Docker, can MySQL da cai san):**
-```powershell
-set DB_HOST=localhost
-set DB_USER=auction_user
-set DB_PASSWORD=Auction123
-java -jar target/server.jar
-```
-
-**macOS:**
-```bash
-# voi Docker Desktop
-docker compose -f docker.yml up --build
-
-# khong co Docker
-java -jar target/server.jar
-```
-
----
-
-### Buoc 3 — Tim IP cua may chu
-
-Cac thiet bi khac can biet IP nay de ket noi.
+### Bước 3 — Chạy **Client sau** (mở nhiều client để test nhiều người dùng)
 
 ```bash
-# Linux / macOS
-ip a | grep "inet " | grep -v 127
-# hoac
-ifconfig | grep "inet "
-
-# Windows
-ipconfig
-# tim dong "IPv4 Address" cua card mang dang dung
-```
-
-Vi du: `192.168.1.10`
-
----
-
-### Buoc 4 — Mo port 5050 tren may chu (neu bi chặn)
-
-**Linux — ufw:**
-```bash
-sudo ufw allow 5050
-```
-
-**Linux — firewalld:**
-```bash
-sudo firewall-cmd --add-port=5050/tcp --permanent
-sudo firewall-cmd --reload
-```
-
-**Windows:**
-Khi chay server lan dau, Windows Firewall se hien hop thoai — chon **"Allow access"** la xong.
-
-Neu khong hien, mo thu cong:
-```
-Control Panel > Windows Defender Firewall > Advanced Settings
-> Inbound Rules > New Rule > Port > TCP 5050 > Allow
-```
-
-**macOS:**
-```bash
-# macOS tu dong hoi khi app lang nghe ket noi den, bam "Allow" la du.
-```
-
----
-
-### Buoc 5 — Cai JDK tren tung thiet bi client
-
-| He dieu hanh | Cach cai |
-|---|---|
-| Linux | `sudo apt install openjdk-21-jdk` hoac tai tu [Adoptium](https://adoptium.net) |
-| Windows | Tai file `.msi` tu [Adoptium](https://adoptium.net), chay cai dat binh thuong |
-| macOS | `brew install openjdk@21` hoac tai `.pkg` tu [Adoptium](https://adoptium.net) |
-
-> Dung JDK 21 (LTS) hoac JDK 25 — phai khop voi phien ban dung de build.
-
----
-
-### Buoc 6 — Chay client tren tung thiet bi
-
-Copy `client.jar` sang thiet bi, sau do chay:
-
-```bash
-# Linux / macOS
-java -jar client.jar
-
-# Windows (Command Prompt / PowerShell)
 java -jar client.jar
 ```
 
-Trong man hinh dang nhap, o **"Dia chi may chu"**:
+Mở **nhiều terminal** và chạy lại lệnh trên để mô phỏng nhiều người dùng đồng thời.
+Trong màn hình đăng nhập, ô **"Địa chỉ máy chủ"**:
 
-| Truong hop | Nhap gi |
+| Trường hợp | Nhập |
 |---|---|
-| Client va server cung may | `127.0.0.1` (mac dinh) |
-| Client khac may, cung mang LAN | IP may chu, vi du `192.168.1.10` |
+| Client cùng máy với server | `127.0.0.1` (mặc định) |
+| Client khác máy, cùng mạng LAN | IP máy chủ, ví dụ `192.168.1.10` |
 
----
+> Nếu firewall chặn, mở port `5050/tcp` trên máy chủ (ufw/firewalld trên Linux,
+> "Allow access" trên Windows Firewall, hoặc cho phép khi macOS hỏi).
 
-### Tom tat nhanh
+### Chạy client JavaFX từ source (cho phát triển)
 
+Chạy được trực tiếp trên **Windows / Linux / macOS** (POM tự chọn JavaFX native theo
+OS qua profile, nên không bị lỗi đồ họa kiểu "module javafx.graphics trùng" hay thiếu
+native):
+
+```bash
+mvn javafx:run
+
+# trỏ tới server khác máy:
+mvn javafx:run -Dauction.server.host=192.168.1.10 -Dauction.server.port=5050
 ```
-May chu (bat ky OS) ──── chay server.jar hoac Docker
-     │
-     │  cong 5050 (LAN)
-     │
-┌────┴─────┐
-│          │
-Windows   Linux   macOS   ──── chay client.jar, nhap IP may chu
+
+> **Lưu ý môi trường (Linux):** trên desktop dùng **Wayland**, nếu cửa sổ không hiện
+> hoặc lỗi GTK, chạy với `GDK_BACKEND=x11 mvn javafx:run`. Trên máy ảo/không có GPU,
+> ép render phần mềm bằng `mvn javafx:run -Dprism.order=sw`.
+
+## 6. Chức năng đã hoàn thành
+
+**Tài khoản & phân quyền**
+- Đăng ký / đăng nhập; 3 vai trò Admin, Seller, Bidder.
+- Admin duyệt tài khoản Seller trước khi seller được phép hoạt động.
+
+**Seller**
+- Đăng / sửa / xóa sản phẩm (Electronics, Art, Vehicle qua Factory Method).
+- Gửi yêu cầu mở phiên đấu giá kèm lịch bắt đầu/kết thúc.
+- Xem người đang giữ giá cao nhất; nhận tiền vào số dư khi sản phẩm bán được.
+- Sản phẩm không có ai đặt giá khi hết giờ sẽ tự reset để gửi duyệt lại.
+
+**Bidder**
+- Gửi yêu cầu nạp tiền; Admin duyệt để cộng số dư.
+- Đặt giá thủ công (kiểm tra giá hợp lệ, không tự đấu sản phẩm của mình).
+- **Đấu giá tự động (auto-bid):** đặt giá tối đa + bước giá, hệ thống tự nâng giá theo độ ưu tiên.
+- Thanh toán khi thắng; hoặc từ chối nhận hàng (hủy phiên).
+
+**Admin**
+- Dashboard tổng quan; duyệt seller, duyệt phiên đấu giá, duyệt yêu cầu nạp tiền.
+
+**Hệ thống**
+- Server tự động bắt đầu/kết thúc phiên theo lịch (`AuctionScheduler`), tự quyết định người thắng.
+- Cập nhật **realtime** qua Observer: giá mới, người giữ giá cao nhất, số dư, trạng thái phiên đẩy tới mọi client.
+- **Xử lý đồng thời (concurrency):** khóa theo từng item (`ReentrantLock`) + giao dịch DB để chống race khi nhiều bidder cùng đặt giá.
+- Cô lập lỗi từng request: một request lỗi không làm rớt kết nối của client.
+- Lưu trữ bền vững xuống DB (MySQL/H2); ảnh sản phẩm lưu ra file.
+
+**Chất lượng mã**
+- Checkstyle tích hợp Maven (`config/checkstyle/checkstyle.xml`).
+- Báo cáo độ phủ test bằng JaCoCo (xem mục dưới).
+
+## 7. Kiểm thử & độ phủ (coverage)
+
+```bash
+mvn test                      # chạy JUnit + sinh báo cáo JaCoCo
+# Báo cáo HTML: target/site/jacoco/index.html
+
+mvn verify                    # chạy test + kiểm tra ngưỡng coverage + Checkstyle
+mvn checkstyle:check          # chỉ chạy Checkstyle
 ```
 
----
+Coverage được đo trên **tầng nghiệp vụ** (`manager`, `dao`, `model`, `factory`, `scheduler`);
+tầng giao diện JavaFX và entry point được kiểm thử thủ công nên loại khỏi phép đo.
+Bộ test tập trung vào `AuctionManager` (đặt giá, auto-bid, đồng thời).
 
-## Luu y ve cau truc
+## 8. Báo cáo & video demo
 
-- Khong de file IDE trong `src/`.
-- Khong de file env/tooling rieng cua IDE trong `src/main/resources/.../view/`.
-- Logic dau gia nam o `server/manager/`, UI chi goi request qua `client/network/`.
+- **Báo cáo PDF:** _(cập nhật link)_ — nội dung trong `REPORT.md`.
+- **Video demo (≤ 3 phút):** _(cập nhật link)_
+
+## 9. Lưu ý về cấu trúc
+
+- Không để file IDE trong `src/`.
+- Logic đấu giá nằm ở `server/manager/`; UI chỉ gọi request qua `client/network/`.
+- Không để file env/cấu hình riêng của IDE trong `src/main/resources/.../view/`.
