@@ -515,8 +515,12 @@ public class SellerController {
             return;
         }
 
+        // Lấy username và số dư từ đối tượng currentSeller
+        String username = currentSeller == null ? "Unknown" : currentSeller.getUserName();
         double balance = currentSeller == null ? 0 : currentSeller.getBalance();
-        sellerBalanceLabel.setText(String.format("Số dư seller: %,.0f VND", balance));
+
+        // Sử dụng \n để xuống dòng giữa Username và Số dư
+        sellerBalanceLabel.setText(String.format("Seller: %s\nSố dư: %,.0f VND", username, balance));
     }
 
     private void updateEditorState(Item picked) {

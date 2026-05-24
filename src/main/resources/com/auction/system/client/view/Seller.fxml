@@ -83,7 +83,7 @@
                             </children>
                         </VBox>
                         <Region minWidth="24.0" HBox.hgrow="ALWAYS" />
-                        <Label fx:id="sellerBalanceLabel" alignment="CENTER" minWidth="250.0" styleClass="seller-balance-card" text="Số dư seller: 0 VND" textAlignment="CENTER" wrapText="true" />
+                        <Label fx:id="sellerBalanceLabel" alignment="CENTER" minWidth="250.0" styleClass="seller-balance-card" text="Seller: ...&#10;Số dư: 0 VND" textAlignment="CENTER" wrapText="true" />
                     </children>
                 </HBox>
 
