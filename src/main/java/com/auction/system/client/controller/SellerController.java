@@ -516,7 +516,7 @@ public class SellerController {
         }
 
         double balance = currentSeller == null ? 0 : currentSeller.getBalance();
-        sellerBalanceLabel.setText(String.format("So du seller: %,.0f VND", balance));
+        sellerBalanceLabel.setText(String.format("Số dư seller: %,.0f VND", balance));
     }
 
     private void updateEditorState(Item picked) {

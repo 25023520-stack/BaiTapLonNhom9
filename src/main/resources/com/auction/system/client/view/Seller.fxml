@@ -62,7 +62,7 @@
                         <Label styleClass="seller-section-title" text="Sản phẩm của tôi" />
                         <Label styleClass="seller-section-subtitle" text="Chọn một sản phẩm để sửa thông tin hoặc xóa khỏi danh sách." wrapText="true" />
                     </children>
-                </VBox>
+                </HBox>
                 <Button fx:id="refreshButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#onRefreshClick" styleClass="secondary-button" text="Làm mới danh sách" />
                 <ListView fx:id="sellerItemList" styleClass="auction-list-view" VBox.vgrow="ALWAYS" />
                     <Button fx:id="newItemButton" mnemonicParsing="false" onAction="#clearFormForNew" styleClass="secondary-button" text="Sản phẩm mới" />
@@ -73,14 +73,19 @@
     <center>
         <VBox spacing="18.0" styleClass="seller-center">
             <children>
-                <VBox spacing="4.0">
+                <HBox alignment="TOP_LEFT" spacing="18.0">
                     <children>
+                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                            <children>
                         <Label styleClass="seller-page-title" text="Thông tin sản phẩm" />
                         <Label styleClass="seller-page-subtitle" text="Nhập thông tin cần thiết trước khi thêm mới hoặc cập nhật sản phẩm." />
                         <Label fx:id="accountStatusLabel" styleClass="seller-inline-status" text="Trang thai tai khoan seller" wrapText="true" />
-                        <Label fx:id="sellerBalanceLabel" styleClass="seller-inline-status" text="So du seller: 0 VND" wrapText="true" />
+                            </children>
+                        </VBox>
+                        <Region minWidth="24.0" HBox.hgrow="ALWAYS" />
+                        <Label fx:id="sellerBalanceLabel" alignment="CENTER" minWidth="250.0" styleClass="seller-balance-card" text="Số dư seller: 0 VND" textAlignment="CENTER" wrapText="true" />
                     </children>
-                </VBox>
+                </HBox>
 
                 <VBox spacing="16.0" styleClass="seller-form-card">
                     <children>
