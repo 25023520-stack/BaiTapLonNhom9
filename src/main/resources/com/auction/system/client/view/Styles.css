@@ -630,6 +630,14 @@
     -fx-font-family: "Segoe UI";
 }
 
+.bidder-filter-box {
+    -fx-background-color: #F8FCFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #C7DFEF;
+    -fx-border-radius: 12;
+    -fx-padding: 12 12 12 12;
+}
+
 .bidder-detail-card,
 .bidder-actions-card {
     -fx-background-color: #FFFFFF;

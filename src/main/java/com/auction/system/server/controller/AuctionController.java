@@ -35,12 +35,14 @@ public class AuctionController {
         String id = payload.getString("id");
         String name = payload.getString("name");
         String description = payload.getString("description");
+        String category = Item.normalizeCategory(payload.getString("category"));
         Double startPrice = payload.getDouble("startPrice");
         if (id == null || name == null || description == null || startPrice == null) {
             return ResponsePayload.error("id, name, description, startPrice are required");
         }
         try {
             Item item = new Item(id, name, description, startPrice, seller.getId());
+            item.setCategory(category);
             String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
             item.setImagePath(imagePath);
             auctionManager.addItem(item, seller);
@@ -60,12 +62,14 @@ public class AuctionController {
         String id = payload.getString("id");
         String name = payload.getString("name");
         String description = payload.getString("description");
+        String category = Item.normalizeCategory(payload.getString("category"));
         Double startPrice = payload.getDouble("startPrice");
         if (id == null || name == null || description == null || startPrice == null) {
             return ResponsePayload.error("id, name, description, startPrice are required");
         }
         try {
             Item item = new Item(id, name, description, startPrice, seller.getId());
+            item.setCategory(category);
             String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
             if (imagePath != null) {
                 item.setImagePath(imagePath);

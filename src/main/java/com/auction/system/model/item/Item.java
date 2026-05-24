@@ -7,12 +7,34 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import com.auction.system.model.auction.AuctionStatus;
 
 public class Item implements Serializable {
+    public static final String CATEGORY_ELECTRONICS = "ELECTRONICS";
+    public static final String CATEGORY_VEHICLE = "VEHICLE";
+    public static final String CATEGORY_ART = "ART";
+    public static final String CATEGORY_FASHION = "FASHION";
+    public static final String CATEGORY_BOOK = "BOOK";
+    public static final String CATEGORY_HOME = "HOME";
+    public static final String CATEGORY_COLLECTIBLE = "COLLECTIBLE";
+    public static final String DEFAULT_CATEGORY = "OTHER";
+
+    private static final List<String> SUPPORTED_CATEGORIES = List.of(
+            CATEGORY_ELECTRONICS,
+            CATEGORY_VEHICLE,
+            CATEGORY_ART,
+            CATEGORY_FASHION,
+            CATEGORY_BOOK,
+            CATEGORY_HOME,
+            CATEGORY_COLLECTIBLE,
+            DEFAULT_CATEGORY
+    );
+
     private String id;
     private String name, description;
+    private String category = DEFAULT_CATEGORY;
     private String imagePath;
     private String imageBase64;
     private double startPrice, currentPrice;
@@ -29,7 +51,9 @@ public class Item implements Serializable {
     private double currentUserAutoBidIncrementAmount;
     private final List<Bid> bidHistory = new ArrayList<>();
 
-    public Item() {}
+    public Item() {
+        setCategory(DEFAULT_CATEGORY);
+    }
 
     public Item(String id, String name, String description, double startingPrice, String sellerId) {
         this.id = id;
@@ -37,6 +61,12 @@ public class Item implements Serializable {
         this.description = description;
         this.startPrice = startingPrice;
         this.sellerId = sellerId;
+        setCategory(DEFAULT_CATEGORY);
+    }
+
+    public Item(String id, String name, String description, double startingPrice, String sellerId, String category) {
+        this(id, name, description, startingPrice, sellerId);
+        setCategory(category);
     }
 
     public Item(String id, String name, String description, double startPrice, double currentPrice, AuctionStatus status)  {
@@ -46,6 +76,33 @@ public class Item implements Serializable {
         this.startPrice = startPrice;
         this.currentPrice = currentPrice > 0 ? currentPrice : startPrice;
         this.status = status != null ? status : AuctionStatus.OPEN;
+        setCategory(DEFAULT_CATEGORY);
+    }
+
+    public Item(String id, String name, String description, double startPrice, double currentPrice,
+                AuctionStatus status, String category)  {
+        this(id, name, description, startPrice, currentPrice, status);
+        setCategory(category);
+    }
+
+    public static List<String> getSupportedCategories() {
+        return SUPPORTED_CATEGORIES;
+    }
+
+    public static boolean isSupportedCategory(String category) {
+        if (category == null || category.trim().isEmpty()) {
+            return false;
+        }
+        return SUPPORTED_CATEGORIES.contains(category.trim().toUpperCase(Locale.ROOT));
+    }
+
+    public static String normalizeCategory(String category) {
+        if (category == null || category.trim().isEmpty()) {
+            return DEFAULT_CATEGORY;
+        }
+
+        String normalized = category.trim().toUpperCase(Locale.ROOT);
+        return SUPPORTED_CATEGORIES.contains(normalized) ? normalized : DEFAULT_CATEGORY;
     }
 
     public AuctionStatus getStatus() {
@@ -78,6 +135,14 @@ public class Item implements Serializable {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getCategory() {
+        return normalizeCategory(category);
+    }
+
+    public void setCategory(String category) {
+        this.category = normalizeCategory(category);
     }
 
     public String getImagePath() {
@@ -196,4 +261,3 @@ public class Item implements Serializable {
         this.highestBidderUsername = highestBidderUsername;
     }
 }
-

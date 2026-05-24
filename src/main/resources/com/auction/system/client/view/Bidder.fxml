@@ -60,6 +60,24 @@
                         <Label styleClass="bidder-live-text" text="Cập nhật giá theo thời gian thực" />
                     </children>
                 </HBox>
+                <VBox spacing="8.0" styleClass="bidder-filter-box">
+                    <children>
+                        <Label styleClass="input-label" text="Tìm theo tên" />
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                            <children>
+                                <Label styleClass="input-icon" text="S" />
+                                <TextField fx:id="itemSearchField" promptText="Nhập tên sản phẩm" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+                        <Label styleClass="input-label" text="Loại sản phẩm" />
+                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                            <children>
+                                <Label styleClass="input-icon" text="CAT" />
+                                <ComboBox fx:id="categoryFilterComboBox" maxWidth="1.7976931348623157E308" styleClass="combo-field" HBox.hgrow="ALWAYS" />
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
                 <ListView fx:id="itemListView" styleClass="auction-list-view" VBox.vgrow="ALWAYS" />
             </children>
         </VBox>
@@ -119,6 +137,13 @@
                                                 <Label styleClass="auction-row-icon" text="S" />
                                                 <Label prefWidth="115.0" styleClass="auction-info-label" text="Người bán" />
                                                 <Label fx:id="sellerValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                            </children>
+                                        </HBox>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <Label styleClass="auction-row-icon" text="C" />
+                                                <Label prefWidth="115.0" styleClass="auction-info-label" text="Loại sản phẩm" />
+                                                <Label fx:id="categoryValue" styleClass="auction-info-value" text="-" wrapText="true" />
                                             </children>
                                         </HBox>
                                         <HBox alignment="CENTER_LEFT" spacing="10.0">
