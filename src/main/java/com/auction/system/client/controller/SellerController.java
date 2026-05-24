@@ -46,6 +46,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -537,8 +538,18 @@ public class SellerController {
         newItemButton.setDisable(!approved);
         chooseImageButton.setDisable(!approved);
         addButton.setDisable(!approved || hasSelection);
-        updateButton.setDisable(!approved || !hasSelection || running || pendingApproval);
-        removeButton.setDisable(!approved || !hasSelection || running || pendingApproval);
+        boolean canEdit = hasSelection
+                && picked.getStatus() != AuctionStatus.RUNNING
+                && picked.getStatus() != AuctionStatus.FINISHED
+                && picked.getStatus() != AuctionStatus.PAID
+                && !pendingApproval;
+
+        boolean canRemove = hasSelection
+                && picked.getStatus() != AuctionStatus.RUNNING
+                && picked.getStatus() != AuctionStatus.FINISHED;
+
+        updateButton.setDisable(!approved || !canEdit);
+        removeButton.setDisable(!approved || !canRemove);
         startAuctionButton.setDisable(!approved || !hasSelection || picked.getStatus() != AuctionStatus.OPEN || pendingApproval);
     }
 
@@ -561,18 +572,12 @@ public class SellerController {
     }
 
     private String describeAuctionState(Item item) {
-        if (item == null) {
-            return "Chua co du lieu";
-        }
-        if (item.getStatus() == AuctionStatus.RUNNING) {
-            return "Dang mo";
-        }
-        if (hasPendingAuctionApproval(item)) {
-            return "Cho admin duyet";
-        }
-        if (item.getStatus() == AuctionStatus.FINISHED) {
-            return "Da ket thuc";
-        }
+        if (item == null) return "Chua co du lieu";
+        if (item.getStatus() == AuctionStatus.RUNNING) return "Dang mo";
+        if (item.getStatus() == AuctionStatus.CANCELED) return "Da huy";
+        if (item.getStatus() == AuctionStatus.PAID) return "Da thanh toan";
+        if (hasPendingAuctionApproval(item)) return "Cho admin duyet";
+        if (item.getStatus() == AuctionStatus.FINISHED) return "Da ket thuc";
         return "Chua gui duyet";
     }
 
@@ -718,6 +723,23 @@ public class SellerController {
                                     updateSellerBalanceLabel();
                                 });
                             }
+                        }
+                        if ("ITEM_REMOVED".equals(eventType)) {
+                            Object rawItem = payload.getBody().get("item");
+                            if (rawItem != null) {
+                                String removedId = rawItem instanceof com.auction.system.model.item.Item i
+                                        ? i.getId()
+                                        : String.valueOf(((com.google.gson.internal.LinkedTreeMap<?,?>) rawItem).get("id"));
+                                Platform.runLater(() -> {
+                                    sellersItem.removeIf(i -> Objects.equals(i.getId(), removedId));
+                                });
+                            }
+                            return;
+                        }
+
+                        if ("ITEM_UPDATED".equals(eventType) || "ITEM_ADDED".equals(eventType)) {
+                            Platform.runLater(this::refreshItems);
+                            return;
                         }
                         // Các event khác (BID_PLACED, AUCTION_FINISHED...) SellerController
                         // không cần xử lý realtime — autoRefresh 3s đã đủ
