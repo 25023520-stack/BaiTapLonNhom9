@@ -110,14 +110,26 @@ public class AuctionManager {
         if (!Objects.equals(seller.getId(), existingItem.getSellerId())) {
             throw new IllegalArgumentException("Seller can only update their own item");
         }
-        if (existingItem.getStatus() == AuctionStatus.RUNNING) {
+        AuctionStatus currentStatus = existingItem.getStatus();
+        if (currentStatus == AuctionStatus.RUNNING) {
             throw new IllegalStateException("Cannot edit an item while auction is running");
+        }
+        if (currentStatus == AuctionStatus.PAID) {
+            throw new IllegalStateException("Cannot edit an item with status: " + currentStatus);
         }
 
         try {
             itemManager.updateItem(item.getId(), item.getName(), item.getDescription(), item.getStartPrice(), item.getImagePath());
         } catch (ItemNotFoundException | InvalidDataException exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
+        }
+        if (currentStatus == AuctionStatus.CANCELED || currentStatus == AuctionStatus.FINISHED) {
+            existingItem.setStatus(AuctionStatus.OPEN);
+            existingItem.setStartTime(null);
+            existingItem.setEndTime(null);
+            existingItem.setAuctionApproved(false);
+            itemDAO.clearAuctionRequest(existingItem.getId());
+            auctionsById.remove(existingItem.getId());
         }
         Item updatedItem = requireItem(item.getId());
         if (auctionSubject != null) {
@@ -131,8 +143,9 @@ public class AuctionManager {
         if (!Objects.equals(seller.getId(), existingItem.getSellerId())) {
             throw new IllegalArgumentException("Seller can only remove their own item");
         }
-        if (!existingItem.getBidHistory().isEmpty()) {
-            throw new IllegalStateException("Cannot remove item that already has bids");
+        AuctionStatus status = existingItem.getStatus();
+        if (status == AuctionStatus.RUNNING) {
+            throw new IllegalStateException("Cannot remove item with status: " + status);
         }
         Item itemToNotify = existingItem;
 

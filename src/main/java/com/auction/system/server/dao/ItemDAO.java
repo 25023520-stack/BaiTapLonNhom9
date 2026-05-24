@@ -179,26 +179,36 @@ public class ItemDAO extends BaseDAO {
     }
 
     public boolean deleteItem(String itemId) {
-        if(itemId == null || itemId.trim().isEmpty()) {
-            return false;
-        }
+        if (itemId == null || itemId.trim().isEmpty()) return false;
 
-        String sql = "DELETE FROM items WHERE id = ?";
-
-        try(Connection conn = getConnection();
-            PreparedStatement pstm = conn.prepareStatement(sql)){
-
-            pstm.setString(1, itemId);
-
-            return pstm.executeUpdate() > 0;
-
-        } catch(SQLException e) {
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement s = conn.prepareStatement("DELETE FROM bids WHERE item_id = ?")) {
+                    s.setString(1, itemId);
+                    s.executeUpdate();
+                }
+                try (PreparedStatement s = conn.prepareStatement("DELETE FROM auctions WHERE item_id = ?")) {
+                    s.setString(1, itemId);
+                    s.executeUpdate();
+                }
+                try (PreparedStatement s = conn.prepareStatement("DELETE FROM items WHERE id = ?")) {
+                    s.setString(1, itemId);
+                    int rows = s.executeUpdate();
+                    conn.commit();
+                    return rows > 0;
+                }
+            } catch (SQLException e) {
+                conn.rollback();
+                System.err.println("Loi xoa item: " + e.getMessage());
+                e.printStackTrace();
+                return false;
+            }
+        } catch (SQLException e) {
             System.err.println("Loi xoa item: " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
-
-        return false;
-
     }
 // cap nhap khi bat dau auction
     public boolean updateAuctionInfo(
