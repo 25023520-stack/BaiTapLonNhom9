@@ -86,6 +86,21 @@
                                     </children>
                                 </VBox>
 
+                                <!-- Email -->
+                                <VBox spacing="5">
+                                    <children>
+                                        <Label styleClass="input-label" text="Email" />
+                                        <HBox styleClass="input-wrapper" alignment="CENTER_LEFT" spacing="8">
+                                            <children>
+                                                <Label styleClass="input-icon" text="\@" />
+                                                <TextField fx:id="txtEmail" onAction="#handleRegister"
+                                                           promptText="Nhập email..."
+                                                           styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+
                                 <!-- Password + Confirm row -->
                                 <GridPane hgap="12">
                                     <columnConstraints>

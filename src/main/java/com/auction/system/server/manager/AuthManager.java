@@ -10,9 +10,13 @@ import com.auction.system.server.dao.UserDAO;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class AuthManager {
     private static final AuthManager INSTANCE = new AuthManager();
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
 
 
     private final UserDAO userDAO = new UserDAO();
@@ -69,6 +73,9 @@ public class AuthManager {
         String normalizedEmail = normalizeEmailForExistingUser(user);
         if (!(user instanceof Admin) && isBlank(normalizedEmail)) {
             throw new IllegalArgumentException("Email must not be blank");
+        }
+        if (!(user instanceof Admin) && !isValidEmail(normalizedEmail)) {
+            throw new IllegalArgumentException("Email format is invalid");
         }
         user.setEmail(normalizedEmail);
         if(userDAO.findById(user.getId()) != null) {
@@ -140,6 +147,9 @@ public class AuthManager {
         if (!"ADMIN".equals(normalizedRole) && isBlank(email)) {
             throw new IllegalArgumentException("Email must not be blank");
         }
+        if (!"ADMIN".equals(normalizedRole) && !isValidEmail(email)) {
+            throw new IllegalArgumentException("Email format is invalid");
+        }
         if (isBlank(password)) {
             throw new IllegalArgumentException("Password must not be blank");
         }
@@ -206,5 +216,9 @@ public class AuthManager {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null && EMAIL_PATTERN.matcher(email.trim()).matches();
     }
 }

@@ -27,15 +27,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 public class RegisterController {
     private static final Logger LOGGER = LoggerFactory.getLogger(RegisterController.class);
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
 
     @FXML
     private TextField txtFullName;
 
     @FXML
     private TextField txtUsername;
+
+    @FXML
+    private TextField txtEmail;
 
     @FXML
     private PasswordField txtPassword;
@@ -59,11 +66,17 @@ public class RegisterController {
     void handleRegister(ActionEvent event) {
         String fullName = txtFullName.getText();
         String username = txtUsername.getText().trim();
-        String email = username.isEmpty() ? "" : username + "@auction.local";
+        String email = txtEmail.getText().trim();
         String password = txtPassword.getText();
         String confirmPassword = txtConfirmPassword.getText();
         String role = cbRole.getValue();
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+
+        if (!isValidEmail(email)) {
+            showAlert(Alert.AlertType.ERROR, "Email khong dung dinh dang. Vi du: user@example.com");
+            return;
+        }
+
         setRegisterDisabled(true);
 
         Thread registerThread = new Thread(() -> {
@@ -112,6 +125,7 @@ public class RegisterController {
     private void setRegisterDisabled(boolean disabled) {
         txtFullName.setDisable(disabled);
         txtUsername.setDisable(disabled);
+        txtEmail.setDisable(disabled);
         txtPassword.setDisable(disabled);
         txtConfirmPassword.setDisable(disabled);
         cbRole.setDisable(disabled);
@@ -151,5 +165,9 @@ public class RegisterController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null && EMAIL_PATTERN.matcher(email).matches();
     }
 }
