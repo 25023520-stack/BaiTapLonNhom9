@@ -90,6 +90,9 @@ public class AdminController {
     private final ObservableList<Item> pendingAuctions = FXCollections.observableArrayList();
     private final ObservableList<DepositRequest> pendingDeposits = FXCollections.observableArrayList();
     private Timeline autoRefresh;
+    private String previousSellersSig = null;
+    private String previousAuctionsSig = null;
+    private String previousDepositsSig = null;
 
     @FXML
     public void initialize() {
@@ -152,9 +155,29 @@ public class AdminController {
                 return;
             }
 
-            pendingSellers.setAll(readUsers(response.getBody().get("pendingSellers")));
-            pendingAuctions.setAll(readItems(response.getBody().get("pendingAuctions")));
-            pendingDeposits.setAll(readDeposits(response.getBody().get("pendingDeposits")));
+            List<User> newSellers = readUsers(response.getBody().get("pendingSellers"));
+            String sellersSig = sellersSignature(newSellers);
+            if (!sellersSig.equals(previousSellersSig)) {
+                previousSellersSig = sellersSig;
+                pendingSellers.setAll(newSellers);
+                sellerListView.refresh();
+            }
+
+            List<Item> newAuctions = readItems(response.getBody().get("pendingAuctions"));
+            String auctionsSig = auctionsSignature(newAuctions);
+            if (!auctionsSig.equals(previousAuctionsSig)) {
+                previousAuctionsSig = auctionsSig;
+                pendingAuctions.setAll(newAuctions);
+                auctionListView.refresh();
+            }
+
+            List<DepositRequest> newDeposits = readDeposits(response.getBody().get("pendingDeposits"));
+            String depositsSig = depositsSignature(newDeposits);
+            if (!depositsSig.equals(previousDepositsSig)) {
+                previousDepositsSig = depositsSig;
+                pendingDeposits.setAll(newDeposits);
+                depositListView.refresh();
+            }
             sellerCountLabel.setText(String.valueOf(pendingSellers.size()));
             auctionCountLabel.setText(String.valueOf(pendingAuctions.size()));
             depositCountLabel.setText(String.valueOf(pendingDeposits.size()));
@@ -579,8 +602,50 @@ public class AdminController {
         detail.setVisible(true);         detail.setManaged(true);
         activeBtn.getStyleClass().add("queue-tab-button-active");
     }
+    // Sinh "chu ky" cho 3 danh sach pending. Hai danh sach co cung chu ky => khong setAll.
+    private String sellersSignature(List<User> users) {
+        if (users == null || users.isEmpty()) return "EMPTY";
+        StringBuilder sb = new StringBuilder(users.size() * 48);
+        for (User u : users) {
+            if (u == null) continue;
+            sb.append(u.getId()).append('|')
+                    .append(u.getUserName()).append('|')
+                    .append(u.getFullName()).append('|')
+                    .append(u.isApproved()).append(';');
+        }
+        return sb.toString();
+    }
+
+    private String auctionsSignature(List<Item> items) {
+        if (items == null || items.isEmpty()) return "EMPTY";
+        StringBuilder sb = new StringBuilder(items.size() * 64);
+        for (Item item : items) {
+            if (item == null) continue;
+            sb.append(item.getId()).append('|')
+                    .append(item.getName()).append('|')
+                    .append(item.getStatus()).append('|')
+                    .append(item.isAuctionApproved()).append('|')
+                    .append(item.getStartTime()).append('|')
+                    .append(item.getEndTime()).append(';');
+        }
+        return sb.toString();
+    }
+
+    private String depositsSignature(List<DepositRequest> requests) {
+        if (requests == null || requests.isEmpty()) return "EMPTY";
+        StringBuilder sb = new StringBuilder(requests.size() * 48);
+        for (DepositRequest r : requests) {
+            if (r == null) continue;
+            sb.append(r.getId()).append('|')
+                    .append(r.getBidderName()).append('|')
+                    .append(r.getAmount()).append('|')
+                    .append(r.getStatus()).append(';');
+        }
+        return sb.toString();
+    }
 
     @FXML private void showSellerQueue()  { showTab(sellerListContainer, sellerDetailPane, btnShowSellers); }
     @FXML private void showAuctionQueue() { showTab(auctionListContainer, auctionDetailPane, btnShowAuctions); }
     @FXML private void showDepositQueue() { showTab(depositListContainer, depositDetailPane, btnShowDeposits); }
 }
+

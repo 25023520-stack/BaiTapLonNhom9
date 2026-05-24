@@ -260,10 +260,15 @@ public class ItemDAO extends BaseDAO {
 
     public boolean clearAuctionRequest(String itemId) {
         String sql = """
-                UPDATE items
-                SET status = ?, start_time = NULL, end_time = NULL, auction_approved = FALSE
-                WHERE id = ?
-                """;
+        UPDATE items
+        SET status = ?,
+            current_price = start_price,
+            highest_bidder_id = NULL,
+            start_time = NULL,
+            end_time = NULL,
+            auction_approved = FALSE
+        WHERE id = ?
+        """;
 
         try (Connection conn = getConnection();
              PreparedStatement pstm = conn.prepareStatement(sql)) {

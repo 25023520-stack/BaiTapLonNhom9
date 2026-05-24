@@ -133,6 +133,9 @@ public class AuctionManager {
             existingItem.setStartTime(null);
             existingItem.setEndTime(null);
             existingItem.setAuctionApproved(false);
+            existingItem.setCurrentPrice(existingItem.getStartPrice());
+            existingItem.setHighestBidderId(null);
+            existingItem.setHighestBidderUsername(null);
             itemDAO.clearAuctionRequest(existingItem.getId());
             auctionsById.remove(existingItem.getId());
         }
@@ -186,6 +189,10 @@ public class AuctionManager {
             }
 
             String auctionId = "AUC-" + itemId;
+            LocalDateTime now = LocalDateTime.now();
+            AuctionStatus initialStatus = startTime.isAfter(now)
+                    ? AuctionStatus.OPEN
+                    : AuctionStatus.RUNNING;
 
             try (Connection conn = Database.getInstance().getConnection()) {
                 conn.setAutoCommit(false);
@@ -194,7 +201,7 @@ public class AuctionManager {
                     boolean itemUpdated = itemDAO.updateAuctionInfo(
                             conn,
                             itemId,
-                            AuctionStatus.RUNNING,
+                            initialStatus,
                             startTime,
                             endTime
                     );
@@ -211,7 +218,7 @@ public class AuctionManager {
                                 itemId,
                                 startTime,
                                 endTime,
-                                AuctionStatus.RUNNING
+                                initialStatus
                         );
                     } else {
                         auctionSaved = auctionDAO.insertAuction(
@@ -220,7 +227,7 @@ public class AuctionManager {
                                 itemId,
                                 startTime,
                                 endTime,
-                                AuctionStatus.RUNNING
+                                initialStatus
                         );
                     }
 
@@ -233,7 +240,7 @@ public class AuctionManager {
                     //update RAM sau khi thành công
                     item.setStartTime(startTime);
                     item.setEndTime(endTime);
-                    item.setStatus(AuctionStatus.RUNNING);
+                    item.setStatus(initialStatus);
                     item.setAuctionApproved(true);
 
                     Auction auction = auctionsById.get(itemId);
@@ -241,7 +248,7 @@ public class AuctionManager {
                         auction = new Auction(auctionId, item);
                         auctionsById.put(itemId, auction);
                     }
-                    auction.setStatus(AuctionStatus.RUNNING);
+                    auction.setStatus(initialStatus);
 
                 } catch (SQLException e) {
                     conn.rollback();
@@ -306,78 +313,35 @@ public class AuctionManager {
         Item item = requireItem(itemId);
 
         String winnerId = item.getHighestBidderId();
-        double finalPrice = winnerId == null ? 0 : item.getCurrentPrice();
+        boolean sold = winnerId != null && !winnerId.isBlank();
+        double finalPrice = sold ? item.getCurrentPrice() : 0;
 
         try (Connection conn = Database.getInstance().getConnection()) {
             conn.setAutoCommit(false);
-
             try {
-                boolean itemUpdated;
-                boolean sold = winnerId != null && !winnerId.isBlank();
-                if (sold) {
-                    itemUpdated = itemDAO.updateStatus(
-                            conn,
-                            itemId,
-                            AuctionStatus.FINISHED
-                    );
-                } else {
-                    // Ghi chu: phien het gio nhung khong co bidder nao dat gia thi san pham chua duoc ban.
-                    // Dua item ve trang thai OPEN/chua gui duyet de seller co the sua lich va gui duyet lai.
-                    itemUpdated = itemDAO.resetUnsoldAuction(conn, itemId);
-                }
-
-                if (!itemUpdated) {
-                    throw new SQLException("Cannot update item after finishing auction");
-                }
+                boolean itemUpdated = itemDAO.updateStatus(conn, itemId, AuctionStatus.FINISHED);
+                if (!itemUpdated) throw new SQLException("Cannot update item after finishing auction");
 
                 boolean auctionUpdated = sold
                         ? auctionDAO.finishAuction(conn, itemId, winnerId, finalPrice)
-                        : auctionDAO.updateStatusAndClearWinner(conn, itemId, AuctionStatus.CANCELED);
-
-                if (!auctionUpdated) {
-                    throw new SQLException("Cannot update auction status to FINISHED");
-                }
-
+                        : auctionDAO.updateStatusAndClearWinner(conn, itemId, AuctionStatus.FINISHED);
+                if (!auctionUpdated) throw new SQLException("Cannot update auction status to FINISHED");
 
                 conn.commit();
 
-                if (sold) {
-                    // Ghi chu: san pham ban thanh cong thi cong tien ve so du seller sau khi commit DB thanh cong.
-                    item.setStatus(AuctionStatus.FINISHED);
-                } else {
-                    item.setStatus(AuctionStatus.OPEN);
-                    item.setCurrentPrice(item.getStartPrice());
-                    item.setHighestBidderId(null);
-                    item.setHighestBidderUsername(null);
-                    item.setAuctionApproved(false);
-                    item.setStartTime(null);
-                    item.setEndTime(null);
-                }
-                // update auction trong RAM
                 item.setStatus(AuctionStatus.FINISHED);
                 autoBidDAO.deactivateByItemId(itemId);
 
                 Auction auction = auctionsById.get(itemId);
-                if (auction != null) {
-                    if (sold) {
-                        auction.finishAuction();
-                    } else {
-                        auction.setStatus(AuctionStatus.CANCELED);
-                    }
-                }
+                if (auction != null) auction.finishAuction();
 
-                //thong bao cho observer
-                if (auctionSubject != null) {
-                    auctionSubject.notifyObservers(item, sold ? "AUCTION_FINISHED" : "AUCTION_UNSOLD_RESET");
-                }
-
+                if (auctionSubject != null) auctionSubject.notifyObservers(item, "AUCTION_FINISHED");
             } catch (SQLException e) {
                 conn.rollback();
                 throw new IllegalStateException("Cannot finish auction: " + e.getMessage(), e);
             } finally {
                 conn.setAutoCommit(true);
             }
-
         } catch (SQLException e) {
             throw new IllegalStateException("Database error when finishing auction", e);
         }
@@ -395,6 +359,49 @@ public class AuctionManager {
             finishAuctionLocked(itemId);
         } finally {
             lock.unlock();
+        }
+    }
+
+    public void activateScheduledAuctions() {
+        List<String> readyItemIds;
+        try {
+            readyItemIds = auctionDAO.findScheduledItemIdsReadyToStart();
+        } catch (SQLException e) {
+            LOGGER.error("Cannot query scheduled auctions: {}", e.getMessage());
+            return;
+        }
+        for (String itemId : readyItemIds) {
+            ReentrantLock lock = lockForItem(itemId);
+            lock.lock();
+            try {
+                Item item = requireItem(itemId);
+                if (item.getStatus() != AuctionStatus.OPEN || !item.isAuctionApproved()) continue;
+                if (item.getStartTime() == null || item.getStartTime().isAfter(LocalDateTime.now())) continue;
+
+                try (Connection conn = Database.getInstance().getConnection()) {
+                    conn.setAutoCommit(false);
+                    try {
+                        itemDAO.updateStatus(conn, itemId, AuctionStatus.RUNNING);
+                        auctionDAO.updateStatus(conn, itemId, AuctionStatus.RUNNING);
+                        conn.commit();
+                        item.setStatus(AuctionStatus.RUNNING);
+                        Auction auction = auctionsById.get(itemId);
+                        if (auction != null) auction.setStatus(AuctionStatus.RUNNING);
+                        if (auctionSubject != null) auctionSubject.notifyObservers(item, "AUCTION_STARTED");
+                    } catch (SQLException e) {
+                        conn.rollback();
+                        LOGGER.warn("Cannot activate scheduled auction {}: {}", itemId, e.getMessage());
+                    } finally {
+                        conn.setAutoCommit(true);
+                    }
+                } catch (SQLException e) {
+                    LOGGER.error("DB error activating auction {}", itemId, e);
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Activate scheduled failed for {}: {}", itemId, e.getMessage());
+            } finally {
+                lock.unlock();
+            }
         }
     }
 

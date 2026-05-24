@@ -175,6 +175,22 @@ public class AuctionDAO extends BaseDAO {
         }
         return result;
     }
+    public List<String> findScheduledItemIdsReadyToStart() throws SQLException {
+        String sql = """
+            SELECT id FROM items
+            WHERE status = 'OPEN'
+              AND auction_approved = TRUE
+              AND start_time IS NOT NULL AND start_time <= NOW()
+              AND end_time   IS NOT NULL AND end_time   > NOW()
+            """;
+        List<String> result = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql);
+             ResultSet rs = pstm.executeQuery()) {
+            while (rs.next()) result.add(rs.getString("id"));
+        }
+        return result;
+    }
 
     public boolean updateStatusAndClearWinner(
             Connection conn,

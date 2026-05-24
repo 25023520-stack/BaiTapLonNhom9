@@ -45,6 +45,11 @@ public class AuctionScheduler {
 
     private void closeExpiredAuctions() {
         try {
+            auctionManager.activateScheduledAuctions();   // <-- THEM
+        } catch (Exception e) {                           // <-- THEM
+            LOGGER.warn("activateScheduledAuctions failed: {}", e.getMessage()); // <-- THEM
+        }
+        try {
             List<String> expiredItemIds = auctionDAO.findExpiredRunningItemIds();
             for (String itemId : expiredItemIds) {
                 try {

@@ -91,6 +91,8 @@ public class SellerController {
     private Timeline autoRefresh;
     private File selectedImageFile;
     private Timeline countdownTimer;
+    private boolean suppressFormReset = false;
+    private String previousItemsSignature = null;
 
     @FXML
     public void initialize() {
@@ -266,7 +268,13 @@ public class SellerController {
     }
 
     @FXML
-    private void onRefreshClick() { refreshItems(); }
+    private void onRefreshClick() {
+        // Khi user bam "Lam moi", ep ListView refresh ve trang thai sach
+        // (huu ich neu UI bi treo do bat dong bo voi VirtualFlow).
+        previousItemsSignature = null;
+        sellerItemList.refresh();
+        refreshItems();
+    }
 
     @FXML
     private void clearFormForNew() {
@@ -396,35 +404,76 @@ public class SellerController {
                         .map(this::toItem)
                         .filter(i -> i != null)
                         .toList();
-                sellersItem.setAll(items);
-                if (selectedId != null) {
-                    sellersItem.stream()
-                            .filter(item -> selectedId.equals(item.getId()))
-                            .findFirst()
-                            .ifPresentOrElse(
-                                    item -> sellerItemList.getSelectionModel().select(item),
-                                    () -> setChangeButton(null)
-                            );
-                } else if (preserveDraft) {
-                    if (!nameField.isFocused()) nameField.setText(draftName);
-                    if (!descriptionField.isFocused()) descriptionField.setText(draftDescription);
-                    if (!startPriceField.isFocused()) startPriceField.setText(draftStartPrice);
-                    if (draftCategory != null && categoryComboBox != null) {
-                        categoryComboBox.getSelectionModel().select(Item.normalizeCategory(draftCategory));
-                    }
-                    selectedImageFile = draftImageFile;
-                    imagePreview.setImage(draftImage);
-                    imageNameLabel.setText(draftImageName);
-                    updateEditorState(null);
-                    updateAuctionApprovalLabel(null);
-                } else {
-                    setChangeButton(sellerItemList.getSelectionModel().getSelectedItem());
+                String newSignature = contentSignature(items);
+                if (newSignature.equals(previousItemsSignature)) {
+                    return;
                 }
+                previousItemsSignature = newSignature;
+                suppressFormReset = true;                            // <-- THEM
+                try {                                                // <-- THEM
+                    sellersItem.setAll(items);
+                    sellerItemList.refresh();
+                    if (selectedId != null) {
+                        sellersItem.stream()
+                                .filter(item -> selectedId.equals(item.getId()))
+                                .findFirst()
+                                .ifPresentOrElse(
+                                        item -> sellerItemList.getSelectionModel().select(item),
+                                        () -> setChangeButton(null)
+                                );
+                    } else if (preserveDraft) {
+                        if (!nameField.isFocused()) nameField.setText(draftName);
+                        if (!descriptionField.isFocused()) descriptionField.setText(draftDescription);
+                        if (!startPriceField.isFocused()) startPriceField.setText(draftStartPrice);
+                        if (draftCategory != null && categoryComboBox != null) {
+                            categoryComboBox.getSelectionModel().select(Item.normalizeCategory(draftCategory));
+                        }
+                        selectedImageFile = draftImageFile;
+                        imagePreview.setImage(draftImage);
+                        imageNameLabel.setText(draftImageName);
+                        updateEditorState(null);
+                        updateAuctionApprovalLabel(null);
+                    } else {
+                        setChangeButton(sellerItemList.getSelectionModel().getSelectedItem());
+                    }
+                } finally {                                          // <-- THEM
+                    suppressFormReset = false;                       // <-- THEM
+                }                                                    // <-- THEM
             }
         });
     }
+    // Sinh "chu ky" cho danh sach item dua tren cac truong hien thi va dieu khien.
+// Hai danh sach co cung chu ky => khong can setAll lai => ListView khong nhay khi vuot.
+    private String contentSignature(List<Item> items) {
+        if (items == null || items.isEmpty()) {
+            return "EMPTY";
+        }
+        StringBuilder sb = new StringBuilder(items.size() * 64);
+        for (Item item : items) {
+            if (item == null) continue;
+            sb.append(item.getId()).append('|')
+                    .append(item.getName()).append('|')
+                    .append(item.getCategory()).append('|')
+                    .append(item.getStatus()).append('|')
+                    .append(item.getCurrentPrice()).append('|')
+                    .append(item.getStartPrice()).append('|')
+                    .append(item.isAuctionApproved()).append('|')
+                    .append(item.getStartTime()).append('|')
+                    .append(item.getEndTime()).append('|')
+                    .append(item.getHighestBidderUsername()).append(';');
+        }
+        return sb.toString();
+    }
 
     private void setChangeButton(Item picked) {
+        if (suppressFormReset) {
+            if (picked != null) {
+                updateEditorState(picked);
+                updateAuctionApprovalLabel(picked);
+                startCountdown(picked);
+            }
+            return;
+        }
         if (picked == null) {
             nameField.clear();
             descriptionField.clear();
@@ -561,17 +610,21 @@ public class SellerController {
         addButton.setDisable(!approved || hasSelection);
         boolean canEdit = hasSelection
                 && picked.getStatus() != AuctionStatus.RUNNING
-                && picked.getStatus() != AuctionStatus.FINISHED
                 && picked.getStatus() != AuctionStatus.PAID
                 && !pendingApproval;
 
         boolean canRemove = hasSelection
-                && picked.getStatus() != AuctionStatus.RUNNING
-                && picked.getStatus() != AuctionStatus.FINISHED;
+                && picked.getStatus() != AuctionStatus.RUNNING;
+
+        boolean canStart = hasSelection
+                && (picked.getStatus() == AuctionStatus.OPEN
+                || picked.getStatus() == AuctionStatus.FINISHED
+                || picked.getStatus() == AuctionStatus.CANCELED)
+                && !pendingApproval;
 
         updateButton.setDisable(!approved || !canEdit);
         removeButton.setDisable(!approved || !canRemove);
-        startAuctionButton.setDisable(!approved || !hasSelection || picked.getStatus() != AuctionStatus.OPEN || pendingApproval);
+        startAuctionButton.setDisable(!approved || !canStart);
     }
 
     private void updateAuctionApprovalLabel(Item item) {
@@ -597,6 +650,12 @@ public class SellerController {
         if (item.getStatus() == AuctionStatus.RUNNING) return "Dang mo";
         if (item.getStatus() == AuctionStatus.CANCELED) return "Da huy";
         if (item.getStatus() == AuctionStatus.PAID) return "Da thanh toan";
+        if (item.getStatus() == AuctionStatus.OPEN
+                && item.isAuctionApproved()
+                && item.getStartTime() != null
+                && item.getStartTime().isAfter(LocalDateTime.now())) {
+            return "Da duyet - cho gio bat dau";
+        }
         if (hasPendingAuctionApproval(item)) return "Cho admin duyet";
         if (item.getStatus() == AuctionStatus.FINISHED) return "Da ket thuc";
         return "Chua gui duyet";
@@ -714,8 +773,17 @@ public class SellerController {
     // THÊM MỚI: đếm ngược thời gian còn lại và hiển thị giá cao nhất
     private void startCountdown(Item item) {
         if (countdownTimer != null) countdownTimer.stop();
-        if (item == null || item.getStatus() != AuctionStatus.RUNNING
-                || item.getEndTime() == null) {
+
+        boolean running = item != null
+                && item.getStatus() == AuctionStatus.RUNNING
+                && item.getEndTime() != null;
+        boolean scheduled = item != null
+                && item.getStatus() == AuctionStatus.OPEN
+                && item.isAuctionApproved()
+                && item.getStartTime() != null
+                && item.getStartTime().isAfter(LocalDateTime.now());
+
+        if (!running && !scheduled) {
             if (auctionInfoBox != null) {
                 auctionInfoBox.setVisible(false);
                 auctionInfoBox.setManaged(false);
@@ -726,28 +794,24 @@ public class SellerController {
         auctionInfoBox.setVisible(true);
         auctionInfoBox.setManaged(true);
 
-        // Cập nhật giá cao nhất
-        double highestPrice = item.getCurrentPrice() > 0
-                ? item.getCurrentPrice() : item.getStartPrice();
-        currentBidLabel.setText(String.format("%,.0f ₫", highestPrice));
+        double highestPrice = item.getCurrentPrice() > 0 ? item.getCurrentPrice() : item.getStartPrice();
+        currentBidLabel.setText(String.format("%,.0f \u20ab", highestPrice));
         if (highestBidderLabel != null) {
-            // Ghi chu: seller chi can thay ten bidder dang dan dau, khong hien thi ID noi bo.
             String highestBidder = safeTrim(item.getHighestBidderUsername());
             highestBidderLabel.setText(highestBidder.isEmpty() ? "Chua co" : highestBidder);
         }
 
-        // Đếm ngược mỗi giây
+        LocalDateTime target = running ? item.getEndTime() : item.getStartTime();
+        String prefix = running ? "" : "Bat dau sau ";
+
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            java.time.LocalDateTime now = java.time.LocalDateTime.now();
-            java.time.Duration remaining = java.time.Duration.between(now, item.getEndTime());
+            java.time.Duration remaining = java.time.Duration.between(LocalDateTime.now(), target);
             if (remaining.isNegative() || remaining.isZero()) {
-                timeRemainingLabel.setText("Đã kết thúc");
+                timeRemainingLabel.setText(running ? "Da ket thuc" : "Dang bat dau...");
                 countdownTimer.stop();
             } else {
-                long h = remaining.toHours();
-                long m = remaining.toMinutesPart();
-                long s = remaining.toSecondsPart();
-                timeRemainingLabel.setText(String.format("%02d:%02d:%02d", h, m, s));
+                long h = remaining.toHours(), m = remaining.toMinutesPart(), s = remaining.toSecondsPart();
+                timeRemainingLabel.setText(prefix + String.format("%02d:%02d:%02d", h, m, s));
             }
         }));
         countdownTimer.setCycleCount(Animation.INDEFINITE);
@@ -780,6 +844,7 @@ public class SellerController {
                                         : String.valueOf(((com.google.gson.internal.LinkedTreeMap<?,?>) rawItem).get("id"));
                                 Platform.runLater(() -> {
                                     sellersItem.removeIf(i -> Objects.equals(i.getId(), removedId));
+                                    previousItemsSignature = null;
                                 });
                             }
                             return;
