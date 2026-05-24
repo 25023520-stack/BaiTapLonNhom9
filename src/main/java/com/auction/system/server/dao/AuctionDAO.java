@@ -99,6 +99,22 @@ public class AuctionDAO extends BaseDAO {
         }
     }
 
+    public boolean updateEndTime(Connection conn, String itemId, LocalDateTime endTime) throws SQLException {
+        // Ghi chu: dong bo end_time ben bang auctions khi anti-sniping keo dai phien.
+        String sql = """
+                UPDATE auctions
+                SET end_time = ?
+                WHERE item_id = ?
+                  AND status = 'RUNNING'
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setTimestamp(1, Timestamp.valueOf(endTime));
+            pstm.setString(2, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
     public boolean finishAuction(
             Connection conn,
             String itemId,

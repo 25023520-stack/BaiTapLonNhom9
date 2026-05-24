@@ -23,6 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -36,6 +37,8 @@ import java.util.UUID;
 
 public class AuctionManager {
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AuctionManager.class);
+    private static final long ANTI_SNIPING_THRESHOLD_SECONDS = 60;
+    private static final long ANTI_SNIPING_EXTENSION_SECONDS = 60;
 
     private static final AuctionManager INSTANCE =
             new AuctionManager(AuthManager.getInstance(), ItemManager.getInstance());
@@ -659,6 +662,8 @@ public class AuctionManager {
                         throw new SQLException("Cannot insert bid");
                     }
 
+                    extendAuctionIfNearEnd(conn, item, bidTime);
+
                     conn.commit();
 
                 } catch (SQLException e) {
@@ -901,6 +906,8 @@ public class AuctionManager {
                     throw new SQLException("Cannot insert auto-bid");
                 }
 
+                extendAuctionIfNearEnd(conn, item, bidTime);
+
                 conn.commit();
             } catch (SQLException exception) {
                 conn.rollback();
@@ -922,6 +929,37 @@ public class AuctionManager {
         item.setHighestBidderUsername(bidder.getUserName());
 
         item.addBid(bid);
+    }
+
+    private void extendAuctionIfNearEnd(Connection conn, Item item, LocalDateTime bidTime) throws SQLException {
+        LocalDateTime endTime = item.getEndTime();
+        if (endTime == null || !endTime.isAfter(bidTime)) {
+            return;
+        }
+
+        long secondsLeft = Duration.between(bidTime, endTime).getSeconds();
+        if (secondsLeft > ANTI_SNIPING_THRESHOLD_SECONDS) {
+            return;
+        }
+
+        LocalDateTime extendedEndTime = bidTime.plusSeconds(ANTI_SNIPING_EXTENSION_SECONDS);
+        if (!extendedEndTime.isAfter(endTime)) {
+            return;
+        }
+
+        // Ghi chu: anti-sniping giu phien con toi thieu 60 giay sau bid cuoi,
+        // cap nhat ca items va auctions trong cung transaction de tranh lech du lieu.
+        boolean itemUpdated = itemDAO.updateEndTime(conn, item.getId(), extendedEndTime);
+        if (!itemUpdated) {
+            throw new SQLException("Cannot extend item end time");
+        }
+
+        boolean auctionUpdated = auctionDAO.updateEndTime(conn, item.getId(), extendedEndTime);
+        if (!auctionUpdated) {
+            throw new SQLException("Cannot extend auction end time");
+        }
+
+        item.setEndTime(extendedEndTime);
     }
 
     public synchronized List<Item> getAllItems() {

@@ -323,6 +323,22 @@ public class ItemDAO extends BaseDAO {
         }
     }
 
+    public boolean updateEndTime(Connection conn, String itemId, LocalDateTime endTime) throws SQLException {
+        // Ghi chu: dung cho anti-sniping, chi keo dai thoi gian khi phien van dang RUNNING.
+        String sql = """
+                UPDATE items
+                SET end_time = ?
+                WHERE id = ?
+                  AND status = 'RUNNING'
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setTimestamp(1, toTimestamp(endTime));
+            pstm.setString(2, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
     public boolean updateStatus(
             Connection conn,
             String itemId,

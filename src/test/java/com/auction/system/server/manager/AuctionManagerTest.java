@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -33,6 +34,8 @@ class AuctionManagerTest {
 
     @BeforeEach
     void setUp() {
+        Database.getInstance().initializeDatabase();
+
         manager = AuctionManager.getInstance();
         manager.resetForTest();
 
@@ -178,6 +181,37 @@ class AuctionManagerTest {
                 IllegalStateException.class,
                 () -> manager.placeBid(itemId, bidder, 650)
         );
+    }
+
+    @Test
+    void placeBidNearEndExtendsAuctionEndTime() {
+        prepareItemOnly();
+
+        LocalDateTime startTime = LocalDateTime.now().minusMinutes(1);
+        LocalDateTime endTime = LocalDateTime.now().plusSeconds(30);
+
+        manager.startAuction(itemId, startTime, endTime);
+        manager.placeBid(itemId, bidder, 650);
+
+        Item storedItem = manager.findItemById(itemId).orElseThrow();
+
+        assertTrue(storedItem.getEndTime().isAfter(endTime));
+        assertTrue(Duration.between(LocalDateTime.now(), storedItem.getEndTime()).getSeconds() >= 45);
+    }
+
+    @Test
+    void placeBidFarFromEndKeepsAuctionEndTime() {
+        prepareItemOnly();
+
+        LocalDateTime startTime = LocalDateTime.now().minusMinutes(1);
+        LocalDateTime endTime = LocalDateTime.now().plusMinutes(10);
+
+        manager.startAuction(itemId, startTime, endTime);
+        manager.placeBid(itemId, bidder, 650);
+
+        Item storedItem = manager.findItemById(itemId).orElseThrow();
+
+        assertEquals(endTime, storedItem.getEndTime());
     }
 
     @Test
