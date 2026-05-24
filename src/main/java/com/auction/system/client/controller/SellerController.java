@@ -60,6 +60,7 @@ public class SellerController {
     @FXML private TextField nameField;
     @FXML private TextArea descriptionField;
     @FXML private TextField startPriceField;
+    @FXML private ComboBox<String> categoryComboBox;
     @FXML private Button addButton;
     @FXML private Button updateButton;
     @FXML private Button removeButton;
@@ -104,8 +105,8 @@ public class SellerController {
             @Override protected void updateItem(Item item, boolean empty) {
                 super.updateItem(item, empty);
                 setText((empty || item == null) ? null
-                        : String.format("%s  —  %,.0f ₫  —  %s",
-                        item.getName(), item.getCurrentPrice(), describeAuctionState(item)));
+                        : String.format("[%s] %s  —  %,.0f ₫  —  %s",
+                        item.getCategory(), item.getName(), item.getCurrentPrice(), describeAuctionState(item)));
             }
         });
 
@@ -116,6 +117,7 @@ public class SellerController {
         removeButton.setDisable(true);
         startAuctionButton.setDisable(true);
         addButton.setDisable(false);
+        configureCategoryComboBox();
         configureScheduleInputs();
         updateSellerApprovalState();
         updateSellerBalanceLabel();
@@ -138,9 +140,11 @@ public class SellerController {
         String name = safeTrim(nameField.getText());
         String desc = safeTrim(descriptionField.getText());
         String priceText = safeTrim(startPriceField.getText());
+        String category = readSelectedCategory();
 
         if (name.isEmpty()) { showError("Lỗi", "Tên sản phẩm không được trống"); return; }
         if (desc.isEmpty()) { showError("Lỗi", "Mô tả không được trống"); return; }
+        if (category == null) { showError("Lỗi", "Vui lòng chọn loại sản phẩm"); return; }
 
         double price;
         try {
@@ -161,6 +165,7 @@ public class SellerController {
                     desc,
                     price,
                     currentSeller.getId(),
+                    category,
                     selectedImageFile == null ? null : selectedImageFile.getName(),
                     selectedImageFile == null ? null : encodeImage(selectedImageFile)
             );
@@ -188,9 +193,11 @@ public class SellerController {
         String name = safeTrim(nameField.getText());
         String desc = safeTrim(descriptionField.getText());
         String priceText = safeTrim(startPriceField.getText());
+        String category = readSelectedCategory();
 
         if (name.isEmpty()) { showError("Lỗi", "Tên sản phẩm không được trống"); return; }
         if (desc.isEmpty()) { showError("Lỗi", "Mô tả không được trống"); return; }
+        if (category == null) { showError("Lỗi", "Vui lòng chọn loại sản phẩm"); return; }
 
         double price;
         try {
@@ -207,6 +214,7 @@ public class SellerController {
         req.put("description", desc);
         req.put("startPrice", price);
         req.put("sellerId", currentSeller.getId());
+        req.put("category", category);
         try {
             if (selectedImageFile != null) {
                 req.put("imageFileName", selectedImageFile.getName());
@@ -354,6 +362,7 @@ public class SellerController {
         String draftName = nameField.getText();
         String draftDescription = descriptionField.getText();
         String draftStartPrice = startPriceField.getText();
+        String draftCategory = categoryComboBox == null ? null : categoryComboBox.getValue();
         File draftImageFile = selectedImageFile;
         Image draftImage = imagePreview.getImage();
         String draftImageName = imageNameLabel.getText();
@@ -361,6 +370,7 @@ public class SellerController {
                 && (!safeTrim(draftName).isEmpty()
                 || !safeTrim(draftDescription).isEmpty()
                 || !safeTrim(draftStartPrice).isEmpty()
+                || (draftCategory != null && !Item.DEFAULT_CATEGORY.equals(draftCategory))
                 || draftImageFile != null);
 
         Payload req = new Payload(PayloadType.LIST_ITEMS_BY_SELLER);
@@ -398,6 +408,9 @@ public class SellerController {
                     if (!nameField.isFocused()) nameField.setText(draftName);
                     if (!descriptionField.isFocused()) descriptionField.setText(draftDescription);
                     if (!startPriceField.isFocused()) startPriceField.setText(draftStartPrice);
+                    if (draftCategory != null && categoryComboBox != null) {
+                        categoryComboBox.getSelectionModel().select(Item.normalizeCategory(draftCategory));
+                    }
                     selectedImageFile = draftImageFile;
                     imagePreview.setImage(draftImage);
                     imageNameLabel.setText(draftImageName);
@@ -415,6 +428,7 @@ public class SellerController {
             nameField.clear();
             descriptionField.clear();
             startPriceField.clear();
+            resetCategorySelection();
             selectedImageFile = null;
             imageNameLabel.setText("Chua chon anh");
             imagePreview.setImage(null);
@@ -426,6 +440,9 @@ public class SellerController {
         nameField.setText(picked.getName());
         descriptionField.setText(picked.getDescription());
         startPriceField.setText(String.valueOf(picked.getStartPrice()));
+        if (categoryComboBox != null) {
+            categoryComboBox.getSelectionModel().select(picked.getCategory());
+        }
         selectedImageFile = null;
         imageNameLabel.setText(picked.getImagePath() == null ? "Chua co anh" : picked.getImagePath());
         setImagePreviewFromBase64(picked.getImageBase64());
@@ -478,6 +495,7 @@ public class SellerController {
         nameField.clear();
         descriptionField.clear();
         startPriceField.clear();
+        resetCategorySelection();
         selectedImageFile = null;
         imageNameLabel.setText("Chua chon anh");
         imagePreview.setImage(null);
@@ -532,6 +550,9 @@ public class SellerController {
         nameField.setDisable(!approved);
         descriptionField.setDisable(!approved);
         startPriceField.setDisable(!approved);
+        if (categoryComboBox != null) {
+            categoryComboBox.setDisable(!approved);
+        }
         durationHoursSpinner.setDisable(!approved);
         setScheduleInputsDisabled(!approved);
         newItemButton.setDisable(!approved);
@@ -577,6 +598,33 @@ public class SellerController {
     }
 
     private String safeTrim(String s) { return s == null ? "" : s.trim(); }
+
+    private void configureCategoryComboBox() {
+        if (categoryComboBox == null) {
+            return;
+        }
+
+        categoryComboBox.setItems(FXCollections.observableArrayList(Item.getSupportedCategories()));
+        resetCategorySelection();
+    }
+
+    private String readSelectedCategory() {
+        if (categoryComboBox == null) {
+            return Item.DEFAULT_CATEGORY;
+        }
+
+        String category = categoryComboBox.getValue();
+        if (category == null || category.isBlank()) {
+            return null;
+        }
+        return Item.normalizeCategory(category);
+    }
+
+    private void resetCategorySelection() {
+        if (categoryComboBox != null) {
+            categoryComboBox.getSelectionModel().select(Item.DEFAULT_CATEGORY);
+        }
+    }
 
     private void configureScheduleInputs() {
         LocalDateTime nowInVietnam = LocalDateTime.now(VIETNAM_ZONE);

@@ -19,12 +19,12 @@ public class ItemDAO extends BaseDAO {
     public boolean insertItem(Item item) {
         String sql = """
                 INSERT INTO items (
-                     id, name, description, image_path,
+                     id, name, description, category, image_path,
                      start_price, current_price, status, auction_approved,
                      seller_id, highest_bidder_id,
                      start_time, end_time
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (Connection conn = getConnection();
              PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -40,18 +40,19 @@ public class ItemDAO extends BaseDAO {
             pstm.setString(1, item.getId());
             pstm.setString(2, item.getName());
             pstm.setString(3, item.getDescription());
-            pstm.setString(4, item.getImagePath());
+            pstm.setString(4, item.getCategory());
+            pstm.setString(5, item.getImagePath());
 
-            pstm.setBigDecimal(5, java.math.BigDecimal.valueOf(item.getStartPrice()));
-            pstm.setBigDecimal(6, java.math.BigDecimal.valueOf(currentPrice));
+            pstm.setBigDecimal(6, java.math.BigDecimal.valueOf(item.getStartPrice()));
+            pstm.setBigDecimal(7, java.math.BigDecimal.valueOf(currentPrice));
 
-            pstm.setString(7, status.name());
-            pstm.setBoolean(8, item.isAuctionApproved());
-            pstm.setString(9, item.getSellerId());
-            pstm.setString(10, item.getHighestBidderId());
+            pstm.setString(8, status.name());
+            pstm.setBoolean(9, item.isAuctionApproved());
+            pstm.setString(10, item.getSellerId());
+            pstm.setString(11, item.getHighestBidderId());
 
-            pstm.setTimestamp(11, toTimestamp(item.getStartTime()));
-            pstm.setTimestamp(12, toTimestamp(item.getEndTime()));
+            pstm.setTimestamp(12, toTimestamp(item.getStartTime()));
+            pstm.setTimestamp(13, toTimestamp(item.getEndTime()));
 
             return pstm.executeUpdate() > 0;
 
@@ -127,7 +128,8 @@ public class ItemDAO extends BaseDAO {
                 description,
                 startPrice,
                 currentPrice,
-                status
+                status,
+                rs.getString("category")
         );
         item.setSellerId(rs.getString("seller_id"));
         item.setImagePath(rs.getString("image_path"));
@@ -147,7 +149,7 @@ public class ItemDAO extends BaseDAO {
     public boolean updateItem(Item item) {
         String sql = """
             UPDATE items
-            SET name = ?, description = ?, image_path = ?, start_price = ?, current_price = ?
+            SET name = ?, description = ?, image_path = ?, category = ?, start_price = ?, current_price = ?
             WHERE id = ?
             """;
 
@@ -163,9 +165,10 @@ public class ItemDAO extends BaseDAO {
             pstm.setString(1, item.getName());
             pstm.setString(2, item.getDescription());
             pstm.setString(3, item.getImagePath());
-            pstm.setBigDecimal(4, BigDecimal.valueOf(item.getStartPrice()));
-            pstm.setBigDecimal(5, BigDecimal.valueOf(currentPrice));
-            pstm.setString(6, item.getId());  // Sử dụng item ID để tìm item cần cập nhật
+            pstm.setString(4, item.getCategory());
+            pstm.setBigDecimal(5, BigDecimal.valueOf(item.getStartPrice()));
+            pstm.setBigDecimal(6, BigDecimal.valueOf(currentPrice));
+            pstm.setString(7, item.getId());  // Sử dụng item ID để tìm item cần cập nhật
 
             // Thực thi câu SQL UPDATE
             return pstm.executeUpdate() > 0;

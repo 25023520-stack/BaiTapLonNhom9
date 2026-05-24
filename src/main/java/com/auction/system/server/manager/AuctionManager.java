@@ -86,6 +86,7 @@ public class AuctionManager {
 
         item.setSellerId(seller.getId());
         item.setSellerUsername(seller.getUserName());
+        item.setCategory(item.getCategory());
 
         item.setStatus(AuctionStatus.OPEN);
         item.setCurrentPrice(item.getStartPrice());
@@ -115,7 +116,8 @@ public class AuctionManager {
         }
 
         try {
-            itemManager.updateItem(item.getId(), item.getName(), item.getDescription(), item.getStartPrice(), item.getImagePath());
+            itemManager.updateItem(item.getId(), item.getName(), item.getDescription(),
+                    item.getStartPrice(), item.getImagePath(), item.getCategory());
         } catch (ItemNotFoundException | InvalidDataException exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
         }

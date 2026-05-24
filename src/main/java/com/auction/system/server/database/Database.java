@@ -107,6 +107,7 @@ public class Database {
                     id VARCHAR(100) PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     description TEXT,
+                    category VARCHAR(30) NOT NULL DEFAULT 'OTHER',
                     image_path VARCHAR(500),
                     start_price DECIMAL(15,2) NOT NULL,
                     current_price DECIMAL(15,2) NOT NULL,
@@ -211,6 +212,8 @@ public class Database {
             ensureColumn(connection1, "users", "approved", "BOOLEAN NOT NULL DEFAULT TRUE");
             ensureColumn(connection1, "users", "balance", "DECIMAL(15,2) NOT NULL DEFAULT 0");
             ensureColumn(connection1, "items", "auction_approved", "BOOLEAN NOT NULL DEFAULT FALSE");
+            ensureColumn(connection1, "items", "category", "VARCHAR(30) NOT NULL DEFAULT 'OTHER'");
+            backfillItemCategoryData(connection1);
             backfillApprovalData(connection1);
             ensureDefaultAdmin(connection1);
             LOGGER.info("Khoi tao database hoan tat.");
@@ -256,6 +259,16 @@ public class Database {
                     UPDATE items
                     SET auction_approved = TRUE
                     WHERE status IN ('RUNNING', 'FINISHED', 'PAID')
+                    """);
+        }
+    }
+
+    private void backfillItemCategoryData(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("""
+                    UPDATE items
+                    SET category = 'OTHER'
+                    WHERE category IS NULL OR TRIM(category) = ''
                     """);
         }
     }

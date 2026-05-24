@@ -22,10 +22,12 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
@@ -43,9 +45,11 @@ import java.util.Objects;
 
 public class AuctionController {
     private static final Gson GSON = GsonProvider.get();
+    private static final String CATEGORY_FILTER_ALL = "ALL";
     private static final DecimalFormat VND_FORMAT =
             new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(new Locale("vi", "VN")));
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    private final ObservableList<Item> allItems = FXCollections.observableArrayList();
     private final ObservableList<Item> items = FXCollections.observableArrayList();
     private Timeline countdownTimer;
 
@@ -60,6 +64,9 @@ public class AuctionController {
 
     @FXML
     private Label statusValue;
+
+    @FXML
+    private Label categoryValue;
 
     @FXML
     private Label sellerValue;
@@ -83,6 +90,12 @@ public class AuctionController {
     private ImageView itemImageView;
 
     @FXML
+    private ComboBox<String> categoryFilterComboBox;
+
+    @FXML
+    private TextField itemSearchField;
+
+    @FXML
     protected void initialize() {
         itemListView.setItems(items);
         itemListView.setCellFactory(list -> new ListCell<>() {
@@ -93,10 +106,12 @@ public class AuctionController {
                     setText(null);
                     return;
                 }
-                setText(item.getName() + " | " + formatCurrency(item.getCurrentPrice()) + " | " + displayStatus(item));
+                setText("[" + item.getCategory() + "] "
+                        + item.getName() + " | " + formatCurrency(item.getCurrentPrice()) + " | " + displayStatus(item));
             }
         });
         itemListView.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, newItem) -> showItemDetails(newItem));
+        configureItemFilters();
 
         descriptionArea.setEditable(false);
         descriptionArea.setWrapText(true);
@@ -109,6 +124,21 @@ public class AuctionController {
     }
 
     protected void initializeAuctionActions() {
+    }
+
+    private void configureItemFilters() {
+        if (categoryFilterComboBox != null) {
+            ObservableList<String> categoryOptions = FXCollections.observableArrayList();
+            categoryOptions.add(CATEGORY_FILTER_ALL);
+            categoryOptions.addAll(Item.getSupportedCategories());
+            categoryFilterComboBox.setItems(categoryOptions);
+            categoryFilterComboBox.getSelectionModel().select(CATEGORY_FILTER_ALL);
+            categoryFilterComboBox.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters(false));
+        }
+
+        if (itemSearchField != null) {
+            itemSearchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters(false));
+        }
     }
 
     @FXML
@@ -142,6 +172,9 @@ public class AuctionController {
             nameValue.setText("-");
             priceValue.setText("-");
             statusValue.setText("-");
+            if (categoryValue != null) {
+                categoryValue.setText("-");
+            }
             sellerValue.setText("-");
             leaderValue.setText("-");
             scheduleValue.setText("-");
@@ -156,6 +189,9 @@ public class AuctionController {
         nameValue.setText(item.getName());
         priceValue.setText(formatCurrency(item.getCurrentPrice()));
         statusValue.setText(displayStatus(item).name());
+        if (categoryValue != null) {
+            categoryValue.setText(item.getCategory());
+        }
         sellerValue.setText(formatUsername(item.getSellerUsername(), item.getSellerId(), "-"));
         leaderValue.setText(formatUsername(item.getHighestBidderUsername(), item.getHighestBidderId(), "Chưa có"));
 
@@ -322,12 +358,12 @@ public class AuctionController {
 
             Object rawItems = response.getBody().get("items");
             if (rawItems instanceof List<?> itemList) {
-                items.setAll(itemList.stream()
+                String selectedId = currentSelectedItemId();
+                allItems.setAll(itemList.stream()
                         .map(this::toItem)
                         .filter(item -> item != null)
                         .toList());
-                itemListView.getSelectionModel().selectFirst();
-                showItemDetails(itemListView.getSelectionModel().getSelectedItem());
+                applyFilters(selectedId, selectedId == null);
                 return;
             }
 
@@ -337,6 +373,72 @@ public class AuctionController {
             stopTimers();
             AppContext.goToServerDown(stage);
         }
+    }
+
+    private void applyFilters(boolean selectFirstWhenMissing) {
+        applyFilters(currentSelectedItemId(), selectFirstWhenMissing);
+    }
+
+    private void applyFilters(String preferredItemId, boolean selectFirstWhenMissing) {
+        List<Item> filteredItems = allItems.stream()
+                .filter(this::matchesSelectedCategory)
+                .filter(this::matchesSearchText)
+                .toList();
+
+        items.setAll(filteredItems);
+
+        Item itemToSelect = preferredItemId == null ? null : findVisibleItemById(preferredItemId);
+        if (itemToSelect != null) {
+            itemListView.getSelectionModel().select(itemToSelect);
+            showItemDetails(itemToSelect);
+        } else if (selectFirstWhenMissing && !items.isEmpty()) {
+            itemListView.getSelectionModel().selectFirst();
+            showItemDetails(itemListView.getSelectionModel().getSelectedItem());
+        } else {
+            itemListView.getSelectionModel().clearSelection();
+            showItemDetails(null);
+        }
+
+        itemListView.refresh();
+    }
+
+    private boolean matchesSelectedCategory(Item item) {
+        if (item == null || categoryFilterComboBox == null) {
+            return true;
+        }
+
+        String selectedCategory = categoryFilterComboBox.getValue();
+        if (selectedCategory == null || CATEGORY_FILTER_ALL.equals(selectedCategory)) {
+            return true;
+        }
+
+        return selectedCategory.equals(item.getCategory());
+    }
+
+    private boolean matchesSearchText(Item item) {
+        if (item == null || itemSearchField == null) {
+            return true;
+        }
+
+        String query = itemSearchField.getText();
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+
+        String name = item.getName();
+        return name != null && name.toLowerCase(Locale.ROOT).contains(query.trim().toLowerCase(Locale.ROOT));
+    }
+
+    private String currentSelectedItemId() {
+        Item selectedItem = itemListView.getSelectionModel().getSelectedItem();
+        return selectedItem == null ? null : selectedItem.getId();
+    }
+
+    private Item findVisibleItemById(String itemId) {
+        return items.stream()
+                .filter(item -> Objects.equals(item.getId(), itemId))
+                .findFirst()
+                .orElse(null);
     }
 
     protected ResponsePayload readResponse(AuctionClient client) throws IOException {
@@ -352,7 +454,7 @@ public class AuctionController {
     }
 
     protected Item findItemById(String itemId) {
-        return items.stream()
+        return allItems.stream()
                 .filter(item -> Objects.equals(item.getId(), itemId))
                 .findFirst()
                 .orElse(null);
@@ -406,46 +508,41 @@ public class AuctionController {
             return;
         }
 
+        String selectedId = currentSelectedItemId();
+
         if ("ITEM_ADDED".equals(eventType)) {
-            boolean exists = items.stream().anyMatch(i -> Objects.equals(i.getId(), updatedItem.getId()));
-            if (!exists) items.add(updatedItem);
+            if (findItemById(updatedItem.getId()) == null) {
+                allItems.add(updatedItem);
+            }
+            applyFilters(selectedId, selectedId == null);
             return;
         }
 
         if ("ITEM_REMOVED".equals(eventType)) {
-            items.removeIf(i -> Objects.equals(i.getId(), updatedItem.getId()));
-            Item selected = itemListView.getSelectionModel().getSelectedItem();
-            if (selected != null && Objects.equals(selected.getId(), updatedItem.getId())) {
-                showItemDetails(null);
-            }
+            allItems.removeIf(i -> Objects.equals(i.getId(), updatedItem.getId()));
+            applyFilters(selectedId, false);
             return;
         }
 
-        for (int i = 0; i < items.size(); i++) {
-            if (Objects.equals(items.get(i).getId(), updatedItem.getId())) {
-                Item previousItem = items.get(i);
+        boolean updatedExisting = false;
+        for (int i = 0; i < allItems.size(); i++) {
+            if (Objects.equals(allItems.get(i).getId(), updatedItem.getId())) {
+                Item previousItem = allItems.get(i);
                 if ((updatedItem.getImageBase64() == null || updatedItem.getImageBase64().isBlank())
                         && previousItem.getImageBase64() != null) {
                     updatedItem.setImageBase64(previousItem.getImageBase64());
                 }
-                items.set(i, updatedItem);
-
-                Item selected = itemListView.getSelectionModel().getSelectedItem();
-                if (selected != null && Objects.equals(selected.getId(), updatedItem.getId())) {
-                    showItemDetails(updatedItem);
-                } else {
-                    updateAuctionActions(itemListView.getSelectionModel().getSelectedItem());
-                }
+                allItems.set(i, updatedItem);
+                updatedExisting = true;
                 break;
             }
         }
 
-        if (findItemById(updatedItem.getId()) == null) {
-            items.add(updatedItem);
-            if (itemListView.getSelectionModel().getSelectedItem() == null) {
-                itemListView.getSelectionModel().select(updatedItem);
-            }
+        if (!updatedExisting) {
+            allItems.add(updatedItem);
         }
+
+        applyFilters(selectedId, selectedId == null);
 
         onAuctionEvent(updatedItem, eventType);
     }

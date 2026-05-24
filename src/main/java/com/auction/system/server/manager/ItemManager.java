@@ -43,6 +43,7 @@ public class ItemManager {
         if (item.getStatus() == null) {
             item.setStatus(AuctionStatus.OPEN);
         }
+        item.setCategory(item.getCategory());
         boolean inserted = itemDAO.insertItem(item);
 
         if(!inserted) {
@@ -67,6 +68,12 @@ public class ItemManager {
 
     public synchronized void updateItem(String itemId, String name, String description, double startPrice, String imagePath)
             throws ItemNotFoundException, InvalidDataException {
+        updateItem(itemId, name, description, startPrice, imagePath, null);
+    }
+
+    public synchronized void updateItem(String itemId, String name, String description, double startPrice,
+                                        String imagePath, String category)
+            throws ItemNotFoundException, InvalidDataException {
         Item existingItem = findItemById(itemId);
 
         if (isBlank(name)) {
@@ -84,6 +91,7 @@ public class ItemManager {
         String oldImagePath = existingItem.getImagePath();
         double oldStartPrice = existingItem.getStartPrice();
         double oldCurrentPrice = existingItem.getCurrentPrice();
+        String oldCategory = existingItem.getCategory();
 
         existingItem.setName(name.trim());
         existingItem.setDescription(description.trim());
@@ -92,6 +100,9 @@ public class ItemManager {
         }
         existingItem.setStartPrice(startPrice);
         existingItem.setCurrentPrice(startPrice);
+        if (category != null) {
+            existingItem.setCategory(category);
+        }
 
         boolean updated = itemDAO.updateItem(existingItem);
 
@@ -101,6 +112,7 @@ public class ItemManager {
             existingItem.setImagePath(oldImagePath);
             existingItem.setStartPrice(oldStartPrice);
             existingItem.setCurrentPrice(oldCurrentPrice);
+            existingItem.setCategory(oldCategory);
 
             throw new InvalidDataException("Cannot update item in database");
         }
