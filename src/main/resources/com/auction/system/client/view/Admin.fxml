@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
@@ -36,7 +38,7 @@
                         <VBox alignment="CENTER_LEFT" spacing="2.0">
                             <children>
                                 <Label styleClass="admin-header-title" text="AuctionHub Admin" />
-                                <Label styleClass="admin-header-subtitle" text="Duyệt seller mới và yêu cầu mở phiên đấu giá" />
+                        <Label styleClass="admin-header-subtitle" text="Quản trị người dùng, sản phẩm và các hàng chờ duyệt" />
                             </children>
                         </VBox>
                         <Region HBox.hgrow="ALWAYS" />
@@ -65,6 +67,38 @@
                                wrapText="true" />
                     </children>
                 </VBox>
+
+                <Button fx:id="btnShowUsers" maxWidth="1.7976931348623157E308"
+                        mnemonicParsing="false" onAction="#showUserManagement"
+                        styleClass="queue-tab-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <children>
+                                <Label styleClass="admin-subsection-title" text="Người dùng"
+                                       mouseTransparent="true" />
+                                <Region HBox.hgrow="ALWAYS" mouseTransparent="true" />
+                                <Label fx:id="userCountLabel" styleClass="admin-count-badge"
+                                       text="0" mouseTransparent="true" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
+
+                <Button fx:id="btnShowItems" maxWidth="1.7976931348623157E308"
+                        mnemonicParsing="false" onAction="#showItemManagement"
+                        styleClass="queue-tab-button">
+                    <graphic>
+                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                            <children>
+                                <Label styleClass="admin-subsection-title" text="Sản phẩm"
+                                       mouseTransparent="true" />
+                                <Region HBox.hgrow="ALWAYS" mouseTransparent="true" />
+                                <Label fx:id="itemCountLabel" styleClass="admin-count-badge"
+                                       text="0" mouseTransparent="true" />
+                            </children>
+                        </HBox>
+                    </graphic>
+                </Button>
 
                 <!-- Nút 1: Seller chờ duyệt -->
                 <Button fx:id="btnShowSellers" maxWidth="1.7976931348623157E308"
@@ -133,6 +167,40 @@
                 <!-- CỘT TRÁI: Danh sách chờ duyệt (ẩn/hiện theo tab) -->
                 <VBox prefWidth="220.0" spacing="0.0" styleClass="admin-list-panel">
                     <children>
+                        <VBox fx:id="userListContainer" spacing="8.0"
+                              styleClass="admin-card"
+                              VBox.vgrow="ALWAYS" visible="false" managed="false">
+                            <children>
+                                <Label styleClass="admin-list-header" text="Tất cả người dùng" />
+                                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="input-wrapper">
+                                    <children>
+                                        <Label styleClass="input-icon" text="S" />
+                                        <TextField fx:id="adminUserSearchField" promptText="Tìm user" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+                                <ComboBox fx:id="adminRoleFilterComboBox" maxWidth="1.7976931348623157E308" styleClass="combo-field" />
+                                <ListView fx:id="allUserListView" styleClass="auction-list-view"
+                                          VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+
+                        <VBox fx:id="itemListContainer" spacing="8.0"
+                              styleClass="admin-card"
+                              VBox.vgrow="ALWAYS" visible="false" managed="false">
+                            <children>
+                                <Label styleClass="admin-list-header" text="Tất cả sản phẩm" />
+                                <HBox alignment="CENTER_LEFT" spacing="8.0" styleClass="input-wrapper">
+                                    <children>
+                                        <Label styleClass="input-icon" text="S" />
+                                        <TextField fx:id="adminItemSearchField" promptText="Tìm sản phẩm" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                    </children>
+                                </HBox>
+                                <ComboBox fx:id="adminItemStatusFilterComboBox" maxWidth="1.7976931348623157E308" styleClass="combo-field" />
+                                <ListView fx:id="allItemListView" styleClass="auction-list-view"
+                                          VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+
                         <!-- ListView Seller -->
                         <VBox fx:id="sellerListContainer" spacing="8.0"
                               styleClass="admin-card"
@@ -171,6 +239,121 @@
                     <children>
 
                         <!-- CARD 1: Chi tiết Seller -->
+                        <VBox fx:id="userManagementDetailPane" spacing="16.0" styleClass="admin-card"
+                              visible="false" managed="false">
+                            <children>
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <Label styleClass="seller-page-title" text="Quản lý người dùng" />
+                                        <Label styleClass="seller-page-subtitle" text="Xem thông tin tài khoản và xóa khi không còn ràng buộc dữ liệu." wrapText="true" />
+                                    </children>
+                                </VBox>
+                                <HBox spacing="18.0">
+                                    <children>
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Họ tên" />
+                                                <Label fx:id="managedUserNameValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                <Label styleClass="input-label" text="Username" />
+                                                <Label fx:id="managedUserUsernameValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                <Label styleClass="input-label" text="Email" />
+                                                <Label fx:id="managedUserEmailValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Vai trò" />
+                                                <Label fx:id="managedUserRoleValue" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                                <Label styleClass="input-label" text="Trạng thái" />
+                                                <Label fx:id="managedUserStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                                <Label styleClass="input-label" text="Số dư" />
+                                                <Label fx:id="managedUserBalanceValue" styleClass="bidder-price-value" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <Region VBox.vgrow="ALWAYS" />
+                                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                                    <children>
+                                        <Button fx:id="deleteUserButton" mnemonicParsing="false"
+                                                onAction="#deleteSelectedUser" styleClass="danger-button"
+                                                text="Xóa người dùng" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
+                        <VBox fx:id="itemManagementDetailPane" spacing="16.0" styleClass="admin-card"
+                              visible="false" managed="false">
+                            <children>
+                                <VBox spacing="4.0">
+                                    <children>
+                                        <Label styleClass="seller-page-title" text="Quản lý sản phẩm" />
+                                        <Label styleClass="seller-page-subtitle" text="Xem thông tin sản phẩm, ảnh, người bán và trạng thái phiên." wrapText="true" />
+                                    </children>
+                                </VBox>
+                                <HBox alignment="CENTER_LEFT" spacing="14.0">
+                                    <children>
+                                        <StackPane minHeight="120.0" minWidth="150.0" prefHeight="120.0"
+                                                   prefWidth="150.0" styleClass="auction-detail-image-frame">
+                                            <children>
+                                                <Label fx:id="managedItemImagePlaceholder" styleClass="image-placeholder-text" text="No Image" />
+                                                <ImageView fx:id="managedItemImageView" fitHeight="110.0"
+                                                           fitWidth="140.0" onMouseClicked="#showManagedItemImagePreview"
+                                                           pickOnBounds="true" preserveRatio="true" />
+                                            </children>
+                                        </StackPane>
+                                        <VBox spacing="5.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Tên sản phẩm" />
+                                                <Label fx:id="managedItemNameValue" styleClass="bidder-item-name"
+                                                       text="-" wrapText="true" />
+                                                <Label fx:id="managedItemCategoryValue" styleClass="seller-inline-status"
+                                                       text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <HBox spacing="18.0">
+                                    <children>
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Seller" />
+                                                <Label fx:id="managedItemSellerValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                <Label styleClass="input-label" text="Giá hiện tại" />
+                                                <Label fx:id="managedItemPriceValue" styleClass="bidder-price-value" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="input-label" text="Trạng thái" />
+                                                <Label fx:id="managedItemStatusValue" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                                <Label styleClass="input-label" text="Lịch đấu giá" />
+                                                <Label fx:id="managedItemScheduleValue" styleClass="auction-info-value" text="-" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                                <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="input-label" text="Mô tả" />
+                                        <TextArea fx:id="managedItemDescriptionArea" prefRowCount="8"
+                                                  styleClass="auction-textarea" wrapText="true"
+                                                  VBox.vgrow="ALWAYS" />
+                                    </children>
+                                </VBox>
+                                <HBox alignment="CENTER_RIGHT" spacing="10.0">
+                                    <children>
+                                        <Button mnemonicParsing="false" onAction="#showManagedItemImagePreview"
+                                                styleClass="secondary-button" text="Xem ảnh lớn" />
+                                        <Button fx:id="deleteItemButton" mnemonicParsing="false"
+                                                onAction="#deleteSelectedItem" styleClass="danger-button"
+                                                text="Xóa sản phẩm" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+
                         <VBox fx:id="sellerDetailPane" spacing="16.0" styleClass="admin-card"
                               visible="true" managed="true">
                             <children>
