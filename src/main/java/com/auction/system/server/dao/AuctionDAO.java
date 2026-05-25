@@ -176,6 +176,29 @@ public class AuctionDAO extends BaseDAO {
         return result;
     }
 
+    public List<String> findApprovedOpenItemIdsReadyToStart() throws SQLException {
+        String sql = """
+                SELECT a.item_id
+                FROM auctions a
+                JOIN items i ON i.id = a.item_id
+                WHERE a.status = 'OPEN'
+                  AND i.status = 'OPEN'
+                  AND i.auction_approved = TRUE
+                  AND a.start_time <= NOW()
+                  AND a.end_time > NOW()
+                """;
+
+        List<String> result = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql);
+             ResultSet rs = pstm.executeQuery()) {
+            while (rs.next()) {
+                result.add(rs.getString("item_id"));
+            }
+        }
+        return result;
+    }
+
     public boolean updateStatusAndClearWinner(
             Connection conn,
             String itemId,

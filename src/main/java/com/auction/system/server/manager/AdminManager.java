@@ -59,6 +59,24 @@ public class AdminManager {
         return depositRequestDAO.findPending();
     }
 
+    public synchronized List<User> getAllUsers(User adminUser) {
+        requireAdmin(adminUser);
+        return authManager.getAllUsers().stream()
+                .sorted(Comparator
+                        .comparing(User::getRole, Comparator.nullsLast(String::compareTo))
+                        .thenComparing(User::getUserName, Comparator.nullsLast(String::compareTo)))
+                .toList();
+    }
+
+    public synchronized List<Item> getAllItems(User adminUser) {
+        requireAdmin(adminUser);
+        return auctionManager.getAllItems().stream()
+                .sorted(Comparator
+                        .comparing(Item::getStatus, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Item::getId, Comparator.nullsLast(String::compareTo)))
+                .toList();
+    }
+
     public synchronized DepositRequest createDepositRequest(User user, double amount) {
         if (!(user instanceof Bidder bidder)) {
             throw new IllegalArgumentException("Only bidder accounts can request deposits");
@@ -147,10 +165,15 @@ public class AdminManager {
         }
 
         if (approved) {
-            if (item.getEndTime() != null && !item.getEndTime().isAfter(LocalDateTime.now())) {
+            LocalDateTime now = LocalDateTime.now();
+            if (item.getEndTime() != null && !item.getEndTime().isAfter(now)) {
                 throw new IllegalStateException("Auction request has already expired");
             }
-            auctionManager.startAuction(itemId, item.getStartTime(), item.getEndTime());
+            if (item.getStartTime() != null && item.getStartTime().isAfter(now)) {
+                auctionManager.approveAuctionRequest(itemId);
+            } else {
+                auctionManager.startAuction(itemId, item.getStartTime(), item.getEndTime());
+            }
             return auctionManager.findItemById(itemId).orElse(item);
         }
 
@@ -163,6 +186,43 @@ public class AdminManager {
         item.setStartTime(null);
         item.setEndTime(null);
         return item;
+    }
+
+    public synchronized void deleteUser(User adminUser, String userId) {
+        requireAdmin(adminUser);
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("User id is required");
+        }
+        if (adminUser.getId().equals(userId)) {
+            throw new IllegalStateException("Cannot delete the admin account currently logged in");
+        }
+
+        User user = authManager.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User does not exist"));
+        if (user instanceof Admin) {
+            throw new IllegalStateException("Deleting admin accounts is not supported from this screen");
+        }
+
+        boolean ownsAnyItem = auctionManager.getAllItems().stream()
+                .anyMatch(item -> userId.equals(item.getSellerId()));
+        if (ownsAnyItem) {
+            throw new IllegalStateException("Cannot delete this seller while products still exist. Delete products first.");
+        }
+
+        boolean leadsAnyItem = auctionManager.getAllItems().stream()
+                .anyMatch(item -> userId.equals(item.getHighestBidderId()));
+        if (leadsAnyItem) {
+            throw new IllegalStateException("Cannot delete this bidder because they are linked to an auction result.");
+        }
+
+        if (!userDAO.deleteUser(userId)) {
+            throw new IllegalStateException("Cannot delete user. They may still be referenced by bids or deposit requests.");
+        }
+    }
+
+    public synchronized void deleteItem(User adminUser, String itemId) {
+        requireAdmin(adminUser);
+        auctionManager.removeItemAsAdmin(itemId, adminUser);
     }
 
     private boolean hasPendingAuctionRequest(Item item) {

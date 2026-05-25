@@ -9,6 +9,7 @@ import com.auction.system.server.controller.AdminController;
 import com.auction.system.server.controller.AuctionController;
 import com.auction.system.server.controller.AuthController;
 import com.auction.system.server.manager.AuctionManager;
+import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.user.User;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.server.observer.AuctionObserver;
@@ -110,6 +111,8 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
                 case AUTO_BID_SET -> handleAutoBidSet(payload);
                 case AUTO_BID_CANCEL -> handleAutoBidCancel(payload);
                 case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
+                case DELETE_USER -> send(adminController.deleteUser(payload, authenticatedUser));
+                case ADMIN_DELETE_ITEM -> send(adminController.deleteItem(payload, authenticatedUser));
                 case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
                 case APPROVE_DEPOSIT -> {
                     ResponsePayload depositResp = adminController.approveDeposit(payload, authenticatedUser);
@@ -295,7 +298,10 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             Object rawItem = response.getBody().get("item");
             boolean approved = response.getBody().get("approved") instanceof Boolean bool && bool;
             if (rawItem instanceof Item item) {
-                auctionServer.notifyObservers(item, approved ? "AUCTION_STARTED" : "AUCTION_REQUEST_REJECTED");
+                String eventType = approved && item.getStatus() == AuctionStatus.RUNNING
+                        ? "AUCTION_STARTED"
+                        : approved ? "AUCTION_APPROVED" : "AUCTION_REQUEST_REJECTED";
+                auctionServer.notifyObservers(item, eventType);
             }
         }
     }

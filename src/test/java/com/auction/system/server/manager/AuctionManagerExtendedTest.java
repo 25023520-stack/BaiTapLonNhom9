@@ -206,6 +206,15 @@ class AuctionManagerExtendedTest {
                 () -> manager.requestAuctionApproval(itemId, seller, null, null));
     }
 
+    @Test
+    void placeBidThrowsBeforeAuctionStartTime() {
+        manager.addItem(item, seller);
+        manager.startAuction(itemId, LocalDateTime.now().plusMinutes(5), LocalDateTime.now().plusMinutes(30));
+
+        assertThrows(IllegalStateException.class,
+                () -> manager.placeBid(itemId, bidder, 600.0));
+    }
+
     // ---- cancelAuction ----
 
     @Test

@@ -21,11 +21,15 @@ public class AdminController {
             List<User> pendingSellers = adminManager.getPendingSellers(authenticatedUser);
             List<Item> pendingAuctions = withImageData(adminManager.getPendingAuctionRequests(authenticatedUser));
             List<DepositRequest> pendingDeposits = adminManager.getPendingDepositRequests(authenticatedUser);
+            List<User> allUsers = adminManager.getAllUsers(authenticatedUser);
+            List<Item> allItems = withImageData(adminManager.getAllItems(authenticatedUser));
 
             ResponsePayload response = ResponsePayload.ok("Admin dashboard loaded");
             response.put("pendingSellers", pendingSellers);
             response.put("pendingAuctions", pendingAuctions);
             response.put("pendingDeposits", pendingDeposits);
+            response.put("allUsers", allUsers);
+            response.put("allItems", allItems);
             return response;
         } catch (IllegalArgumentException | IllegalStateException exception) {
             return ResponsePayload.error(exception.getMessage());
@@ -105,6 +109,34 @@ public class AdminController {
         }
     }
 
+    public ResponsePayload deleteUser(Payload payload, User authenticatedUser) {
+        String userId = payload.getString("userId");
+        if (userId == null || userId.isBlank()) {
+            return ResponsePayload.error("userId is required");
+        }
+
+        try {
+            adminManager.deleteUser(authenticatedUser, userId);
+            return ResponsePayload.ok("User deleted successfully");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponsePayload.error(exception.getMessage());
+        }
+    }
+
+    public ResponsePayload deleteItem(Payload payload, User authenticatedUser) {
+        String itemId = payload.getString("itemId");
+        if (itemId == null || itemId.isBlank()) {
+            return ResponsePayload.error("itemId is required");
+        }
+
+        try {
+            adminManager.deleteItem(authenticatedUser, itemId);
+            return ResponsePayload.ok("Item deleted successfully");
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            return ResponsePayload.error(exception.getMessage());
+        }
+    }
+
     private List<Item> withImageData(List<Item> items) {
         items.forEach(this::attachImageData);
         return items;
@@ -116,12 +148,28 @@ public class AdminController {
         }
 
         try {
-            Path imagePath = Path.of(item.getImagePath());
+            Path imagePath = resolveImagePath(item.getImagePath());
             if (Files.exists(imagePath)) {
                 item.setImageBase64(Base64.getEncoder().encodeToString(Files.readAllBytes(imagePath)));
             }
         } catch (IOException ignored) {
             item.setImageBase64(null);
         }
+    }
+
+    private Path resolveImagePath(String storedPath) {
+        Path path = Path.of(storedPath);
+        if (path.isAbsolute()) {
+            return path.normalize();
+        }
+
+        Path fromWorkingDirectory = Path.of(System.getProperty("user.dir")).resolve(path).normalize();
+        if (Files.exists(fromWorkingDirectory)) {
+            return fromWorkingDirectory;
+        }
+
+        return Path.of(System.getProperty("user.dir"), "data", "uploads", "items")
+                .resolve(path.getFileName())
+                .normalize();
     }
 }

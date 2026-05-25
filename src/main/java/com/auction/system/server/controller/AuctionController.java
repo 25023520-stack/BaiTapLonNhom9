@@ -3,6 +3,7 @@ package com.auction.system.server.controller;
 import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.factory.ItemFactory;
 import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
@@ -20,7 +21,9 @@ import java.util.List;
 
 public class AuctionController {
     private final AuctionManager auctionManager = AuctionManager.getInstance();
-    private static final Path ITEM_UPLOAD_DIR = Path.of("data", "uploads", "items");
+    private static final Path ITEM_UPLOAD_DIR = Path.of(System.getProperty("user.dir"), "data", "uploads", "items")
+            .toAbsolutePath()
+            .normalize();
 
     public ResponsePayload listItems(User user) {
         ResponsePayload response = ResponsePayload.ok("Items retrieved");
@@ -40,9 +43,11 @@ public class AuctionController {
         if (id == null || name == null || description == null || startPrice == null) {
             return ResponsePayload.error("id, name, description, startPrice are required");
         }
+        if (!hasUploadedImage(payload)) {
+            return ResponsePayload.error("Product image is required");
+        }
         try {
-            Item item = new Item(id, name, description, startPrice, seller.getId());
-            item.setCategory(category);
+            Item item = ItemFactory.createItem(category, id, name, description, startPrice, seller.getId());
             String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
             item.setImagePath(imagePath);
             auctionManager.addItem(item, seller);
@@ -68,13 +73,15 @@ public class AuctionController {
             return ResponsePayload.error("id, name, description, startPrice are required");
         }
         try {
-            Item item = new Item(id, name, description, startPrice, seller.getId());
-            item.setCategory(category);
+            Item item = ItemFactory.createItem(category, id, name, description, startPrice, seller.getId());
             String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
             if (imagePath != null) {
                 item.setImagePath(imagePath);
             } else {
                 auctionManager.findItemById(id).ifPresent(existing -> item.setImagePath(existing.getImagePath()));
+            }
+            if (item.getImagePath() == null || item.getImagePath().isBlank()) {
+                return ResponsePayload.error("Product image is required");
             }
             auctionManager.updateItem(item, seller);
             Item updatedItem = auctionManager.findItemById(id).orElse(item);
@@ -358,7 +365,7 @@ public class AuctionController {
         }
 
         try {
-            Path imagePath = Path.of(item.getImagePath());
+            Path imagePath = resolveImagePath(item.getImagePath());
             if (Files.exists(imagePath)) {
                 item.setImageBase64(Base64.getEncoder().encodeToString(Files.readAllBytes(imagePath)));
             }
@@ -376,7 +383,26 @@ public class AuctionController {
         String extension = getSafeExtension(imageFileName);
         Path target = ITEM_UPLOAD_DIR.resolve(itemId + extension);
         Files.write(target, Base64.getDecoder().decode(imageBase64));
-        return target.toString();
+        return target.toAbsolutePath().normalize().toString();
+    }
+
+    private boolean hasUploadedImage(Payload payload) {
+        String imageBase64 = payload.getString("imageBase64");
+        return imageBase64 != null && !imageBase64.isBlank();
+    }
+
+    private Path resolveImagePath(String storedPath) {
+        Path path = Path.of(storedPath);
+        if (path.isAbsolute()) {
+            return path.normalize();
+        }
+
+        Path fromWorkingDirectory = Path.of(System.getProperty("user.dir")).resolve(path).normalize();
+        if (Files.exists(fromWorkingDirectory)) {
+            return fromWorkingDirectory;
+        }
+
+        return ITEM_UPLOAD_DIR.resolve(path.getFileName()).normalize();
     }
 
     private String getSafeExtension(String fileName) {

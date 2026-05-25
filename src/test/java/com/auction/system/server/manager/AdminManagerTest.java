@@ -276,6 +276,24 @@ class AdminManagerTest {
         assertNull(result.getEndTime());
     }
 
+    @Test
+    void updateAuctionApprovalForFutureStartKeepsAuctionOpenUntilStartTime() {
+        String itemId = TEST_PREFIX + "ITEM-SCHEDULE-" + shortToken();
+        Item item = new Item(itemId, "Scheduled Item", "Desc", 500.0, 500.0, AuctionStatus.OPEN);
+        auctionManager.addItem(item, seller);
+
+        LocalDateTime start = LocalDateTime.now().plusMinutes(5);
+        LocalDateTime end = start.plusHours(1);
+        auctionManager.requestAuctionApproval(itemId, seller, start, end);
+
+        Item result = adminManager.updateAuctionApproval(admin, itemId, true);
+
+        assertEquals(AuctionStatus.OPEN, result.getStatus());
+        assertTrue(result.isAuctionApproved());
+        assertEquals(start, result.getStartTime());
+        assertEquals(end, result.getEndTime());
+    }
+
     private void cleanUpTestData() {
         String[] statements = {
             "DELETE FROM deposit_requests WHERE bidder_id LIKE 'TEST-ADMIN-%'",

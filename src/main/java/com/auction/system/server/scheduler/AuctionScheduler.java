@@ -45,6 +45,8 @@ public class AuctionScheduler {
 
     private void closeExpiredAuctions() {
         try {
+            startDueApprovedAuctions();
+
             List<String> expiredItemIds = auctionDAO.findExpiredRunningItemIds();
             for (String itemId : expiredItemIds) {
                 try {
@@ -56,6 +58,18 @@ public class AuctionScheduler {
             }
         } catch (SQLException e) {
             LOGGER.error("Scheduler failed to query expired auctions: {}", e.getMessage());
+        }
+    }
+
+    private void startDueApprovedAuctions() throws SQLException {
+        List<String> dueItemIds = auctionDAO.findApprovedOpenItemIdsReadyToStart();
+        for (String itemId : dueItemIds) {
+            try {
+                auctionManager.startApprovedAuction(itemId);
+                LOGGER.info("Scheduler started approved auction for item: {}", itemId);
+            } catch (Exception e) {
+                LOGGER.warn("Failed to start approved auction for item {}: {}", itemId, e.getMessage());
+            }
         }
     }
 }

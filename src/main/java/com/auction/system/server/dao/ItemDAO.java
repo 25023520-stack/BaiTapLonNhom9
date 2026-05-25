@@ -1,5 +1,6 @@
 package com.auction.system.server.dao;
 
+import com.auction.system.factory.ItemFactory;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.User;
@@ -122,15 +123,16 @@ public class ItemDAO extends BaseDAO {
                 ? AuctionStatus.valueOf(statusText.trim().toUpperCase())
                 : AuctionStatus.OPEN;
 
-        Item item = new Item(
+        Item item = ItemFactory.createItem(
+                rs.getString("category"),
                 id,
                 name,
                 description,
                 startPrice,
-                currentPrice,
-                status,
-                rs.getString("category")
+                rs.getString("seller_id")
         );
+        item.setCurrentPrice(currentPrice);
+        item.setStatus(status);
         item.setSellerId(rs.getString("seller_id"));
         item.setImagePath(rs.getString("image_path"));
         item.setHighestBidderId(rs.getString("highest_bidder_id"));
@@ -310,6 +312,7 @@ public class ItemDAO extends BaseDAO {
             WHERE id = ?
             AND current_price < ?
             AND status = 'RUNNING'
+            AND (start_time IS NULL OR start_time <= NOW())
             AND end_time > NOW()
             """;
 

@@ -6,6 +6,7 @@ import com.auction.system.model.auction.Auction;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
+import com.auction.system.model.user.Admin;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
@@ -166,6 +167,28 @@ public class AuctionManager {
         }
     }
 
+    public synchronized void removeItemAsAdmin(String itemId, User adminUser) {
+        if (!(adminUser instanceof Admin)) {
+            throw new IllegalArgumentException("Only admin accounts can remove items");
+        }
+        Item existingItem = requireItem(itemId);
+        AuctionStatus status = existingItem.getStatus();
+        if (status == AuctionStatus.RUNNING) {
+            throw new IllegalStateException("Cannot remove item with status: " + status);
+        }
+        Item itemToNotify = existingItem;
+
+        try {
+            itemManager.deleteItem(itemId);
+            auctionsById.remove(itemId);
+        } catch (ItemNotFoundException exception) {
+            throw new IllegalArgumentException(exception.getMessage(), exception);
+        }
+        if (auctionSubject != null) {
+            auctionSubject.notifyObservers(itemToNotify, "ITEM_REMOVED");
+        }
+    }
+
     public void startAuction(String itemId, LocalDateTime startTime, LocalDateTime endTime) {
         if(itemId == null || itemId.isBlank()) {
             throw new IllegalArgumentException("Item id must not be empty");
@@ -254,6 +277,10 @@ public class AuctionManager {
                 throw new IllegalStateException("Database error when starting auction", e);
             }
 
+            if (auctionSubject != null) {
+                auctionSubject.notifyObservers(item, "AUCTION_STARTED");
+            }
+
         } finally {
             lock.unlock();
         }
@@ -300,6 +327,106 @@ public class AuctionManager {
         } finally {
             lock.unlock();
         }
+    }
+
+    public void approveAuctionRequest(String itemId) {
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
+        }
+
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
+
+        try {
+            Item item = requireItem(itemId);
+            if (item.isAuctionApproved()
+                    || item.getStatus() != AuctionStatus.OPEN
+                    || item.getStartTime() == null
+                    || item.getEndTime() == null) {
+                throw new IllegalStateException("Auction does not have a pending approval request");
+            }
+            if (!item.getEndTime().isAfter(LocalDateTime.now())) {
+                throw new IllegalStateException("Auction request has already expired");
+            }
+
+            try (Connection conn = Database.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    boolean itemUpdated = itemDAO.updateAuctionInfo(
+                            conn,
+                            itemId,
+                            AuctionStatus.OPEN,
+                            item.getStartTime(),
+                            item.getEndTime()
+                    );
+                    if (!itemUpdated) {
+                        throw new SQLException("Cannot approve auction request");
+                    }
+
+                    boolean auctionSaved;
+                    if (auctionDAO.existsByItemId(conn, itemId)) {
+                        auctionSaved = auctionDAO.updateAuctionTimeAndStatus(
+                                conn,
+                                itemId,
+                                item.getStartTime(),
+                                item.getEndTime(),
+                                AuctionStatus.OPEN
+                        );
+                    } else {
+                        auctionSaved = auctionDAO.insertAuction(
+                                conn,
+                                "AUC-" + itemId,
+                                itemId,
+                                item.getStartTime(),
+                                item.getEndTime(),
+                                AuctionStatus.OPEN
+                        );
+                    }
+                    if (!auctionSaved) {
+                        throw new SQLException("Cannot save approved auction");
+                    }
+
+                    conn.commit();
+                    item.setStatus(AuctionStatus.OPEN);
+                    item.setAuctionApproved(true);
+
+                    Auction auction = auctionsById.get(itemId);
+                    if (auction == null) {
+                        auction = new Auction("AUC-" + itemId, item);
+                        auctionsById.put(itemId, auction);
+                    }
+                    auction.setStatus(AuctionStatus.OPEN);
+                } catch (SQLException exception) {
+                    conn.rollback();
+                    throw new IllegalStateException("Cannot approve auction request: " + exception.getMessage(), exception);
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Database error when approving auction request", exception);
+            }
+
+            if (auctionSubject != null) {
+                auctionSubject.notifyObservers(item, "AUCTION_APPROVED");
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void startApprovedAuction(String itemId) {
+        Item item = requireItem(itemId);
+        if (!item.isAuctionApproved()
+                || item.getStatus() != AuctionStatus.OPEN
+                || item.getStartTime() == null
+                || item.getEndTime() == null) {
+            throw new IllegalStateException("Auction is not approved for scheduled start");
+        }
+        if (item.getStartTime().isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException("Auction start time has not arrived");
+        }
+        startAuction(itemId, item.getStartTime(), item.getEndTime());
     }
 
     private void finishAuctionLocked(String itemId) {
@@ -353,8 +480,7 @@ public class AuctionManager {
                     item.setStartTime(null);
                     item.setEndTime(null);
                 }
-                // update auction trong RAM
-                item.setStatus(AuctionStatus.FINISHED);
+                // update auction trong RAM; item da duoc set status theo nhanh sold/unsold o tren.
                 autoBidDAO.deactivateByItemId(itemId);
 
                 Auction auction = auctionsById.get(itemId);
@@ -613,7 +739,12 @@ public class AuctionManager {
                 throw new IllegalArgumentException("Seller cannot bid on their own item");
             }
 
-            if (item.getEndTime() != null && LocalDateTime.now().isAfter(item.getEndTime())) {
+            LocalDateTime now = LocalDateTime.now();
+            if (item.getStartTime() != null && now.isBefore(item.getStartTime())) {
+                throw new IllegalStateException("Auction has not started yet");
+            }
+
+            if (item.getEndTime() != null && now.isAfter(item.getEndTime())) {
                 finishAuctionLocked(itemId);
                 throw new IllegalStateException("Auction already finished");
             }
@@ -720,7 +851,12 @@ public class AuctionManager {
                 throw new IllegalArgumentException("Seller cannot enable auto-bid on their own item");
             }
 
-            if (item.getEndTime() != null && LocalDateTime.now().isAfter(item.getEndTime())) {
+            LocalDateTime now = LocalDateTime.now();
+            if (item.getStartTime() != null && now.isBefore(item.getStartTime())) {
+                throw new IllegalStateException("Auction has not started yet");
+            }
+
+            if (item.getEndTime() != null && now.isAfter(item.getEndTime())) {
                 finishAuctionLocked(itemId);
                 throw new IllegalStateException("Auction already finished");
             }
