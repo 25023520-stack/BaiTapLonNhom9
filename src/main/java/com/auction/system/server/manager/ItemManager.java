@@ -2,6 +2,7 @@ package com.auction.system.server.manager;
 
 import com.auction.system.exception.InvalidDataException;
 import com.auction.system.exception.ItemNotFoundException;
+import com.auction.system.factory.ItemFactory;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 import com.auction.system.server.dao.ItemDAO;
@@ -86,38 +87,35 @@ public class ItemManager {
             throw new InvalidDataException("Start price must be greater than or equal to 0");
         }
 
-        String oldName = existingItem.getName();
-        String oldDescription = existingItem.getDescription();
-        String oldImagePath = existingItem.getImagePath();
-        double oldStartPrice = existingItem.getStartPrice();
-        double oldCurrentPrice = existingItem.getCurrentPrice();
-        String oldCategory = existingItem.getCategory();
+        Item updatedItem = ItemFactory.createItem(
+                category != null ? category : existingItem.getCategory(),
+                existingItem.getId(),
+                name.trim(),
+                description.trim(),
+                startPrice,
+                existingItem.getSellerId()
+        );
+        updatedItem.setImagePath(imagePath != null ? imagePath : existingItem.getImagePath());
+        updatedItem.setCurrentPrice(startPrice);
+        updatedItem.setStatus(existingItem.getStatus());
+        updatedItem.setSellerUsername(existingItem.getSellerUsername());
+        updatedItem.setHighestBidderId(existingItem.getHighestBidderId());
+        updatedItem.setHighestBidderUsername(existingItem.getHighestBidderUsername());
+        updatedItem.setAuctionApproved(existingItem.isAuctionApproved());
+        updatedItem.setStartTime(existingItem.getStartTime());
+        updatedItem.setEndTime(existingItem.getEndTime());
+        updatedItem.setCurrentUserAutoBidActive(existingItem.isCurrentUserAutoBidActive());
+        updatedItem.setCurrentUserAutoBidMaxBid(existingItem.getCurrentUserAutoBidMaxBid());
+        updatedItem.setCurrentUserAutoBidIncrementAmount(existingItem.getCurrentUserAutoBidIncrementAmount());
+        existingItem.getBidHistory().forEach(updatedItem::addBid);
 
-        existingItem.setName(name.trim());
-        existingItem.setDescription(description.trim());
-        if (imagePath != null) {
-            existingItem.setImagePath(imagePath);
-        }
-        existingItem.setStartPrice(startPrice);
-        existingItem.setCurrentPrice(startPrice);
-        if (category != null) {
-            existingItem.setCategory(category);
-        }
-
-        boolean updated = itemDAO.updateItem(existingItem);
+        boolean updated = itemDAO.updateItem(updatedItem);
 
         if (!updated) {
-            existingItem.setName(oldName);
-            existingItem.setDescription(oldDescription);
-            existingItem.setImagePath(oldImagePath);
-            existingItem.setStartPrice(oldStartPrice);
-            existingItem.setCurrentPrice(oldCurrentPrice);
-            existingItem.setCategory(oldCategory);
-
             throw new InvalidDataException("Cannot update item in database");
         }
 
-        itemsById.put(existingItem.getId(), existingItem);
+        itemsById.put(updatedItem.getId(), updatedItem);
     }
 
     public synchronized void deleteItem(String itemId) throws ItemNotFoundException {

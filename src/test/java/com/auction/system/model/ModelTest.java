@@ -6,7 +6,11 @@ import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Art;
+import com.auction.system.model.item.Book;
+import com.auction.system.model.item.Collectible;
 import com.auction.system.model.item.Electronics;
+import com.auction.system.model.item.Fashion;
+import com.auction.system.model.item.Home;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.item.Vehicle;
 import com.auction.system.model.user.Admin;
@@ -256,27 +260,63 @@ class ModelTest {
     void itemFactoryCreatesElectronics() {
         Item item = ItemFactory.createItem("electronics", "E-1", "Phone", "Desc", 500.0, "S-1");
         assertInstanceOf(Electronics.class, item);
-        assertEquals("ELECTRONICS", ((Electronics) item).getCategory());
+        assertEquals(Item.CATEGORY_ELECTRONICS, item.getCategory());
     }
 
     @Test
     void itemFactoryCreatesArt() {
         Item item = ItemFactory.createItem("Art", "A-1", "Painting", "Desc", 300.0, "S-1");
         assertInstanceOf(Art.class, item);
-        assertEquals("ART", ((Art) item).getCategory());
+        assertEquals(Item.CATEGORY_ART, item.getCategory());
     }
 
     @Test
     void itemFactoryCreatesVehicle() {
         Item item = ItemFactory.createItem("Vehicle", "V-1", "Car", "Desc", 10000.0, "S-1");
         assertInstanceOf(Vehicle.class, item);
-        assertEquals("VEHICLE", ((Vehicle) item).getCategory());
+        assertEquals(Item.CATEGORY_VEHICLE, item.getCategory());
     }
 
     @Test
-    void itemFactoryThrowsOnInvalidCategory() {
-        assertThrows(IllegalArgumentException.class,
-                () -> ItemFactory.createItem("INVALID", "X-1", "Name", "Desc", 100.0, "S-1"));
+    void itemFactoryCreatesFashion() {
+        Item item = ItemFactory.createItem("Fashion", "F-1", "Jacket", "Desc", 200.0, "S-1");
+        assertInstanceOf(Fashion.class, item);
+        assertEquals(Item.CATEGORY_FASHION, item.getCategory());
+    }
+
+    @Test
+    void itemFactoryCreatesBook() {
+        Item item = ItemFactory.createItem("Book", "B-1", "Novel", "Desc", 80.0, "S-1");
+        assertInstanceOf(Book.class, item);
+        assertEquals(Item.CATEGORY_BOOK, item.getCategory());
+    }
+
+    @Test
+    void itemFactoryCreatesHome() {
+        Item item = ItemFactory.createItem("Home", "H-1", "Chair", "Desc", 120.0, "S-1");
+        assertInstanceOf(Home.class, item);
+        assertEquals(Item.CATEGORY_HOME, item.getCategory());
+    }
+
+    @Test
+    void itemFactoryCreatesCollectible() {
+        Item item = ItemFactory.createItem("Collectible", "C-1", "Coin", "Desc", 60.0, "S-1");
+        assertInstanceOf(Collectible.class, item);
+        assertEquals(Item.CATEGORY_COLLECTIBLE, item.getCategory());
+    }
+
+    @Test
+    void itemFactoryCreatesBaseItemForOther() {
+        Item item = ItemFactory.createItem("Other", "O-1", "Misc", "Desc", 100.0, "S-1");
+        assertEquals(Item.class, item.getClass());
+        assertEquals(Item.DEFAULT_CATEGORY, item.getCategory());
+    }
+
+    @Test
+    void itemFactoryFallsBackToOtherForInvalidCategory() {
+        Item item = ItemFactory.createItem("INVALID", "X-1", "Name", "Desc", 100.0, "S-1");
+        assertEquals(Item.class, item.getClass());
+        assertEquals(Item.DEFAULT_CATEGORY, item.getCategory());
     }
 
     // ---- Item ----
