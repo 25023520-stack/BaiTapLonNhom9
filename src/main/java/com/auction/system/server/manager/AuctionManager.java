@@ -129,15 +129,16 @@ public class AuctionManager {
             throw new IllegalArgumentException(exception.getMessage(), exception);
         }
         if (currentStatus == AuctionStatus.CANCELED || currentStatus == AuctionStatus.FINISHED) {
-            existingItem.setStatus(AuctionStatus.OPEN);
-            existingItem.setStartTime(null);
-            existingItem.setEndTime(null);
-            existingItem.setAuctionApproved(false);
-            existingItem.setCurrentPrice(existingItem.getStartPrice());
-            existingItem.setHighestBidderId(null);
-            existingItem.setHighestBidderUsername(null);
-            itemDAO.clearAuctionRequest(existingItem.getId());
-            auctionsById.remove(existingItem.getId());
+            Item refreshedItem = requireItem(item.getId());
+            refreshedItem.setStatus(AuctionStatus.OPEN);
+            refreshedItem.setStartTime(null);
+            refreshedItem.setEndTime(null);
+            refreshedItem.setAuctionApproved(false);
+            refreshedItem.setCurrentPrice(refreshedItem.getStartPrice());
+            refreshedItem.setHighestBidderId(null);
+            refreshedItem.setHighestBidderUsername(null);
+            itemDAO.clearAuctionRequest(refreshedItem.getId());
+            auctionsById.remove(refreshedItem.getId());
         }
         Item updatedItem = requireItem(item.getId());
         if (auctionSubject != null) {

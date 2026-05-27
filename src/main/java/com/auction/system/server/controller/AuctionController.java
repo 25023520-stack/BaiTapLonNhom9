@@ -3,6 +3,7 @@ package com.auction.system.server.controller;
 import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.factory.ItemFactory;
 import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
@@ -41,8 +42,7 @@ public class AuctionController {
             return ResponsePayload.error("id, name, description, startPrice are required");
         }
         try {
-            Item item = new Item(id, name, description, startPrice, seller.getId());
-            item.setCategory(category);
+            Item item = ItemFactory.createItem(category, id, name, description, startPrice, seller.getId());
             String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
             item.setImagePath(imagePath);
             auctionManager.addItem(item, seller);
@@ -68,8 +68,7 @@ public class AuctionController {
             return ResponsePayload.error("id, name, description, startPrice are required");
         }
         try {
-            Item item = new Item(id, name, description, startPrice, seller.getId());
-            item.setCategory(category);
+            Item item = ItemFactory.createItem(category, id, name, description, startPrice, seller.getId());
             String imagePath = saveItemImage(id, payload.getString("imageFileName"), payload.getString("imageBase64"));
             if (imagePath != null) {
                 item.setImagePath(imagePath);
