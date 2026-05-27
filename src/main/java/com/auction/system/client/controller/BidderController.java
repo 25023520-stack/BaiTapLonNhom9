@@ -57,6 +57,9 @@ public class BidderController extends AuctionController {
     private Label balanceValue;
 
     @FXML
+    private Label detailBalanceValue;
+
+    @FXML
     private TextField depositAmountField;
 
     @FXML
@@ -110,7 +113,7 @@ public class BidderController extends AuctionController {
             maxBidField.setDisable(false);
             incrementField.setDisable(false);
 
-            balanceValue.setText(formatCurrency(bidder.getBalance()));
+            updateBalanceLabels(bidder.getBalance());
             depositAmountField.setDisable(false);
             depositButton.setDisable(false);
             return;
@@ -121,6 +124,9 @@ public class BidderController extends AuctionController {
         bidAmountField.setDisable(true);
         bidButton.setDisable(true);
         balanceValue.setText("-");
+        if (detailBalanceValue != null) {
+            detailBalanceValue.setText("-");
+        }
         depositAmountField.setDisable(true);
         depositButton.setDisable(true);
     }
@@ -464,6 +470,14 @@ public class BidderController extends AuctionController {
         User currentUser = AppContext.getCurrentUser();
         if (currentUser == null || !currentUser.getId().equals(userId)) return;
         currentUser.setBalance(newBalance);
-        balanceValue.setText(formatCurrency(newBalance));
+        updateBalanceLabels(newBalance);
+    }
+
+    private void updateBalanceLabels(double balance) {
+        String formattedBalance = formatCurrency(balance);
+        balanceValue.setText(formattedBalance);
+        if (detailBalanceValue != null) {
+            detailBalanceValue.setText(formattedBalance);
+        }
     }
 }
