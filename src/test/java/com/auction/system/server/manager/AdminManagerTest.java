@@ -4,7 +4,7 @@ import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Admin;
 import com.auction.system.model.user.Bidder;
-import com.auction.system.model.user.DepositRequest;
+import com.auction.system.model.payment.DepositRequest;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 import com.auction.system.server.database.Database;

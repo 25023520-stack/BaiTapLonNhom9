@@ -3,7 +3,7 @@ package com.auction.system.server.controller;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.model.item.Item;
-import com.auction.system.model.user.DepositRequest;
+import com.auction.system.model.payment.DepositRequest;
 import com.auction.system.model.user.User;
 import com.auction.system.server.manager.AdminManager;
 

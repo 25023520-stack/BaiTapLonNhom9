@@ -8,7 +8,7 @@ import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Admin;
-import com.auction.system.model.user.DepositRequest;
+import com.auction.system.model.payment.DepositRequest;
 import com.auction.system.model.user.User;
 import com.google.gson.Gson;
 import javafx.animation.Animation;
@@ -44,7 +44,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class AdminController {
     private static final Logger LOGGER = LoggerFactory.getLogger(AdminController.class);

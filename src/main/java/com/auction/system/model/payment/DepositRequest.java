@@ -1,4 +1,4 @@
-package com.auction.system.model.user;
+package com.auction.system.model.payment;
 
 import com.auction.system.common.money.Money;
 

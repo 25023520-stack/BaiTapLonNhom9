@@ -1,7 +1,7 @@
 package com.auction.system.server.dao;
 
 import com.auction.system.common.money.Money;
-import com.auction.system.model.user.DepositRequest;
+import com.auction.system.model.payment.DepositRequest;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
