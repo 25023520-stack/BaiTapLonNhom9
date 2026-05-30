@@ -44,6 +44,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class AdminController {
     private static final Logger LOGGER = LoggerFactory.getLogger(AdminController.class);
@@ -90,9 +91,9 @@ public class AdminController {
     private final ObservableList<Item> pendingAuctions = FXCollections.observableArrayList();
     private final ObservableList<DepositRequest> pendingDeposits = FXCollections.observableArrayList();
     private Timeline autoRefresh;
-    private String previousSellersSig = null;
-    private String previousAuctionsSig = null;
-    private String previousDepositsSig = null;
+    private final String[] previousSellersSig  = {null};
+    private final String[] previousAuctionsSig = {null};
+    private final String[] previousDepositsSig = {null};
 
     @FXML
     public void initialize() {
@@ -139,15 +140,9 @@ public class AdminController {
 
     @FXML
     public void refreshDashboard() {
-        String selectedSellerId = sellerListView.getSelectionModel().getSelectedItem() == null
-                ? null
-                : sellerListView.getSelectionModel().getSelectedItem().getId();
-        String selectedItemId = auctionListView.getSelectionModel().getSelectedItem() == null
-                ? null
-                : auctionListView.getSelectionModel().getSelectedItem().getId();
-        String selectedDepositId = depositListView.getSelectionModel().getSelectedItem() == null
-                ? null
-                : depositListView.getSelectionModel().getSelectedItem().getId();
+        String selectedSellerId  = sellerListView.getSelectionModel().getSelectedItem()  == null ? null : sellerListView.getSelectionModel().getSelectedItem().getId();
+        String selectedItemId    = auctionListView.getSelectionModel().getSelectedItem() == null ? null : auctionListView.getSelectionModel().getSelectedItem().getId();
+        String selectedDepositId = depositListView.getSelectionModel().getSelectedItem() == null ? null : depositListView.getSelectionModel().getSelectedItem().getId();
 
         runAsync(new Payload(PayloadType.ADMIN_DASHBOARD), response -> {
             if (!response.isSuccess()) {
@@ -155,38 +150,43 @@ public class AdminController {
                 return;
             }
 
-            List<User> newSellers = readUsers(response.getBody().get("pendingSellers"));
-            String sellersSig = sellersSignature(newSellers);
-            if (!sellersSig.equals(previousSellersSig)) {
-                previousSellersSig = sellersSig;
-                pendingSellers.setAll(newSellers);
-                sellerListView.refresh();
-            }
+            List<User> newSellers = readList(response.getBody().get("pendingSellers"), this::toUser);
+            updateListIfChanged(newSellers,
+                    computeSignature(newSellers, u -> u.getId() + "|" + u.getUserName() + "|" + u.getFullName() + "|" + u.isApproved()),
+                    previousSellersSig, pendingSellers, sellerListView, sellerCountLabel);
 
-            List<Item> newAuctions = readItems(response.getBody().get("pendingAuctions"));
-            String auctionsSig = auctionsSignature(newAuctions);
-            if (!auctionsSig.equals(previousAuctionsSig)) {
-                previousAuctionsSig = auctionsSig;
-                pendingAuctions.setAll(newAuctions);
-                auctionListView.refresh();
-            }
+            List<Item> newAuctions = readList(response.getBody().get("pendingAuctions"), this::toItem);
+            updateListIfChanged(newAuctions,
+                    computeSignature(newAuctions, i -> i.getId() + "|" + i.getName() + "|" + i.getStatus() + "|" + i.isAuctionApproved() + "|" + i.getStartTime() + "|" +
+                            i.getEndTime()),
+                    previousAuctionsSig, pendingAuctions, auctionListView, auctionCountLabel);
 
-            List<DepositRequest> newDeposits = readDeposits(response.getBody().get("pendingDeposits"));
-            String depositsSig = depositsSignature(newDeposits);
-            if (!depositsSig.equals(previousDepositsSig)) {
-                previousDepositsSig = depositsSig;
-                pendingDeposits.setAll(newDeposits);
-                depositListView.refresh();
-            }
-            sellerCountLabel.setText(String.valueOf(pendingSellers.size()));
-            auctionCountLabel.setText(String.valueOf(pendingAuctions.size()));
-            depositCountLabel.setText(String.valueOf(pendingDeposits.size()));
+            List<DepositRequest> newDeposits = readList(response.getBody().get("pendingDeposits"), this::toDepositRequest);
+            updateListIfChanged(newDeposits,
+                    computeSignature(newDeposits, r -> r.getId() + "|" + r.getBidderName() + "|" + r.getAmount() + "|" + r.getStatus()),
+                    previousDepositsSig, pendingDeposits, depositListView, depositCountLabel);
 
-            restoreSellerSelection(selectedSellerId);
-            restoreAuctionSelection(selectedItemId);
-            restoreDepositSelection(selectedDepositId);
+            restoreSelection(selectedSellerId, pendingSellers,  User::getId, sellerListView, this::clearSellerDetails);
+            restoreSelection(selectedItemId, pendingAuctions, Item::getId, auctionListView, this::clearAuctionDetails);
+            restoreSelection(selectedDepositId, pendingDeposits, DepositRequest::getId, depositListView, this::clearDepositDetails);
         });
     }
+
+    private <T> void updateListIfChanged(
+            List<T> newList,
+            String newSig,
+            String[] prevSigHolder,
+            ObservableList<T> observable,
+            ListView<T> view,
+            Label countLabel) {
+        if (!newSig.equals(prevSigHolder[0])) {
+            prevSigHolder[0] = newSig;
+            observable.setAll(newList);
+            view.refresh();
+        }
+        countLabel.setText(String.valueOf(observable.size()));
+    }
+
 
     @FXML
     public void handleLogout(ActionEvent event) {
@@ -212,40 +212,33 @@ public class AdminController {
     }
 
     private void configureLists() {
-        sellerListView.setItems(pendingSellers);
-        sellerListView.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(User user, boolean empty) {
-                super.updateItem(user, empty);
-                setText(empty || user == null ? null : user.getFullName() + "  |  @" + user.getUserName());
-            }
-        });
-        sellerListView.getSelectionModel().selectedItemProperty()
-                .addListener((obs, oldValue, newValue) -> showSellerDetails(newValue));
+        configureListView(sellerListView, pendingSellers,
+                u -> u.getFullName() + "  |  @" + u.getUserName(),
+                (obs, old, val) -> showSellerDetails(val));
 
-        auctionListView.setItems(pendingAuctions);
-        auctionListView.setCellFactory(list -> new ListCell<>() {
+        configureListView(auctionListView, pendingAuctions,
+                i -> i.getName() + "  |  " + formatSchedule(i),
+                (obs, old, val) -> showAuctionDetails(val));
+
+        configureListView(depositListView, pendingDeposits,
+                r -> r.getBidderName() + "  |  " + formatCurrency(r.getAmount()),
+                (obs, old, val) -> showDepositDetails(val));
+    }
+
+    private <T> void configureListView(
+            ListView<T> listView,
+            ObservableList<T> items,
+            java.util.function.Function<T, String> display,
+            javafx.beans.value.ChangeListener<T> onSelect) {
+        listView.setItems(items);
+        listView.setCellFactory(list -> new ListCell<>() {
             @Override
-            protected void updateItem(Item item, boolean empty) {
+            protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.getName() + "  |  " + formatSchedule(item));
+                setText(empty || item == null ? null : display.apply(item));
             }
         });
-        auctionListView.getSelectionModel().selectedItemProperty()
-                .addListener((obs, oldValue, newValue) -> showAuctionDetails(newValue));
-
-        depositListView.setItems(pendingDeposits);
-        depositListView.setCellFactory(list -> new ListCell<>() {
-            @Override
-            protected void updateItem(DepositRequest request, boolean empty) {
-                super.updateItem(request, empty);
-                setText(empty || request == null
-                        ? null
-                        : request.getBidderName() + "  |  " + formatCurrency(request.getAmount()));
-            }
-        });
-        depositListView.getSelectionModel().selectedItemProperty()
-                .addListener((obs, oldValue, newValue) -> showDepositDetails(newValue));
+        listView.getSelectionModel().selectedItemProperty().addListener(onSelect);
     }
 
     private void updateSellerApproval(boolean approved) {
@@ -313,63 +306,6 @@ public class AdminController {
             showInfo(response.getMessage());
             refreshDashboard();
         });
-    }
-
-    private void restoreSellerSelection(String sellerId) {
-        if (sellerId == null) {
-            sellerListView.getSelectionModel().clearSelection();
-            clearSellerDetails();
-            return;
-        }
-
-        pendingSellers.stream()
-                .filter(user -> sellerId.equals(user.getId()))
-                .findFirst()
-                .ifPresentOrElse(
-                        user -> sellerListView.getSelectionModel().select(user),
-                        () -> {
-                            sellerListView.getSelectionModel().clearSelection();
-                            clearSellerDetails();
-                        }
-                );
-    }
-
-    private void restoreAuctionSelection(String itemId) {
-        if (itemId == null) {
-            auctionListView.getSelectionModel().clearSelection();
-            clearAuctionDetails();
-            return;
-        }
-
-        pendingAuctions.stream()
-                .filter(item -> itemId.equals(item.getId()))
-                .findFirst()
-                .ifPresentOrElse(
-                        item -> auctionListView.getSelectionModel().select(item),
-                        () -> {
-                            auctionListView.getSelectionModel().clearSelection();
-                            clearAuctionDetails();
-                        }
-                );
-    }
-
-    private void restoreDepositSelection(String requestId) {
-        if (requestId == null) {
-            depositListView.getSelectionModel().clearSelection();
-            clearDepositDetails();
-            return;
-        }
-
-        pendingDeposits.stream()
-                .filter(request -> requestId.equals(request.getId()))
-                .findFirst()
-                .ifPresentOrElse(
-                        request -> depositListView.getSelectionModel().select(request),
-                        () -> {
-                            depositListView.getSelectionModel().clearSelection();
-                            clearDepositDetails();
-                        }
-                );
     }
 
     private void showSellerDetails(User seller) {
@@ -464,36 +400,11 @@ public class AdminController {
                 + DATE_TIME_FORMATTER.format(item.getEndTime());
     }
 
-    private List<User> readUsers(Object rawUsers) {
-        if (!(rawUsers instanceof List<?> list)) {
-            return List.of();
-        }
-
+    private <T> List<T> readList(Object raw, java.util.function.Function<Object, T> converter) {
+        if (!(raw instanceof List<?> list)) return List.of();
         return list.stream()
-                .map(this::toUser)
-                .filter(user -> user != null)
-                .toList();
-    }
-
-    private List<Item> readItems(Object rawItems) {
-        if (!(rawItems instanceof List<?> list)) {
-            return List.of();
-        }
-
-        return list.stream()
-                .map(this::toItem)
+                .map(converter)
                 .filter(item -> item != null)
-                .toList();
-    }
-
-    private List<DepositRequest> readDeposits(Object rawRequests) {
-        if (!(rawRequests instanceof List<?> list)) {
-            return List.of();
-        }
-
-        return list.stream()
-                .map(this::toDepositRequest)
-                .filter(request -> request != null)
                 .toList();
     }
 
@@ -602,46 +513,34 @@ public class AdminController {
         detail.setVisible(true);         detail.setManaged(true);
         activeBtn.getStyleClass().add("queue-tab-button-active");
     }
-    // Sinh "chu ky" cho 3 danh sach pending. Hai danh sach co cung chu ky => khong setAll.
-    private String sellersSignature(List<User> users) {
-        if (users == null || users.isEmpty()) return "EMPTY";
-        StringBuilder sb = new StringBuilder(users.size() * 48);
-        for (User u : users) {
-            if (u == null) continue;
-            sb.append(u.getId()).append('|')
-                    .append(u.getUserName()).append('|')
-                    .append(u.getFullName()).append('|')
-                    .append(u.isApproved()).append(';');
+
+    private <T> String computeSignature(List<T> list, java.util.function.Function<T, String> extractor) {
+        if (list == null || list.isEmpty()) return "EMPTY";
+        StringBuilder sb = new StringBuilder();
+        for (T item : list) {
+            if (item != null) sb.append(extractor.apply(item)).append(';');
         }
         return sb.toString();
     }
 
-    private String auctionsSignature(List<Item> items) {
-        if (items == null || items.isEmpty()) return "EMPTY";
-        StringBuilder sb = new StringBuilder(items.size() * 64);
-        for (Item item : items) {
-            if (item == null) continue;
-            sb.append(item.getId()).append('|')
-                    .append(item.getName()).append('|')
-                    .append(item.getStatus()).append('|')
-                    .append(item.isAuctionApproved()).append('|')
-                    .append(item.getStartTime()).append('|')
-                    .append(item.getEndTime()).append(';');
+    private <T> void restoreSelection(
+            String id,
+            ObservableList<T> list,
+            java.util.function.Function<T, String> idExtractor,
+            ListView<T> listView,
+            Runnable onClear) {
+        if (id == null) {
+            listView.getSelectionModel().clearSelection();
+            onClear.run();
+            return;
         }
-        return sb.toString();
-    }
-
-    private String depositsSignature(List<DepositRequest> requests) {
-        if (requests == null || requests.isEmpty()) return "EMPTY";
-        StringBuilder sb = new StringBuilder(requests.size() * 48);
-        for (DepositRequest r : requests) {
-            if (r == null) continue;
-            sb.append(r.getId()).append('|')
-                    .append(r.getBidderName()).append('|')
-                    .append(r.getAmount()).append('|')
-                    .append(r.getStatus()).append(';');
-        }
-        return sb.toString();
+        list.stream()
+                .filter(item -> id.equals(idExtractor.apply(item)))
+                .findFirst()
+                .ifPresentOrElse(
+                        item -> listView.getSelectionModel().select(item),
+                        () -> { listView.getSelectionModel().clearSelection(); onClear.run(); }
+                );
     }
 
     @FXML private void showSellerQueue()  { showTab(sellerListContainer, sellerDetailPane, btnShowSellers); }
