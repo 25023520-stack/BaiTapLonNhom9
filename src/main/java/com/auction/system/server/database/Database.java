@@ -32,7 +32,7 @@ public class Database {
             + "&serverTimezone=" + APP_TIMEZONE;
 
     private static final String DB_USER = System.getenv().getOrDefault("DB_USER", "auction_user");
-    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "Auction123");
+    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "Auction@123456");
     private static final String ADMIN_BOOTSTRAP_ID = getEnvOrDefault("ADMIN_BOOTSTRAP_ID", "ADMIN-DEFAULT");
     private static final String ADMIN_BOOTSTRAP_FULL_NAME = getEnvOrDefault("ADMIN_BOOTSTRAP_FULL_NAME", "System Admin");
     private static final String ADMIN_BOOTSTRAP_USERNAME = getEnvOrDefault("ADMIN_BOOTSTRAP_USERNAME", "admin");
