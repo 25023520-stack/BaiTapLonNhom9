@@ -2,6 +2,7 @@ package com.auction.system.server.manager;
 
 import com.auction.system.exception.InvalidDataException;
 import com.auction.system.exception.ItemNotFoundException;
+import com.auction.system.common.money.Money;
 import com.auction.system.model.auction.Auction;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.auction.Bid;
@@ -25,7 +26,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -646,7 +646,7 @@ public class AuctionManager {
                     boolean itemUpdated = itemDAO.updateAfterBid(
                             conn,
                             itemId,
-                            BigDecimal.valueOf(bidAmount),
+                            Money.toDatabaseAmount(bidAmount),
                             bidder.getId()
                     );
 
@@ -892,7 +892,7 @@ public class AuctionManager {
                 boolean itemUpdated = itemDAO.updateAfterBid(
                         conn,
                         itemId,
-                        BigDecimal.valueOf(bidAmount),
+                        Money.toDatabaseAmount(bidAmount),
                         bidder.getId()
                 );
 

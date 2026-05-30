@@ -1,5 +1,6 @@
 package com.auction.system.server.dao;
 
+import com.auction.system.common.money.Money;
 import com.auction.system.model.user.DepositRequest;
 
 import java.math.BigDecimal;
@@ -23,7 +24,7 @@ public class DepositRequestDAO extends BaseDAO {
              PreparedStatement pstm = conn.prepareStatement(sql)) {
             pstm.setString(1, request.getId());
             pstm.setString(2, request.getBidderId());
-            pstm.setBigDecimal(3, BigDecimal.valueOf(request.getAmount()));
+            pstm.setBigDecimal(3, Money.toDatabaseAmount(request.getAmount()));
             pstm.setString(4, request.getStatus());
             return pstm.executeUpdate() > 0;
         } catch (SQLException e) {

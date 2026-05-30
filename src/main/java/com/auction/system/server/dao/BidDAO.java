@@ -1,5 +1,6 @@
 package com.auction.system.server.dao;
 
+import com.auction.system.common.money.Money;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.User;
@@ -33,7 +34,7 @@ public class BidDAO extends BaseDAO {
             pstm.setString(2, auctionId);
             pstm.setString(3, itemId);
             pstm.setString(4, bidderId);
-            pstm.setBigDecimal(5, BigDecimal.valueOf(amount));
+            pstm.setBigDecimal(5, Money.toDatabaseAmount(amount));
             pstm.setTimestamp(6, toTimestamp(bidTime));
 
             return pstm.executeUpdate() > 0;

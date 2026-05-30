@@ -1,5 +1,6 @@
 package com.auction.system.server.dao;
 
+import com.auction.system.common.money.Money;
 import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.user.User;
 
@@ -30,8 +31,8 @@ public class AutoBidDAO extends BaseDAO {
             pstm.setString(1, autoBid.getId());
             pstm.setString(2, autoBid.getItemId());
             pstm.setString(3, autoBid.getBidderId());
-            pstm.setBigDecimal(4, BigDecimal.valueOf(autoBid.getMaxBid()));
-            pstm.setBigDecimal(5, BigDecimal.valueOf(autoBid.getIncrementAmount()));
+            pstm.setBigDecimal(4, Money.toDatabaseAmount(autoBid.getMaxBid()));
+            pstm.setBigDecimal(5, Money.toDatabaseAmount(autoBid.getIncrementAmount()));
             pstm.setBoolean(6, autoBid.isActive());
             pstm.setTimestamp(7, toTimestamp(autoBid.getCreatedAt()));
 
@@ -158,7 +159,7 @@ public class AutoBidDAO extends BaseDAO {
              PreparedStatement pstm = conn.prepareStatement(sql)) {
 
             pstm.setString(1, itemId);
-            pstm.setBigDecimal(2, BigDecimal.valueOf(currentPrice));
+            pstm.setBigDecimal(2, Money.toDatabaseAmount(currentPrice));
             pstm.executeUpdate();
             return true;
         } catch (SQLException e) {

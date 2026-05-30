@@ -1,5 +1,6 @@
 package com.auction.system.model.auction;
 
+import com.auction.system.common.money.Money;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -15,14 +16,14 @@ public class Bid implements Serializable {
     public Bid(String bidId, Bidder bidder, double amount) {
         this.bidId = bidId;
         this.bidder = bidder;
-        this.amount = amount;
+        this.amount = Money.normalize(amount);
         this.timestamp = LocalDateTime.now();
     }
 
     public Bid(String bidId, Bidder bidder, double amount, LocalDateTime timestamp) {
         this.bidId = bidId;
         this.bidder = bidder;
-        this.amount = amount;
+        this.amount = Money.normalize(amount);
         this.timestamp = timestamp;
     }
 

@@ -1,5 +1,6 @@
 package com.auction.system.server.dao;
 
+import com.auction.system.common.money.Money;
 import com.auction.system.model.auction.Auction;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
@@ -129,7 +130,7 @@ public class AuctionDAO extends BaseDAO {
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
             pstm.setString(1, AuctionStatus.FINISHED.name());
             pstm.setString(2, winnerId);
-            pstm.setBigDecimal(3, BigDecimal.valueOf(finalPrice));
+            pstm.setBigDecimal(3, Money.toDatabaseAmount(finalPrice));
             pstm.setString(4, itemId);
 
             return pstm.executeUpdate() > 0;

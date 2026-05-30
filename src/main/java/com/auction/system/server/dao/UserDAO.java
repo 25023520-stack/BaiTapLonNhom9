@@ -1,5 +1,6 @@
 package com.auction.system.server.dao;
 
+import com.auction.system.common.money.Money;
 import com.auction.system.model.user.*;
 
 import java.math.BigDecimal;
@@ -63,7 +64,7 @@ public class UserDAO extends BaseDAO {
             pstm.setString(5, user.getPassWord());
             pstm.setString(6, user.getRole());
             pstm.setBoolean(7, user.isApproved());
-            pstm.setBigDecimal(8, BigDecimal.valueOf(user.getBalance()));
+            pstm.setBigDecimal(8, Money.toDatabaseAmount(user.getBalance()));
 
             int rowsAffected = pstm.executeUpdate();
             return rowsAffected > 0 ? user.getId() : null;
@@ -209,7 +210,7 @@ public class UserDAO extends BaseDAO {
     public boolean addBalance(Connection conn, String userId, double amount) throws SQLException {
         String sql = "UPDATE users SET balance = balance + ? WHERE id = ? AND role = 'BIDDER'";
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
-            pstm.setBigDecimal(1, BigDecimal.valueOf(amount));
+            pstm.setBigDecimal(1, Money.toDatabaseAmount(amount));
             pstm.setString(2, userId);
             return pstm.executeUpdate() > 0;
         }
@@ -219,7 +220,7 @@ public class UserDAO extends BaseDAO {
         // Ghi chu: seller nhan tien sau khi phien dau gia co winner va giao dich ket thuc thanh cong.
         String sql = "UPDATE users SET balance = balance + ? WHERE id = ? AND role = 'SELLER'";
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
-            pstm.setBigDecimal(1, BigDecimal.valueOf(amount));
+            pstm.setBigDecimal(1, Money.toDatabaseAmount(amount));
             pstm.setString(2, sellerId);
             return pstm.executeUpdate() > 0;
         }
@@ -227,9 +228,9 @@ public class UserDAO extends BaseDAO {
     public boolean deductBidderBalance(Connection conn, String bidderId, double amount) throws SQLException {
         String sql = "UPDATE users SET balance = balance - ? WHERE id = ? AND role = 'BIDDER' AND balance >= ?";
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
-            pstm.setBigDecimal(1, BigDecimal.valueOf(amount));
+            pstm.setBigDecimal(1, Money.toDatabaseAmount(amount));
             pstm.setString(2, bidderId);
-            pstm.setBigDecimal(3, BigDecimal.valueOf(amount));
+            pstm.setBigDecimal(3, Money.toDatabaseAmount(amount));
             return pstm.executeUpdate() > 0;
         }
     }
