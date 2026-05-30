@@ -158,11 +158,11 @@
                     </top>
 
                     <center>
-                        <ScrollPane fitToWidth="true" styleClass="auction-scroll-pane">
+                        <ScrollPane fx:id="auctionDetailScrollPane" fitToWidth="true" styleClass="auction-scroll-pane">
                             <content>
                                 <HBox fx:id="auctionDetailContent" spacing="18.0" styleClass="auction-detail-content">
                                     <children>
-                                        <VBox fx:id="auctionImagePanel" prefWidth="315.0" minWidth="270.0" spacing="12.0" styleClass="auction-image-panel">
+                                        <VBox fx:id="auctionImagePanel" prefWidth="280.0" minWidth="240.0" maxWidth="320.0" spacing="12.0" styleClass="auction-image-panel">
                                             <children>
                                                 <StackPane fx:id="auctionDetailImageFrame" minHeight="250.0" prefHeight="270.0" styleClass="auction-detail-image-frame">
                                                     <children>
@@ -184,19 +184,19 @@
                                             </children>
                                         </VBox>
 
-                                        <VBox fx:id="auctionInfoColumn" minWidth="380.0" prefWidth="560.0" spacing="14.0" HBox.hgrow="ALWAYS">
+                                        <VBox fx:id="auctionInfoColumn" minWidth="320.0" prefWidth="500.0" maxWidth="600.0" spacing="14.0">
                                             <children>
                                                 <VBox spacing="14.0" styleClass="auction-info-panel">
                                                     <children>
                                                         <HBox spacing="12.0">
                                                             <children>
-                                                                <VBox spacing="5.0" styleClass="bidder-metric-card" HBox.hgrow="ALWAYS">
+                                                                <VBox minWidth="0.0" spacing="5.0" styleClass="bidder-metric-card" HBox.hgrow="ALWAYS">
                                                                     <children>
                                                                         <Label styleClass="bidder-eyebrow" text="Giá hiện tại" />
                                                                         <Label fx:id="priceValue" styleClass="bidder-price-value" text="-" wrapText="true" />
                                                                     </children>
                                                                 </VBox>
-                                                                <VBox spacing="5.0" styleClass="bidder-status-metric-card" HBox.hgrow="ALWAYS">
+                                                                <VBox minWidth="0.0" spacing="5.0" styleClass="bidder-status-metric-card" HBox.hgrow="ALWAYS">
                                                                     <children>
                                                                         <Label styleClass="bidder-eyebrow" text="Trạng thái" />
                                                                         <Label fx:id="statusValue" styleClass="bidder-state-value" text="-" wrapText="true" />
@@ -247,25 +247,25 @@
                                                     </children>
                                                 </VBox>
 
-                                                <VBox spacing="9.0" styleClass="auction-info-panel" VBox.vgrow="ALWAYS">
+                                                <VBox spacing="9.0" styleClass="auction-info-panel">
                                                     <children>
                                                         <Label styleClass="bidder-panel-title" text="Mô tả sản phẩm" />
-                                                        <TextArea fx:id="descriptionArea" prefHeight="130.0" prefRowCount="6"
-                                                                  styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
+                                                        <TextArea fx:id="descriptionArea" maxHeight="150.0" prefHeight="120.0" prefRowCount="5"
+                                                                  styleClass="auction-textarea" wrapText="true" />
                                                     </children>
                                                 </VBox>
 
-                                                <VBox spacing="8.0" styleClass="auction-info-panel" VBox.vgrow="ALWAYS">
+                                                <VBox spacing="8.0" styleClass="auction-info-panel">
                                                     <children>
                                                         <Label styleClass="bidder-panel-title" text="Lịch sử đấu giá" />
-                                                        <TextArea fx:id="bidHistoryArea" prefHeight="170.0" prefRowCount="11"
-                                                                  styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
+                                                        <TextArea fx:id="bidHistoryArea" maxHeight="190.0" prefHeight="150.0" prefRowCount="8"
+                                                                  styleClass="auction-textarea" wrapText="true" />
                                                     </children>
                                                 </VBox>
                                             </children>
                                         </VBox>
 
-                                        <VBox fx:id="auctionActionPanel" prefWidth="340.0" minWidth="300.0" spacing="14.0" styleClass="auction-action-panel">
+                                        <VBox fx:id="auctionActionPanel" prefWidth="310.0" minWidth="280.0" maxWidth="330.0" spacing="14.0" styleClass="auction-action-panel">
                                             <children>
                                                 <VBox spacing="4.0">
                                                     <children>
@@ -281,7 +281,7 @@
                                                     </children>
                                                 </VBox>
 
-                                                <Rectangle fill="#DDEDF7" height="1.0" width="300.0" />
+                                                <Separator />
 
                                                 <Label styleClass="input-label" text="Người đấu giá" />
                                                 <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
@@ -306,7 +306,7 @@
                                                         styleClass="auction-bid-button"
                                                         text="Đặt giá" />
 
-                                                <Rectangle fill="#DDEDF7" height="1.0" width="300.0" />
+                                                <Separator />
 
                                                 <VBox spacing="8.0">
                                                     <children>
