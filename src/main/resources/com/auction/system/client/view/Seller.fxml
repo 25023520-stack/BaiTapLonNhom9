@@ -265,8 +265,10 @@
                                                         <HBox alignment="CENTER_LEFT" spacing="14.0">
                                                             <children>
                                                                 <Label styleClass="input-label" text="Thời lượng" />
-                                                                <Spinner fx:id="durationHoursSpinner" editable="true" prefWidth="120.0" styleClass="combo-field" />
+                                                                <Spinner fx:id="durationHoursSpinner" editable="true" prefWidth="82.0" styleClass="combo-field" />
                                                                 <Label styleClass="seller-page-subtitle" text="giờ" />
+                                                                <Spinner fx:id="durationMinutesSpinner" editable="true" prefWidth="82.0" styleClass="combo-field" />
+                                                                <Label styleClass="seller-page-subtitle" text="phút" />
                                                             </children>
                                                         </HBox>
 

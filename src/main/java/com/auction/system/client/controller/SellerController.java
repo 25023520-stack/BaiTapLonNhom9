@@ -96,6 +96,7 @@ public class SellerController {
     @FXML private Label sellerBalanceLabel;
     @FXML private Label auctionApprovalLabel;
     @FXML private Spinner<Integer> durationHoursSpinner;
+    @FXML private Spinner<Integer> durationMinutesSpinner;
     @FXML private DatePicker startDatePicker;
     @FXML private Spinner<Integer> startHourSpinner;
     @FXML private Spinner<Integer> startMinuteSpinner;
@@ -116,6 +117,7 @@ public class SellerController {
     private boolean suppressSelectionChange;
     private boolean suppressScheduleSuggestion;
     private boolean refreshInFlight;
+    private boolean editorModeActive;
     private int sellerGridColumnCount = 1;
     private double sellerGridCardWidth = 286;
 
@@ -133,8 +135,12 @@ public class SellerController {
             LocalDate endDate,
             Integer endHour,
             Integer endMinute,
-            Integer durationHours
+            Integer durationHours,
+            Integer durationMinutes
     ) {
+    }
+
+    private record AuctionSchedule(LocalDateTime startTime, LocalDateTime endTime) {
     }
 
     @FXML
@@ -179,8 +185,7 @@ public class SellerController {
         updateImageValidationLabel(null);
         showSellerCatalog();
 
-        refreshItems();
-        autoRefresh = new Timeline(new KeyFrame(POLL_INTERVAL, e -> refreshItems()));
+        autoRefresh = new Timeline(new KeyFrame(POLL_INTERVAL, e -> refreshItems(false)));
         autoRefresh.setCycleCount(Animation.INDEFINITE);
         autoRefresh.play();
         startRealtimeListener();
@@ -216,6 +221,11 @@ public class SellerController {
         }
         if (price <= 0) { showError("Lỗi", "Giá khởi điểm phải > 0"); return; }
 
+        AuctionSchedule schedule = readValidatedAuctionSchedule();
+        if (schedule == null) {
+            return;
+        }
+
         String newId = "ITEM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         Payload req;
@@ -237,10 +247,7 @@ public class SellerController {
 
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
-                showInfo("Đã thêm: " + name);
-                clearForm();
-                showSellerCatalog();
-                refreshItems();
+                requestAuctionApprovalAfterCreate(newId, name, schedule);
             } else {
                 showError("Không thêm được", resp.getMessage());
             }
@@ -297,7 +304,6 @@ public class SellerController {
                 showInfo("Đã cập nhật: " + name);
                 clearForm();
                 showSellerCatalog();
-                refreshItems();
             } else {
                 showError("Không cập nhật được", resp.getMessage());
             }
@@ -325,7 +331,6 @@ public class SellerController {
                     showInfo("Đã xoá");
                     clearForm();
                     showSellerCatalog();
-                    refreshItems();
                 } else {
                     showError("Không xoá được", resp.getMessage());
                 }
@@ -334,7 +339,14 @@ public class SellerController {
     }
 
     @FXML
-    private void onRefreshClick() { refreshItems(); }
+    private void onRefreshClick() {
+        if (editorModeActive) {
+            showInfo("Hãy lưu hoặc quay lại trước khi làm mới danh sách.");
+            return;
+        }
+
+        refreshItems(true);
+    }
 
     @FXML
     private void clearFormForNew() {
@@ -350,24 +362,14 @@ public class SellerController {
         }
 
         Payload req = new Payload(PayloadType.START_AUCTION);
-        LocalDateTime startTime = readScheduleTime(startDatePicker, startHourSpinner, startMinuteSpinner, "bat dau");
-        LocalDateTime endTime = readScheduleTime(endDatePicker, endHourSpinner, endMinuteSpinner, "ket thuc");
-        if (startTime == null || endTime == null) {
-            return;
-        }
-        if (!endTime.isAfter(startTime)) {
-            showError("Thoi gian khong hop le", "Thoi diem ket thuc phai sau thoi diem bat dau.");
-            return;
-        }
-        LocalDateTime now = LocalDateTime.now(VIETNAM_ZONE);
-        if (!endTime.isAfter(now)) {
-            showError("Thoi gian khong hop le", "Thoi diem ket thuc phai nam trong tuong lai.");
+        AuctionSchedule schedule = readValidatedAuctionSchedule();
+        if (schedule == null) {
             return;
         }
 
         req.put("id", selected.getId());
-        req.put("startTime", startTime.toString());
-        req.put("endTime", endTime.toString());
+        req.put("startTime", schedule.startTime().toString());
+        req.put("endTime", schedule.endTime().toString());
 
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
@@ -379,10 +381,30 @@ public class SellerController {
                 }
                 showInfo("Da gui yeu cau mo phien cho admin: " + selected.getName());
                 showSellerCatalog();
-                refreshItems();
             } else {
                 showError("Khong mo duoc phien", resp.getMessage());
             }
+        });
+    }
+
+    private void requestAuctionApprovalAfterCreate(String itemId, String itemName, AuctionSchedule schedule) {
+        Payload req = new Payload(PayloadType.START_AUCTION);
+        req.put("id", itemId);
+        req.put("startTime", schedule.startTime().toString());
+        req.put("endTime", schedule.endTime().toString());
+
+        runAsync(req, resp -> {
+            if (resp.isSuccess()) {
+                Item updatedItem = toItem(resp.getBody().get("item"));
+                if (updatedItem != null) {
+                    replaceOrAddSellerItem(updatedItem);
+                }
+                showInfo("Đã thêm và gửi yêu cầu mở phiên cho admin: " + itemName);
+            } else {
+                showError("Đã thêm sản phẩm nhưng chưa gửi được lịch đấu giá", resp.getMessage());
+            }
+            clearForm();
+            showSellerCatalog();
         });
     }
 
@@ -409,14 +431,40 @@ public class SellerController {
 
     @FXML
     public void showSellerCatalog() {
+        editorModeActive = false;
+
         setViewVisible(sellerCatalogView, true);
         setViewVisible(sellerDetailView, false);
         renderSellerCards();
+
+        resumeAutoRefresh();
+        refreshItems(true);
     }
+    /*
+    Khi quay lại danh sách seller
+→ thoát chế độ thêm/sửa
+→ bật lại auto refresh
+→ refresh danh sách ngay lập tức
+*/
 
     private void showSellerDetail() {
+        editorModeActive = true;
+        pauseAutoRefresh();
+
         setViewVisible(sellerCatalogView, false);
         setViewVisible(sellerDetailView, true);
+    }
+
+    private void pauseAutoRefresh() {
+        if (autoRefresh != null) {
+            autoRefresh.pause();
+        }
+    }
+
+    private void resumeAutoRefresh() {
+        if (autoRefresh != null) {
+            autoRefresh.play();
+        }
     }
 
     private void setViewVisible(Node node, boolean visible) {
@@ -479,7 +527,16 @@ public class SellerController {
     }
 
     private void refreshItems() {
+        refreshItems(false);
+    }
+
+    private void refreshItems(boolean force) {
         if (currentSeller == null) return;
+
+        if (!force && editorModeActive) {
+            return;
+        }
+
         if (refreshInFlight) return;
         refreshInFlight = true;
         Item selectedBeforeRefresh = sellerItemList.getSelectionModel().getSelectedItem();
@@ -715,12 +772,15 @@ public class SellerController {
         if (categoryComboBox != null) {
             categoryComboBox.setDisable(!canEditProductFields);
         }
-        boolean canEditSchedule = approved
+        boolean canCreateNewSchedule = approved && !hasSelection;
+        boolean canEditExistingSchedule = approved
                 && hasSelection
                 && picked.getStatus() == AuctionStatus.OPEN
                 && !pendingApproval
                 && !approvedWaitingStart;
+        boolean canEditSchedule = canCreateNewSchedule || canEditExistingSchedule;
         durationHoursSpinner.setDisable(!canEditSchedule);
+        durationMinutesSpinner.setDisable(!canEditSchedule);
         setScheduleInputsDisabled(!canEditSchedule);
         newItemButton.setDisable(!approved);
         chooseImageButton.setDisable(!canEditProductFields);
@@ -734,7 +794,7 @@ public class SellerController {
 
         updateButton.setDisable(!approved || !canEdit);
         removeButton.setDisable(!approved || !canRemove);
-        startAuctionButton.setDisable(!canEditSchedule);
+        startAuctionButton.setDisable(!canEditExistingSchedule);
     }
 
     private void updateAuctionApprovalLabel(Item item) {
@@ -1066,6 +1126,14 @@ public class SellerController {
         }
     }
 
+    private void setTextIfChanged(TextInputControl control, String value) {
+        String newValue = value == null ? "" : value;
+
+        if (!Objects.equals(control.getText(), newValue)) {
+            control.setText(newValue);
+        }
+    }
+
     private EditorDraft captureEditorDraft() {
         return new EditorDraft(
                 nameField.getText(),
@@ -1081,7 +1149,8 @@ public class SellerController {
                 endDatePicker.getValue(),
                 endHourSpinner.getValue(),
                 endMinuteSpinner.getValue(),
-                durationHoursSpinner.getValue()
+                durationHoursSpinner.getValue(),
+                durationMinutesSpinner.getValue()
         );
     }
 
@@ -1089,11 +1158,16 @@ public class SellerController {
         if (draft == null) {
             return;
         }
-        nameField.setText(draft.name());
-        descriptionField.setText(draft.description());
-        startPriceField.setText(draft.startPrice());
+
+        setTextIfChanged(nameField, draft.name());
+        setTextIfChanged(descriptionField, draft.description());
+        setTextIfChanged(startPriceField, draft.startPrice());
+
         if (draft.category() != null && categoryComboBox != null) {
-            categoryComboBox.getSelectionModel().select(Item.normalizeCategory(draft.category()));
+            String normalizedCategory = Item.normalizeCategory(draft.category());
+            if (!Objects.equals(categoryComboBox.getValue(), normalizedCategory)) {
+                categoryComboBox.getSelectionModel().select(normalizedCategory);
+            }
         }
         selectedImageFile = draft.imageFile();
         imagePreview.setImage(draft.image());
@@ -1102,6 +1176,9 @@ public class SellerController {
         try {
             if (draft.durationHours() != null && durationHoursSpinner.getValueFactory() != null) {
                 durationHoursSpinner.getValueFactory().setValue(draft.durationHours());
+            }
+            if (draft.durationMinutes() != null && durationMinutesSpinner.getValueFactory() != null) {
+                durationMinutesSpinner.getValueFactory().setValue(draft.durationMinutes());
             }
             startDatePicker.setValue(draft.startDate());
             setSpinnerValue(startHourSpinner, draft.startHour());
@@ -1206,9 +1283,11 @@ public class SellerController {
             endDatePicker.setValue(end.toLocalDate());
             setSpinnerValue(endHourSpinner, end.getHour());
             setSpinnerValue(endMinuteSpinner, end.getMinute());
-            long minutes = Math.max(60, java.time.Duration.between(start, end).toMinutes());
-            int hours = (int) Math.min(168, Math.max(1, Math.ceil(minutes / 60.0)));
+            long minutes = Math.max(1, java.time.Duration.between(start, end).toMinutes());
+            int hours = (int) Math.min(168, Math.max(0, minutes / 60));
+            int remainingMinutes = (int) Math.max(0, minutes % 60);
             setSpinnerValue(durationHoursSpinner, hours);
+            setSpinnerValue(durationMinutesSpinner, remainingMinutes);
         } finally {
             suppressScheduleSuggestion = false;
         }
@@ -1249,7 +1328,8 @@ public class SellerController {
     private void configureScheduleInputs() {
         LocalDateTime defaultStart = defaultAuctionStartTime();
 
-        durationHoursSpinner.setValueFactory(new IntegerSpinnerValueFactory(1, 168, 1));
+        durationHoursSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 168, 1));
+        durationMinutesSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 59, 0));
         startHourSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 23, defaultStart.getHour()));
         startMinuteSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 59, defaultStart.getMinute()));
         endHourSpinner.setValueFactory(new IntegerSpinnerValueFactory(0, 23, defaultStart.plusHours(1).getHour()));
@@ -1257,11 +1337,14 @@ public class SellerController {
 
         startHourSpinner.setEditable(true);
         startMinuteSpinner.setEditable(true);
+        durationHoursSpinner.setEditable(true);
+        durationMinutesSpinner.setEditable(true);
         endHourSpinner.setEditable(true);
         endMinuteSpinner.setEditable(true);
         setScheduleInputs(defaultStart, defaultStart.plusHours(1));
 
         durationHoursSpinner.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
+        durationMinutesSpinner.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
         startDatePicker.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
         startHourSpinner.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
         startMinuteSpinner.valueProperty().addListener((obs, oldValue, newValue) -> applyDurationSuggestion());
@@ -1275,13 +1358,17 @@ public class SellerController {
         Integer startHour = startHourSpinner.getValue();
         Integer startMinute = startMinuteSpinner.getValue();
         Integer durationHours = durationHoursSpinner.getValue();
-        if (startDate == null || startHour == null || startMinute == null || durationHours == null) {
+        Integer durationMinutes = durationMinutesSpinner.getValue();
+        if (startDate == null || startHour == null || startMinute == null
+                || durationHours == null || durationMinutes == null) {
             return;
         }
 
         // Ghi chu: seller co the chon truc tiep thoi diem ket thuc.
         // Spinner thoi luong chi dung de goi y nhanh endTime theo gio Viet Nam tu startTime da chon.
-        LocalDateTime suggestedEnd = startDate.atTime(startHour, startMinute).plusHours(durationHours);
+        LocalDateTime suggestedEnd = startDate.atTime(startHour, startMinute)
+                .plusHours(durationHours)
+                .plusMinutes(durationMinutes);
         endDatePicker.setValue(suggestedEnd.toLocalDate());
         endHourSpinner.getValueFactory().setValue(suggestedEnd.getHour());
         endMinuteSpinner.getValueFactory().setValue(suggestedEnd.getMinute());
@@ -1306,6 +1393,24 @@ public class SellerController {
             showError("Thoi gian khong hop le", "Gio/phut " + label + " phien dau gia khong hop le.");
             return null;
         }
+    }
+
+    private AuctionSchedule readValidatedAuctionSchedule() {
+        LocalDateTime startTime = readScheduleTime(startDatePicker, startHourSpinner, startMinuteSpinner, "bat dau");
+        LocalDateTime endTime = readScheduleTime(endDatePicker, endHourSpinner, endMinuteSpinner, "ket thuc");
+        if (startTime == null || endTime == null) {
+            return null;
+        }
+        if (!endTime.isAfter(startTime)) {
+            showError("Thoi gian khong hop le", "Thoi diem ket thuc phai sau thoi diem bat dau.");
+            return null;
+        }
+        LocalDateTime now = LocalDateTime.now(VIETNAM_ZONE);
+        if (!endTime.isAfter(now)) {
+            showError("Thoi gian khong hop le", "Thoi diem ket thuc phai nam trong tuong lai.");
+            return null;
+        }
+        return new AuctionSchedule(startTime, endTime);
     }
 
     private void setScheduleInputsDisabled(boolean disabled) {
