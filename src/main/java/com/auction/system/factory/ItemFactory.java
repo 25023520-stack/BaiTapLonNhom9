@@ -1,15 +1,22 @@
 package com.auction.system.factory;
 
-import com.auction.system.model.item.Art;
-import com.auction.system.model.item.Book;
-import com.auction.system.model.item.Collectible;
-import com.auction.system.model.item.Electronics;
-import com.auction.system.model.item.Fashion;
-import com.auction.system.model.item.Home;
-import com.auction.system.model.item.Vehicle;
 import com.auction.system.model.item.Item;
 
+import java.util.Map;
+
 public class ItemFactory {
+    private static final ItemCreator DEFAULT_CREATOR = new OtherItemCreator();
+
+    private static final Map<String, ItemCreator> CREATORS = Map.of(
+            Item.CATEGORY_ELECTRONICS, new ElectronicsItemCreator(),
+            Item.CATEGORY_ART, new ArtItemCreator(),
+            Item.CATEGORY_VEHICLE, new VehicleItemCreator(),
+            Item.CATEGORY_FASHION, new FashionItemCreator(),
+            Item.CATEGORY_BOOK, new BookItemCreator(),
+            Item.CATEGORY_HOME, new HomeItemCreator(),
+            Item.CATEGORY_COLLECTIBLE, new CollectibleItemCreator()
+    );
+
     public static Item createItem(
         String category,
         String id,
@@ -19,16 +26,7 @@ public class ItemFactory {
         String sellerId
     ) {
         String normalizedCategory = Item.normalizeCategory(category);
-        return switch (normalizedCategory) {
-            case Item.CATEGORY_ELECTRONICS -> new Electronics(id, name, description, startingPrice, sellerId);
-            case Item.CATEGORY_ART -> new Art(id, name, description, startingPrice, sellerId);
-            case Item.CATEGORY_VEHICLE -> new Vehicle(id, name, description, startingPrice, sellerId);
-            case Item.CATEGORY_FASHION -> new Fashion(id, name, description, startingPrice, sellerId);
-            case Item.CATEGORY_BOOK -> new Book(id, name, description, startingPrice, sellerId);
-            case Item.CATEGORY_HOME -> new Home(id, name, description, startingPrice, sellerId);
-            case Item.CATEGORY_COLLECTIBLE -> new Collectible(id, name, description, startingPrice, sellerId);
-            default -> new Item(id, name, description, startingPrice, sellerId, Item.DEFAULT_CATEGORY);
-        };
+        ItemCreator creator = CREATORS.getOrDefault(normalizedCategory, DEFAULT_CREATOR);
+        return creator.createItem(id, name, description, startingPrice, sellerId);
     }
-    
 }

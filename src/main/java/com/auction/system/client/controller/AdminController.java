@@ -455,8 +455,7 @@ public class AdminController {
         Thread thread = new Thread(() -> {
             try {
                 AuctionClient client = AppContext.getAuctionClient();
-                client.send(payload);
-                Payload raw = client.read();
+                Payload raw = client.request(payload);
                 ResponsePayload response = new ResponsePayload();
                 response.setType(raw.getType());
                 raw.getBody().forEach(response::put);
