@@ -522,6 +522,18 @@
     -fx-font-family: "Segoe UI";
 }
 
+.seller-validation-label {
+    -fx-background-color: #FFF1EC;
+    -fx-background-radius: 10;
+    -fx-border-color: #F0B8A6;
+    -fx-border-radius: 10;
+    -fx-padding: 8 10 8 10;
+    -fx-text-fill: #B13A18;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
 .seller-balance-card {
     -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #DDEDF7);
     -fx-background-radius: 14;
@@ -536,6 +548,29 @@
     -fx-alignment: center;
     -fx-text-alignment: center;
     -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.14), 12, 0, 0, 4);
+}
+
+.seller-dashboard-strip {
+    -fx-background-color: #F8FCFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #D6E8F2;
+    -fx-border-radius: 12;
+    -fx-padding: 10 10 10 10;
+}
+
+.seller-stat-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 10;
+    -fx-border-color: #E1EEF5;
+    -fx-border-radius: 10;
+    -fx-padding: 10 12 10 12;
+}
+
+.seller-stat-value {
+    -fx-text-fill: #005C93;
+    -fx-font-size: 20px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
 }
 
 .admin-card {
@@ -721,6 +756,233 @@
     -fx-border-color: #C7DFEF;
     -fx-border-radius: 12;
     -fx-padding: 12 12 12 12;
+}
+
+.bidder-workspace {
+    -fx-padding: 14 18 18 18;
+}
+
+.bidder-main-view,
+.auction-detail-view {
+    -fx-background-color: transparent;
+}
+
+.bidder-toolbar,
+.auction-detail-topbar {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-color: #C7DFEF;
+    -fx-border-radius: 16;
+    -fx-padding: 12 16 12 16;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.12), 16, 0, 0, 5);
+}
+
+.bidder-filter-strip {
+    -fx-background-color: #F8FCFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #D6E8F2;
+    -fx-border-radius: 12;
+    -fx-padding: 8 10 8 10;
+}
+
+.bidder-main-wallet {
+    -fx-background-color: linear-gradient(to bottom right, #FFFFFF, #EAF8F5);
+    -fx-background-radius: 16;
+    -fx-border-color: #B5D9E8;
+    -fx-border-radius: 16;
+    -fx-padding: 12 14 12 14;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.14), 16, 0, 0, 5);
+}
+
+.product-grid-shell {
+    -fx-padding: 14 0 0 0;
+}
+
+.product-grid {
+    -fx-padding: 2 6 24 2;
+    -fx-alignment: top-left;
+}
+
+.empty-catalog-label {
+    -fx-text-fill: #5E8CAA;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+    -fx-background-color: rgba(255, 255, 255, 0.82);
+    -fx-background-radius: 14;
+    -fx-border-color: #C7DFEF;
+    -fx-border-radius: 14;
+    -fx-padding: 18 24 18 24;
+}
+
+.product-card {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-color: #C7DFEF;
+    -fx-border-radius: 16;
+    -fx-padding: 12 12 13 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.12), 14, 0, 0, 4);
+}
+
+.product-card:hover {
+    -fx-border-color: #006BA6;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.20), 18, 0, 0, 6);
+    -fx-translate-y: -1;
+}
+
+.product-card-selected {
+    -fx-border-color: #004E84;
+    -fx-border-width: 2;
+}
+
+.product-card-image {
+    -fx-background-color: linear-gradient(to bottom right, #EAF3F9, #D6F3EE);
+    -fx-background-radius: 12;
+    -fx-border-color: #D6E8F2;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-padding: 8 8 8 8;
+}
+
+.product-card-placeholder,
+.image-placeholder-text {
+    -fx-text-fill: #5E8CAA;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.product-card-category {
+    -fx-background-color: #EAF3F9;
+    -fx-background-radius: 999;
+    -fx-padding: 5 9 5 9;
+    -fx-text-fill: #004E84;
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
+}
+
+.product-card-status {
+    -fx-background-radius: 999;
+    -fx-padding: 5 9 5 9;
+    -fx-font-size: 10px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
+}
+
+.status-running {
+    -fx-background-color: #EAF8F5;
+    -fx-text-fill: #087A74;
+}
+
+.status-open {
+    -fx-background-color: #EDF4FF;
+    -fx-text-fill: #245BA8;
+}
+
+.status-approved {
+    -fx-background-color: #FFF7E6;
+    -fx-text-fill: #9A5A00;
+}
+
+.status-finished,
+.status-paid,
+.status-canceled {
+    -fx-background-color: #F3F6F8;
+    -fx-text-fill: #536879;
+}
+
+.product-card-title {
+    -fx-text-fill: #123C59;
+    -fx-font-size: 16px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
+}
+
+.product-card-price {
+    -fx-text-fill: #005C93;
+    -fx-font-size: 18px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
+}
+
+.product-card-meta {
+    -fx-background-color: #F8FCFF;
+    -fx-background-radius: 10;
+    -fx-padding: 10 10 10 10;
+}
+
+.product-card-meta-label {
+    -fx-text-fill: #5E8CAA;
+    -fx-font-size: 11px;
+    -fx-font-family: "Segoe UI";
+    -fx-min-width: 62;
+}
+
+.product-card-meta-value {
+    -fx-text-fill: #123C59;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-detail-content {
+    -fx-padding: 18 0 24 0;
+}
+
+.auction-image-panel,
+.auction-info-panel,
+.auction-action-panel {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 16;
+    -fx-border-color: #C7DFEF;
+    -fx-border-radius: 16;
+    -fx-padding: 18 20 18 20;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.12), 16, 0, 0, 5);
+}
+
+.auction-action-panel {
+    -fx-border-color: #B5D9E8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 78, 132, 0.17), 18, 0, 0, 6);
+}
+
+.auction-detail-image-frame {
+    -fx-background-color: linear-gradient(to bottom right, #EAF3F9, #D6F3EE);
+    -fx-background-radius: 16;
+    -fx-border-color: #D6E8F2;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-padding: 10 10 10 10;
+}
+
+.auction-detail-title {
+    -fx-text-fill: #123C59;
+    -fx-font-size: 24px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
+}
+
+.auction-readonly-wallet {
+    -fx-background-color: #F8FCFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #D6E8F2;
+    -fx-border-radius: 12;
+    -fx-padding: 12 12 12 12;
+}
+
+.auction-detail-balance-value {
+    -fx-text-fill: #005C93;
+    -fx-font-size: 18px;
+    -fx-font-weight: 900;
+    -fx-font-family: "Segoe UI";
+}
+
+.image-preview-dialog {
+    -fx-background-color: #F8FCFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #C7DFEF;
+    -fx-border-radius: 12;
+    -fx-padding: 14 14 14 14;
 }
 
 /* ============================================================
