@@ -261,6 +261,33 @@ public class ItemDAO extends BaseDAO {
         }
     }
 
+    public boolean relistAuction(
+            Connection conn,
+            String itemId,
+            AuctionStatus status,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    ) throws SQLException {
+        String sql = """
+                UPDATE items
+                SET status = ?,
+                    current_price = start_price,
+                    highest_bidder_id = NULL,
+                    start_time = ?,
+                    end_time = ?,
+                    auction_approved = TRUE
+                WHERE id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, status.name());
+            pstm.setTimestamp(2, toTimestamp(startTime));
+            pstm.setTimestamp(3, toTimestamp(endTime));
+            pstm.setString(4, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
     public boolean clearAuctionRequest(String itemId) {
         String sql = """
         UPDATE items

@@ -82,6 +82,32 @@ public class AuctionDAO extends BaseDAO {
         }
     }
 
+    public boolean relistAuction(
+            Connection conn,
+            String itemId,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            AuctionStatus status
+    ) throws SQLException {
+        String sql = """
+                UPDATE auctions
+                SET start_time = ?,
+                    end_time = ?,
+                    status = ?,
+                    winner_id = NULL,
+                    final_price = 0
+                WHERE item_id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setTimestamp(1, Timestamp.valueOf(startTime));
+            pstm.setTimestamp(2, Timestamp.valueOf(endTime));
+            pstm.setString(3, status.name());
+            pstm.setString(4, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
     public boolean updateStatus(
             Connection conn,
             String itemId,

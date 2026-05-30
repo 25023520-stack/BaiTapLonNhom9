@@ -268,6 +268,92 @@ public class AuctionManager {
 
     }
 
+    public void relistAuction(String itemId, Seller seller, LocalDateTime startTime, LocalDateTime endTime) {
+        validateSeller(seller);
+        if (itemId == null || itemId.isBlank()) {
+            throw new IllegalArgumentException("Item id must not be empty");
+        }
+        if (startTime == null || endTime == null) {
+            throw new IllegalArgumentException("Start time and end time must not be null");
+        }
+        if (!endTime.isAfter(startTime)) {
+            throw new IllegalArgumentException("Auction end time must be after start time");
+        }
+        if (!endTime.isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Auction end time must be in the future");
+        }
+
+        ReentrantLock lock = lockForItem(itemId);
+        lock.lock();
+
+        try {
+            Item item = requireItem(itemId);
+            if (!Objects.equals(seller.getId(), item.getSellerId())) {
+                throw new IllegalArgumentException("Seller can only relist their own item");
+            }
+            if (item.getStatus() != AuctionStatus.CANCELED) {
+                throw new IllegalStateException("Only CANCELED auctions can be relisted");
+            }
+
+            String auctionId = "AUC-" + itemId;
+            AuctionStatus initialStatus = startTime.isAfter(LocalDateTime.now())
+                    ? AuctionStatus.OPEN
+                    : AuctionStatus.RUNNING;
+
+            try (Connection conn = Database.getInstance().getConnection()) {
+                conn.setAutoCommit(false);
+
+                try {
+                    boolean itemUpdated = itemDAO.relistAuction(
+                            conn,
+                            itemId,
+                            initialStatus,
+                            startTime,
+                            endTime
+                    );
+                    if (!itemUpdated) {
+                        throw new SQLException("Cannot relist item");
+                    }
+
+                    boolean auctionSaved = auctionDAO.existsByItemId(conn, itemId)
+                            ? auctionDAO.relistAuction(conn, itemId, startTime, endTime, initialStatus)
+                            : auctionDAO.insertAuction(conn, auctionId, itemId, startTime, endTime, initialStatus);
+                    if (!auctionSaved) {
+                        throw new SQLException("Cannot save relisted auction");
+                    }
+
+                    conn.commit();
+
+                    item.setStatus(initialStatus);
+                    item.setAuctionApproved(true);
+                    item.setStartTime(startTime);
+                    item.setEndTime(endTime);
+                    item.setCurrentPrice(item.getStartPrice());
+                    item.setHighestBidderId(null);
+                    item.setHighestBidderUsername(null);
+                    autoBidDAO.deactivateByItemId(itemId);
+
+                    Auction auction = auctionsById.get(itemId);
+                    if (auction == null) {
+                        auction = new Auction(auctionId, item);
+                        auctionsById.put(itemId, auction);
+                    }
+                    auction.setStatus(initialStatus);
+
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw new IllegalStateException("Cannot relist auction: " + e.getMessage(), e);
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException e) {
+                throw new IllegalStateException("Database error when relisting auction", e);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public void requestAuctionApproval(String itemId, Seller seller, LocalDateTime startTime, LocalDateTime endTime) {
         validateSeller(seller);
         if (itemId == null || itemId.isBlank()) {

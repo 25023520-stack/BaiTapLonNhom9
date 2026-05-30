@@ -7,6 +7,7 @@ import com.auction.system.common.payload.AddItemPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.common.payload.UserProfilePayload;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Seller;
@@ -50,6 +51,7 @@ import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -64,10 +66,12 @@ public class SellerController {
     private static final Duration POLL_INTERVAL = Duration.seconds(3);
     private static final Gson GSON = GsonProvider.get();
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter PROFILE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @FXML private ListView<Item> sellerItemList;
     @FXML private Node sellerCatalogView;
     @FXML private Node sellerDetailView;
+    @FXML private Node sellerProfileView;
     @FXML private FlowPane sellerProductGridPane;
     @FXML private Label emptySellerCatalogLabel;
     @FXML private TextField sellerSearchField;
@@ -86,6 +90,7 @@ public class SellerController {
     @FXML private Button removeButton;
     @FXML private Button refreshButton;
     @FXML private Button startAuctionButton;
+    @FXML private Button relistButton;
     @FXML private Button newItemButton;
     @FXML private Button chooseImageButton;
     @FXML private ImageView imagePreview;
@@ -107,6 +112,17 @@ public class SellerController {
     @FXML private Label currentBidLabel;
     @FXML private Label highestBidderLabel;
     @FXML private Label timeRemainingLabel;
+    @FXML private Label sellerProfileNameLabel;
+    @FXML private Label sellerProfileUsernameLabel;
+    @FXML private Label sellerProfileEmailLabel;
+    @FXML private Label sellerProfileApprovalLabel;
+    @FXML private Label sellerProfileBalanceLabel;
+    @FXML private Label sellerProfileRevenueLabel;
+    @FXML private Label sellerProfileSoldItemsLabel;
+    @FXML private Label sellerProfileFinishedItemsLabel;
+    @FXML private Label sellerProfileCanceledItemsLabel;
+    @FXML private Label sellerProfileSuccessRateLabel;
+    @FXML private TextArea sellerProfileResultArea;
 
     private final ObservableList<Item> sellersItem = FXCollections.observableArrayList();
     private final Map<String, Image> sellerImageCache = new HashMap<>();
@@ -175,6 +191,7 @@ public class SellerController {
         updateButton.setDisable(true);
         removeButton.setDisable(true);
         startAuctionButton.setDisable(true);
+        relistButton.setDisable(true);
         addButton.setDisable(false);
         configureCategoryComboBox();
         configureSellerCatalogFilters();
@@ -221,11 +238,6 @@ public class SellerController {
         }
         if (price <= 0) { showError("Lỗi", "Giá khởi điểm phải > 0"); return; }
 
-        AuctionSchedule schedule = readValidatedAuctionSchedule();
-        if (schedule == null) {
-            return;
-        }
-
         String newId = "ITEM-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         Payload req;
@@ -247,7 +259,13 @@ public class SellerController {
 
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
-                requestAuctionApprovalAfterCreate(newId, name, schedule);
+                Item createdItem = toItem(resp.getBody().get("item"));
+                if (createdItem != null) {
+                    replaceOrAddSellerItem(createdItem);
+                }
+                showInfo("Da them san pham. Chon san pham va bam 'Gui duyet phien' khi ban muon mo dau gia.");
+                clearForm();
+                showSellerCatalog();
             } else {
                 showError("Không thêm được", resp.getMessage());
             }
@@ -299,8 +317,15 @@ public class SellerController {
             return;
         }
 
+        boolean wasCanceled = selected.getStatus() == AuctionStatus.CANCELED;
         runAsync(req, resp -> {
             if (resp.isSuccess()) {
+                if (wasCanceled) {
+                    showInfo("Da cap nhat san pham. Vui long gui duyet phien lai truoc khi dau gia.");
+                    clearForm();
+                    showSellerCatalog();
+                    return;
+                }
                 showInfo("Đã cập nhật: " + name);
                 clearForm();
                 showSellerCatalog();
@@ -387,9 +412,24 @@ public class SellerController {
         });
     }
 
-    private void requestAuctionApprovalAfterCreate(String itemId, String itemName, AuctionSchedule schedule) {
-        Payload req = new Payload(PayloadType.START_AUCTION);
-        req.put("id", itemId);
+    @FXML
+    private void setRelistAuctionButton() {
+        Item selected = sellerItemList.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
+        if (selected.getStatus() != AuctionStatus.CANCELED) {
+            showError("Khong dang lai duoc", "Chi phien da huy moi co the dang lai.");
+            return;
+        }
+
+        AuctionSchedule schedule = readValidatedAuctionSchedule();
+        if (schedule == null) {
+            return;
+        }
+
+        Payload req = new Payload(PayloadType.RELIST_AUCTION);
+        req.put("id", selected.getId());
         req.put("startTime", schedule.startTime().toString());
         req.put("endTime", schedule.endTime().toString());
 
@@ -398,13 +438,14 @@ public class SellerController {
                 Item updatedItem = toItem(resp.getBody().get("item"));
                 if (updatedItem != null) {
                     replaceOrAddSellerItem(updatedItem);
+                    sellerItemList.getSelectionModel().select(updatedItem);
+                    setChangeButton(updatedItem);
                 }
-                showInfo("Đã thêm và gửi yêu cầu mở phiên cho admin: " + itemName);
+                showInfo("Da dang lai phien dau gia: " + selected.getName());
+                showSellerCatalog();
             } else {
-                showError("Đã thêm sản phẩm nhưng chưa gửi được lịch đấu giá", resp.getMessage());
+                showError("Khong dang lai duoc", resp.getMessage());
             }
-            clearForm();
-            showSellerCatalog();
         });
     }
 
@@ -435,6 +476,7 @@ public class SellerController {
 
         setViewVisible(sellerCatalogView, true);
         setViewVisible(sellerDetailView, false);
+        setViewVisible(sellerProfileView, false);
         renderSellerCards();
 
         resumeAutoRefresh();
@@ -453,6 +495,145 @@ public class SellerController {
 
         setViewVisible(sellerCatalogView, false);
         setViewVisible(sellerDetailView, true);
+        setViewVisible(sellerProfileView, false);
+    }
+
+    @FXML
+    private void showSellerProfile() {
+        editorModeActive = false;
+        pauseAutoRefresh();
+
+        setViewVisible(sellerCatalogView, false);
+        setViewVisible(sellerDetailView, false);
+        setViewVisible(sellerProfileView, true);
+        loadSellerProfile();
+    }
+
+    private void loadSellerProfile() {
+        Payload req = new Payload(PayloadType.GET_USER_PROFILE);
+        runAsync(req, resp -> {
+            if (!resp.isSuccess()) {
+                showError("Khong tai duoc ho so", resp.getMessage());
+                return;
+            }
+
+            UserProfilePayload profile = toProfile(resp.getBody().get("profile"));
+            if (profile == null) {
+                showError("Khong tai duoc ho so", "Du lieu ho so khong hop le.");
+                return;
+            }
+
+            renderSellerProfile(profile);
+        });
+    }
+
+    private UserProfilePayload toProfile(Object rawProfile) {
+        if (rawProfile == null) {
+            return null;
+        }
+        if (rawProfile instanceof UserProfilePayload profile) {
+            return profile;
+        }
+        try {
+            return GSON.fromJson(GSON.toJson(rawProfile), UserProfilePayload.class);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private void renderSellerProfile(UserProfilePayload profile) {
+        setLabelText(sellerProfileNameLabel, emptyToDash(profile.getFullName()));
+        setLabelText(sellerProfileUsernameLabel, "@" + emptyToDash(profile.getUsername()));
+        setLabelText(sellerProfileEmailLabel, emptyToDash(profile.getEmail()));
+        setLabelText(sellerProfileApprovalLabel, profile.isApproved()
+                ? "Tai khoan da duoc duyet"
+                : "Tai khoan dang cho admin duyet");
+        setLabelText(sellerProfileBalanceLabel, formatVnd(profile.getBalance()));
+
+        if (currentSeller != null && currentSeller.getId().equals(profile.getUserId())) {
+            currentSeller.setBalance(profile.getBalance());
+            currentSeller.setApproved(profile.isApproved());
+            updateSellerBalanceLabel();
+            updateSellerApprovalState();
+        }
+
+        UserProfilePayload.SellerStats stats = profile.getSellerStats();
+        setLabelText(sellerProfileRevenueLabel, formatVnd(stats == null ? 0 : stats.getRevenue()));
+        setLabelText(sellerProfileSoldItemsLabel, String.valueOf(stats == null ? 0 : stats.getSoldItems()));
+        setLabelText(sellerProfileFinishedItemsLabel,
+                String.valueOf(stats == null ? 0 : stats.getFinishedUnpaidItems()));
+        setLabelText(sellerProfileCanceledItemsLabel, String.valueOf(stats == null ? 0 : stats.getCanceledItems()));
+        setLabelText(sellerProfileSuccessRateLabel,
+                stats == null ? "0%" : formatPercent(stats.getPaymentSuccessRate()));
+
+        if (sellerProfileResultArea != null) {
+            sellerProfileResultArea.setText(formatSellerResults(profile.getSellerResults()));
+        }
+    }
+
+    private String formatSellerResults(List<UserProfilePayload.SellerResultEntry> results) {
+        if (results == null || results.isEmpty()) {
+            return "Chua co item nao co ket qua ban.";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (UserProfilePayload.SellerResultEntry entry : results) {
+            builder.append(formatProfileDate(entry.getEndTime()))
+                    .append(" | ")
+                    .append(emptyToDash(entry.getItemName()))
+                    .append(" | ")
+                    .append(formatVnd(entry.getFinalPrice()))
+                    .append(" | Winner: @")
+                    .append(emptyToDash(entry.getWinnerUsername()))
+                    .append(" | ")
+                    .append(profileStatusText(entry.getStatus()))
+                    .append(" | ")
+                    .append(sellerResultHint(entry.getStatus()))
+                    .append(System.lineSeparator());
+        }
+        return builder.toString();
+    }
+
+    private String sellerResultHint(String status) {
+        return switch (status == null ? "" : status) {
+            case "PAID" -> "Hoan tat";
+            case "FINISHED" -> "Cho bidder thanh toan";
+            case "CANCELED" -> "Co the dang lai neu can";
+            default -> "-";
+        };
+    }
+
+    private String profileStatusText(String status) {
+        return switch (status == null ? "" : status) {
+            case "RUNNING" -> "Dang dau gia";
+            case "FINISHED" -> "Da ket thuc";
+            case "PAID" -> "Da thanh toan";
+            case "CANCELED" -> "Da huy";
+            case "OPEN" -> "Chua mo";
+            default -> emptyToDash(status);
+        };
+    }
+
+    private String formatProfileDate(LocalDateTime value) {
+        return value == null ? "-" : PROFILE_DATE_FORMATTER.format(value);
+    }
+
+    private String formatVnd(double value) {
+        return String.format("%,.0f VND", value);
+    }
+
+    private String formatPercent(double value) {
+        return String.format("%.0f%%", value * 100);
+    }
+
+    private void setLabelText(Label label, String value) {
+        if (label != null) {
+            label.setText(value);
+        }
+    }
+
+    private String emptyToDash(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 
     private void pauseAutoRefresh() {
@@ -757,6 +938,7 @@ public class SellerController {
         boolean hasSelection = picked != null;
         boolean pendingApproval = hasPendingAuctionApproval(picked);
         boolean approvedWaitingStart = hasApprovedScheduledAuction(picked);
+        boolean canRelist = approved && hasSelection && picked.getStatus() == AuctionStatus.CANCELED;
 
         boolean canEdit = hasSelection
                 && picked.getStatus() != AuctionStatus.RUNNING
@@ -772,13 +954,12 @@ public class SellerController {
         if (categoryComboBox != null) {
             categoryComboBox.setDisable(!canEditProductFields);
         }
-        boolean canCreateNewSchedule = approved && !hasSelection;
         boolean canEditExistingSchedule = approved
                 && hasSelection
                 && picked.getStatus() == AuctionStatus.OPEN
                 && !pendingApproval
                 && !approvedWaitingStart;
-        boolean canEditSchedule = canCreateNewSchedule || canEditExistingSchedule;
+        boolean canEditSchedule = canEditExistingSchedule || canRelist;
         durationHoursSpinner.setDisable(!canEditSchedule);
         durationMinutesSpinner.setDisable(!canEditSchedule);
         setScheduleInputsDisabled(!canEditSchedule);
@@ -788,13 +969,13 @@ public class SellerController {
 
         boolean canRemove = hasSelection
                 && picked.getStatus() != AuctionStatus.RUNNING
-                && picked.getStatus() != AuctionStatus.FINISHED
                 && !pendingApproval
                 && !approvedWaitingStart;
 
         updateButton.setDisable(!approved || !canEdit);
         removeButton.setDisable(!approved || !canRemove);
         startAuctionButton.setDisable(!canEditExistingSchedule);
+        relistButton.setDisable(!canRelist);
     }
 
     private void updateAuctionApprovalLabel(Item item) {
@@ -1254,6 +1435,12 @@ public class SellerController {
     private void populateSchedule(Item item) {
         if (item == null || item.getStartTime() == null || item.getEndTime() == null) {
             resetScheduleDefaults();
+            return;
+        }
+        if (item.getStatus() == AuctionStatus.CANCELED) {
+            LocalDateTime start = defaultAuctionStartTime();
+            long minutes = Math.max(1, java.time.Duration.between(item.getStartTime(), item.getEndTime()).toMinutes());
+            setScheduleInputs(start, start.plusMinutes(minutes));
             return;
         }
         setScheduleInputs(item.getStartTime(), item.getEndTime());

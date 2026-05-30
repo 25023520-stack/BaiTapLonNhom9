@@ -37,6 +37,7 @@
                                 <Label styleClass="seller-status-text" text="Seller Workspace" />
                             </children>
                         </HBox>
+                        <Button mnemonicParsing="false" onAction="#showSellerProfile" styleClass="secondary-button" text="Hồ sơ" />
                         <Button mnemonicParsing="false" onAction="#handleLogout" styleClass="logout-button" text="Đăng xuất" />
                     </children>
                 </HBox>
@@ -161,6 +162,94 @@
                                 <ListView fx:id="sellerItemList" managed="false" visible="false" />
                             </children>
                         </StackPane>
+                    </center>
+                </BorderPane>
+
+                <BorderPane fx:id="sellerProfileView" managed="false" styleClass="auction-detail-view" visible="false">
+                    <top>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="auction-detail-topbar">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#showSellerCatalog" styleClass="secondary-button" text="← Quay lại" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="seller-page-title" text="Hồ sơ seller" />
+                                        <Label styleClass="seller-page-subtitle" text="Thông tin tài khoản, doanh thu và lịch sử kết quả bán." />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </top>
+
+                    <center>
+                        <ScrollPane fitToWidth="true" styleClass="auction-scroll-pane">
+                            <content>
+                                <VBox spacing="14.0" styleClass="profile-content">
+                                    <children>
+                                        <HBox spacing="14.0">
+                                            <children>
+                                                <VBox spacing="5.0" styleClass="auction-info-panel" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Tài khoản" />
+                                                        <Label fx:id="sellerProfileNameLabel" styleClass="bidder-item-name" text="-" wrapText="true" />
+                                                        <Label fx:id="sellerProfileUsernameLabel" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                        <Label fx:id="sellerProfileEmailLabel" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                        <Label fx:id="sellerProfileApprovalLabel" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="260.0" spacing="5.0" styleClass="bidder-main-wallet">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Số dư" />
+                                                        <Label fx:id="sellerProfileBalanceLabel" styleClass="bidder-price-value" text="-" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+
+                                        <HBox spacing="12.0" styleClass="profile-metric-strip">
+                                            <children>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Doanh thu" />
+                                                        <Label fx:id="sellerProfileRevenueLabel" styleClass="seller-stat-value" text="0 VND" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Đã bán" />
+                                                        <Label fx:id="sellerProfileSoldItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Chờ thanh toán" />
+                                                        <Label fx:id="sellerProfileFinishedItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Bị hủy" />
+                                                        <Label fx:id="sellerProfileCanceledItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Tỷ lệ thanh toán" />
+                                                        <Label fx:id="sellerProfileSuccessRateLabel" styleClass="seller-stat-value" text="0%" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+
+                                        <VBox spacing="8.0" styleClass="auction-info-panel">
+                                            <children>
+                                                <Label styleClass="bidder-panel-title" text="Lịch sử kết quả bán" />
+                                                <TextArea fx:id="sellerProfileResultArea" editable="false" prefRowCount="13" styleClass="auction-textarea" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
                     </center>
                 </BorderPane>
 
@@ -354,6 +443,9 @@
                                                 <Button fx:id="startAuctionButton" maxWidth="1.7976931348623157E308"
                                                         mnemonicParsing="false" onAction="#setStartAuctionButton"
                                                         styleClass="secondary-button" text="Gửi duyệt phiên" />
+                                                <Button fx:id="relistButton" maxWidth="1.7976931348623157E308"
+                                                        mnemonicParsing="false" onAction="#setRelistAuctionButton"
+                                                        styleClass="secondary-button" text="Đăng lại phiên" />
                                                 <Button fx:id="removeButton" maxWidth="1.7976931348623157E308"
                                                         mnemonicParsing="false" onAction="#setRemoveButton"
                                                         styleClass="danger-button" text="Xóa sản phẩm" />

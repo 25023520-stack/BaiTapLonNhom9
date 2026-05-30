@@ -37,6 +37,7 @@
                                 <Label styleClass="bidder-status-text" text="Bidder Workspace" />
                             </children>
                         </HBox>
+                        <Button mnemonicParsing="false" onAction="#showBidderProfile" styleClass="secondary-button" text="Hồ sơ" />
                         <Button mnemonicParsing="false" onAction="#handleLogout" styleClass="logout-button" text="Đăng xuất" />
                     </children>
                 </HBox>
@@ -139,6 +140,110 @@
                                        text="Không có sản phẩm phù hợp." visible="false" />
                             </children>
                         </StackPane>
+                    </center>
+                </BorderPane>
+
+                <BorderPane fx:id="profileView" managed="false" styleClass="auction-detail-view" visible="false">
+                    <top>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="auction-detail-topbar">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#showMainCatalog" styleClass="secondary-button" text="← Quay lại" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="bidder-page-title" text="Hồ sơ bidder" />
+                                        <Label styleClass="bidder-page-subtitle" text="Thông tin tài khoản, item thắng và lịch sử đặt giá." />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </top>
+
+                    <center>
+                        <ScrollPane fitToWidth="true" styleClass="auction-scroll-pane">
+                            <content>
+                                <VBox spacing="14.0" styleClass="profile-content">
+                                    <children>
+                                        <HBox spacing="14.0">
+                                            <children>
+                                                <VBox spacing="5.0" styleClass="auction-info-panel" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Tài khoản" />
+                                                        <Label fx:id="profileNameLabel" styleClass="bidder-item-name" text="-" wrapText="true" />
+                                                        <Label fx:id="profileUsernameLabel" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                        <Label fx:id="profileEmailLabel" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="240.0" spacing="5.0" styleClass="bidder-main-wallet">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Số dư" />
+                                                        <Label fx:id="profileBalanceLabel" styleClass="bidder-price-value" text="-" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+
+                                        <HBox spacing="12.0" styleClass="profile-metric-strip">
+                                            <children>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Tổng lượt bid" />
+                                                        <Label fx:id="profileTotalBidsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Item đã tham gia" />
+                                                        <Label fx:id="profileParticipatedItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Đang dẫn giá" />
+                                                        <Label fx:id="profileLeadingItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Chờ thanh toán" />
+                                                        <Label fx:id="profilePendingWinsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Đã mua" />
+                                                        <Label fx:id="profilePaidItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+
+                                        <VBox spacing="5.0" styleClass="auction-info-panel">
+                                            <children>
+                                                <Label styleClass="bidder-panel-title" text="Tổng tiền đã thanh toán" />
+                                                <Label fx:id="profileTotalPaidLabel" styleClass="bidder-price-value" text="0 VND" wrapText="true" />
+                                            </children>
+                                        </VBox>
+
+                                        <HBox spacing="14.0">
+                                            <children>
+                                                <VBox spacing="8.0" styleClass="auction-info-panel" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-panel-title" text="Item thắng" />
+                                                        <TextArea fx:id="profileWonItemsArea" editable="false" prefRowCount="9" styleClass="auction-textarea" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="8.0" styleClass="auction-info-panel" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-panel-title" text="Lịch sử bid" />
+                                                        <TextArea fx:id="profileBidHistoryArea" editable="false" prefRowCount="9" styleClass="auction-textarea" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
                     </center>
                 </BorderPane>
 

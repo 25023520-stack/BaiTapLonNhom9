@@ -8,6 +8,7 @@ import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.server.controller.AdminController;
 import com.auction.system.server.controller.AuctionController;
 import com.auction.system.server.controller.AuthController;
+import com.auction.system.server.controller.ProfileController;
 import com.auction.system.server.manager.AuctionManager;
 import com.auction.system.model.user.User;
 import com.auction.system.model.user.Bidder;
@@ -34,6 +35,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
     private final AuctionController auctionController;
     private final AdminController adminController;
     private final AuthController authController;
+    private final ProfileController profileController;
     private final PrintWriter writer;
     private final BufferedReader reader;
 
@@ -49,6 +51,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
         this.auctionController = new AuctionController();
         this.adminController = new AdminController();
         this.authController = new AuthController();
+        this.profileController = new ProfileController();
         this.writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
         this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         this.auctionServer.addObserver(this);
@@ -106,10 +109,12 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
                 case UPDATE_ITEM -> handleItemMutation(payload, "ITEM_UPDATED");
                 case REMOVE_ITEM -> send(auctionController.removeItem(payload, authenticatedUser));
                 case START_AUCTION -> handleItemMutation(payload, "AUCTION_APPROVAL_REQUESTED");
+                case RELIST_AUCTION -> handleItemMutation(payload, "AUCTION_RELISTED");
                 case BID -> handleBid(payload);
                 case AUTO_BID_SET -> handleAutoBidSet(payload);
                 case AUTO_BID_CANCEL -> handleAutoBidCancel(payload);
                 case ADMIN_DASHBOARD -> send(adminController.dashboard(authenticatedUser));
+                case GET_USER_PROFILE -> send(profileController.profile(authenticatedUser));
                 case REQUEST_DEPOSIT -> send(adminController.requestDeposit(payload, authenticatedUser));
                 case APPROVE_DEPOSIT -> {
                     ResponsePayload depositResp = adminController.approveDeposit(payload, authenticatedUser);
@@ -183,6 +188,7 @@ public class ClientHandler implements Runnable, Closeable, AuctionObserver {
             case ADD_ITEM -> auctionController.addItem(payload, authenticatedUser);
             case UPDATE_ITEM -> auctionController.updateItem(payload, authenticatedUser);
             case START_AUCTION -> auctionController.startAuction(payload, authenticatedUser);
+            case RELIST_AUCTION -> auctionController.relistAuction(payload, authenticatedUser);
             default -> ResponsePayload.error("Unsupported item mutation: " + payload.getType());
         };
 
