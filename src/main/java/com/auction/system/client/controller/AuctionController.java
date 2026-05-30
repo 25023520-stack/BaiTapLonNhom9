@@ -63,12 +63,12 @@ public class AuctionController {
     private static final double PRODUCT_CARD_HORIZONTAL_INSET = 24;
     private static final double PRODUCT_IMAGE_ASPECT_RATIO = 0.62;
     private static final double DETAIL_COLUMN_GAP = 18;
-    private static final double DETAIL_IMAGE_PANEL_MIN_WIDTH = 270;
-    private static final double DETAIL_IMAGE_PANEL_MAX_WIDTH = 380;
-    private static final double DETAIL_INFO_MIN_WIDTH = 380;
-    private static final double DETAIL_INFO_MAX_WIDTH = 720;
-    private static final double DETAIL_ACTION_MIN_WIDTH = 300;
-    private static final double DETAIL_ACTION_MAX_WIDTH = 340;
+    private static final double DETAIL_IMAGE_PANEL_MIN_WIDTH = 240;
+    private static final double DETAIL_IMAGE_PANEL_MAX_WIDTH = 320;
+    private static final double DETAIL_INFO_MIN_WIDTH = 320;
+    private static final double DETAIL_INFO_MAX_WIDTH = 600;
+    private static final double DETAIL_ACTION_MIN_WIDTH = 280;
+    private static final double DETAIL_ACTION_MAX_WIDTH = 330;
     private static final double DETAIL_IMAGE_ASPECT_RATIO = 0.84;
     private static final DecimalFormat VND_FORMAT =
             new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(new Locale("vi", "VN")));
@@ -129,6 +129,9 @@ public class AuctionController {
 
     @FXML
     private TextArea bidHistoryArea;
+
+    @FXML
+    private ScrollPane auctionDetailScrollPane;
 
     @FXML
     private ImageView itemImageView;
@@ -300,8 +303,57 @@ public class AuctionController {
         if (auctionDetailContent == null) {
             return;
         }
+        configureDetailTextWrapping();
+        auctionDetailContent.setFillHeight(false);
         auctionDetailContent.widthProperty().addListener((obs, oldWidth, newWidth) -> resizeAuctionDetailColumns());
+        if (auctionDetailScrollPane != null) {
+            auctionDetailScrollPane.setFitToWidth(true);
+            auctionDetailScrollPane.viewportBoundsProperty()
+                    .addListener((obs, oldBounds, newBounds) -> resizeAuctionDetailColumns());
+            auctionDetailScrollPane.widthProperty().addListener((obs, oldWidth, newWidth) -> resizeAuctionDetailColumns());
+        }
+        setDetailColumnGrowNever(auctionImagePanel);
+        setDetailColumnGrowNever(auctionInfoColumn);
+        setDetailColumnGrowNever(auctionActionPanel);
         Platform.runLater(this::resizeAuctionDetailColumns);
+    }
+
+    private void setDetailColumnGrowNever(Node column) {
+        if (column != null) {
+            HBox.setHgrow(column, Priority.NEVER);
+        }
+    }
+
+    private void configureDetailTextWrapping() {
+        configureDetailLabel(nameValue);
+        configureDetailLabel(priceValue);
+        configureDetailLabel(statusValue);
+        configureDetailLabel(categoryValue);
+        configureDetailLabel(sellerValue);
+        configureDetailLabel(leaderValue);
+        configureDetailLabel(scheduleValue);
+        configureDetailLabel(countdownValue);
+
+        setDetailValueGrow(categoryValue);
+        setDetailValueGrow(sellerValue);
+        setDetailValueGrow(leaderValue);
+        setDetailValueGrow(scheduleValue);
+        setDetailValueGrow(countdownValue);
+    }
+
+    private void configureDetailLabel(Label label) {
+        if (label == null) {
+            return;
+        }
+        label.setMinWidth(0);
+        label.setMaxWidth(Double.MAX_VALUE);
+        label.setWrapText(true);
+    }
+
+    private void setDetailValueGrow(Label label) {
+        if (label != null) {
+            HBox.setHgrow(label, Priority.ALWAYS);
+        }
     }
 
     @FXML
@@ -822,24 +874,37 @@ public class AuctionController {
             return;
         }
 
-        double contentWidth = auctionDetailContent.getWidth();
-        if (contentWidth <= 0) {
-            contentWidth = auctionDetailContent.getBoundsInParent().getWidth();
+        double viewportWidth = auctionDetailViewportWidth();
+        if (viewportWidth <= 0) {
+            viewportWidth = auctionDetailContent.getWidth();
         }
-        if (contentWidth <= 0) {
+        if (viewportWidth <= 0) {
+            viewportWidth = auctionDetailContent.getBoundsInParent().getWidth();
+        }
+        if (viewportWidth <= 0) {
             return;
         }
 
-        double availableWidth = Math.max(0, contentWidth - DETAIL_COLUMN_GAP * 2);
+        double availableWidth = Math.max(0, viewportWidth - DETAIL_COLUMN_GAP * 2);
         double actionWidth = clamp(availableWidth * 0.24, DETAIL_ACTION_MIN_WIDTH, DETAIL_ACTION_MAX_WIDTH);
-        double imagePanelWidth = clamp(availableWidth * 0.27, DETAIL_IMAGE_PANEL_MIN_WIDTH,
+        double imagePanelWidth = clamp(availableWidth * 0.25, DETAIL_IMAGE_PANEL_MIN_WIDTH,
                 DETAIL_IMAGE_PANEL_MAX_WIDTH);
         double infoWidth = clamp(availableWidth - imagePanelWidth - actionWidth, DETAIL_INFO_MIN_WIDTH,
                 DETAIL_INFO_MAX_WIDTH);
-        double imageFrameWidth = Math.max(220, imagePanelWidth - 40);
-        double imageFrameHeight = clamp(imageFrameWidth * DETAIL_IMAGE_ASPECT_RATIO, 230, 320);
+        DetailColumnWidths columnWidths = fitDetailColumnsToViewport(viewportWidth, imagePanelWidth, infoWidth,
+                actionWidth);
+        imagePanelWidth = columnWidths.imagePanelWidth();
+        infoWidth = columnWidths.infoWidth();
+        actionWidth = columnWidths.actionWidth();
+
+        double detailContentWidth = imagePanelWidth + infoWidth + actionWidth + DETAIL_COLUMN_GAP * 2;
+        double imageFrameWidth = Math.max(200, imagePanelWidth - 40);
+        double imageFrameHeight = clamp(imageFrameWidth * DETAIL_IMAGE_ASPECT_RATIO, 210, 300);
 
         auctionDetailContent.setAlignment(Pos.TOP_CENTER);
+        auctionDetailContent.setMinWidth(Math.min(detailContentWidth, viewportWidth));
+        auctionDetailContent.setPrefWidth(Math.max(detailContentWidth, viewportWidth));
+        auctionDetailContent.setMaxWidth(Double.MAX_VALUE);
         setFixedWidth(auctionImagePanel, imagePanelWidth);
         setFixedWidth(auctionInfoColumn, infoWidth);
         setFixedWidth(auctionActionPanel, actionWidth);
@@ -858,6 +923,41 @@ public class AuctionController {
         }
     }
 
+    private double auctionDetailViewportWidth() {
+        if (auctionDetailScrollPane == null) {
+            return 0;
+        }
+
+        double viewportWidth = auctionDetailScrollPane.getViewportBounds().getWidth();
+        if (viewportWidth > 0) {
+            return viewportWidth;
+        }
+
+        return innerWidth(auctionDetailScrollPane.getWidth(), auctionDetailScrollPane);
+    }
+
+    private DetailColumnWidths fitDetailColumnsToViewport(double viewportWidth, double imagePanelWidth,
+                                                          double infoWidth, double actionWidth) {
+        double totalWidth = imagePanelWidth + infoWidth + actionWidth + DETAIL_COLUMN_GAP * 2;
+        double overflow = totalWidth - viewportWidth;
+        if (overflow <= 0) {
+            return new DetailColumnWidths(imagePanelWidth, infoWidth, actionWidth);
+        }
+
+        double infoShrink = Math.min(overflow, infoWidth - DETAIL_INFO_MIN_WIDTH);
+        infoWidth -= infoShrink;
+        overflow -= infoShrink;
+
+        double imageShrink = Math.min(overflow, imagePanelWidth - DETAIL_IMAGE_PANEL_MIN_WIDTH);
+        imagePanelWidth -= imageShrink;
+        overflow -= imageShrink;
+
+        double actionShrink = Math.min(overflow, actionWidth - DETAIL_ACTION_MIN_WIDTH);
+        actionWidth -= actionShrink;
+
+        return new DetailColumnWidths(imagePanelWidth, infoWidth, actionWidth);
+    }
+
     private void setFixedWidth(Region region, double width) {
         if (region == null) {
             return;
@@ -869,6 +969,9 @@ public class AuctionController {
 
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private record DetailColumnWidths(double imagePanelWidth, double infoWidth, double actionWidth) {
     }
 
     private HBox createProductMetaRow(String labelText, Label valueLabel) {
