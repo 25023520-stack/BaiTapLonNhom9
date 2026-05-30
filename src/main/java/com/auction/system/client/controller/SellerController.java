@@ -505,8 +505,7 @@ public class SellerController {
         Thread t = new Thread(() -> {
             try {
                 AuctionClient client = AppContext.getAuctionClient();
-                client.send(req);
-                Payload raw = client.read();
+                Payload raw = client.request(req);
                 ResponsePayload resp = new ResponsePayload();
                 resp.setType(raw.getType());
                 raw.getBody().forEach(resp::put);
