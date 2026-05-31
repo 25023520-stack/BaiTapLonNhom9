@@ -6,11 +6,8 @@ import com.auction.system.model.item.Item;
 import com.auction.system.model.payment.DepositRequest;
 import com.auction.system.model.user.User;
 import com.auction.system.server.manager.AdminManager;
+import com.auction.system.server.util.ItemImageService;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Base64;
 import java.util.List;
 
 public class AdminController {
@@ -19,7 +16,7 @@ public class AdminController {
     public ResponsePayload dashboard(User authenticatedUser) {
         try {
             List<User> pendingSellers = adminManager.getPendingSellers(authenticatedUser);
-            List<Item> pendingAuctions = withImageData(adminManager.getPendingAuctionRequests(authenticatedUser));
+            List<Item> pendingAuctions = ItemImageService.withImageData(adminManager.getPendingAuctionRequests(authenticatedUser));
             List<DepositRequest> pendingDeposits = adminManager.getPendingDepositRequests(authenticatedUser);
 
             ResponsePayload response = ResponsePayload.ok("Admin dashboard loaded");
@@ -61,7 +58,7 @@ public class AdminController {
 
         try {
             Item item = adminManager.updateAuctionApproval(authenticatedUser, itemId, approved);
-            attachImageData(item);
+            ItemImageService.attachImageData(item);
             ResponsePayload response = ResponsePayload.ok(
                     approved ? "Auction approved successfully" : "Auction request rejected"
             );
@@ -105,23 +102,4 @@ public class AdminController {
         }
     }
 
-    private List<Item> withImageData(List<Item> items) {
-        items.forEach(this::attachImageData);
-        return items;
-    }
-
-    private void attachImageData(Item item) {
-        if (item == null || item.getImagePath() == null || item.getImagePath().isBlank()) {
-            return;
-        }
-
-        try {
-            Path imagePath = Path.of(item.getImagePath());
-            if (Files.exists(imagePath)) {
-                item.setImageBase64(Base64.getEncoder().encodeToString(Files.readAllBytes(imagePath)));
-            }
-        } catch (IOException ignored) {
-            item.setImageBase64(null);
-        }
-    }
 }

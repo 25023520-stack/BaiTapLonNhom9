@@ -4,13 +4,14 @@ import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.ResponsePayload;
 import com.auction.system.factory.ItemFactory;
-import com.auction.system.model.auction.AutoBid;
 import com.auction.system.model.auction.Bid;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.Seller;
 import com.auction.system.model.user.User;
 import com.auction.system.server.manager.AuctionManager;
+import com.auction.system.server.util.AutoBidEnricher;
+import com.auction.system.server.util.ItemImageService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,7 +48,7 @@ public class AuctionController {
             item.setImagePath(imagePath);
             auctionManager.addItem(item, seller);
             ResponsePayload resp = ResponsePayload.ok("Item added successfully");
-            attachImageData(item);
+            ItemImageService.attachImageData(item);
             resp.put("item", item);
             return resp;
         } catch (Exception e) {
@@ -77,7 +78,7 @@ public class AuctionController {
             }
             auctionManager.updateItem(item, seller);
             Item updatedItem = auctionManager.findItemById(id).orElse(item);
-            attachImageData(updatedItem);
+            ItemImageService.attachImageData(updatedItem);
             ResponsePayload resp = ResponsePayload.ok("Item updated successfully");
             resp.put("item", updatedItem);
             return resp;
@@ -128,7 +129,7 @@ public class AuctionController {
                     LocalDateTime.parse(endTimeText)
             );
             Item updatedItem = auctionManager.findItemById(itemId).orElse(item);
-            attachImageData(updatedItem);
+            ItemImageService.attachImageData(updatedItem);
 
             ResponsePayload response = ResponsePayload.ok("Auction approval requested successfully");
             response.put("item", updatedItem);
@@ -159,7 +160,7 @@ public class AuctionController {
             );
             Item updatedItem = auctionManager.findItemById(itemId)
                     .orElseThrow(() -> new IllegalArgumentException("Item does not exist"));
-            attachImageData(updatedItem);
+            ItemImageService.attachImageData(updatedItem);
 
             ResponsePayload response = ResponsePayload.ok("Auction relisted successfully");
             response.put("item", updatedItem);
@@ -190,7 +191,7 @@ public class AuctionController {
                 .map(User::getBalance)
                 .orElse(user.getBalance());
         ResponsePayload resp = ResponsePayload.ok("Items retrieved");
-        resp.put("items", withImageData(items));
+        resp.put("items", ItemImageService.withImageData(items));
         resp.put("approved", approved);
         resp.put("sellerBalance", sellerBalance);
         return resp;
@@ -292,7 +293,7 @@ public class AuctionController {
             }
             auctionManager.markAsPaid(itemId);
             Item updatedItem = auctionManager.findItemById(itemId).orElse(item);
-            attachImageData(updatedItem);
+            ItemImageService.attachImageData(updatedItem);
             ResponsePayload resp = ResponsePayload.ok("Payment confirmed successfully");
             resp.put("item", updatedItem);
             return resp;
@@ -312,7 +313,7 @@ public class AuctionController {
         try {
             auctionManager.winnerDecline(itemId, bidder.getId());
             Item updatedItem = auctionManager.findItemById(itemId).orElse(null);
-            if (updatedItem != null) attachImageData(updatedItem);
+            if (updatedItem != null) ItemImageService.attachImageData(updatedItem);
             ResponsePayload resp = ResponsePayload.ok("Win declined. The auction has been canceled.");
             if (updatedItem != null) resp.put("item", updatedItem);
             return resp;
@@ -344,57 +345,14 @@ public class AuctionController {
         }
     }
 
-    private List<Item> withImageData(List<Item> items) {
-        items.forEach(this::attachImageData);
-        return items;
-    }
-
     private List<Item> withClientData(List<Item> items, User user) {
         items.forEach(item -> attachClientData(item, user));
         return items;
     }
 
     private void attachClientData(Item item, User user) {
-        attachImageData(item);
-        attachAutoBidData(item, user);
-    }
-
-    private void attachAutoBidData(Item item, User user) {
-        if (item == null) {
-            return;
-        }
-
-        item.setCurrentUserAutoBidActive(false);
-        item.setCurrentUserAutoBidMaxBid(0);
-        item.setCurrentUserAutoBidIncrementAmount(0);
-
-        if (!(user instanceof Bidder bidder)) {
-            return;
-        }
-
-        AutoBid autoBid = auctionManager.findActiveAutoBid(item.getId(), bidder.getId());
-        if (autoBid == null) {
-            return;
-        }
-
-        item.setCurrentUserAutoBidActive(true);
-        item.setCurrentUserAutoBidMaxBid(autoBid.getMaxBid());
-        item.setCurrentUserAutoBidIncrementAmount(autoBid.getIncrementAmount());
-    }
-
-    private void attachImageData(Item item) {
-        if (item == null || item.getImagePath() == null || item.getImagePath().isBlank()) {
-            return;
-        }
-
-        try {
-            Path imagePath = Path.of(item.getImagePath());
-            if (Files.exists(imagePath)) {
-                item.setImageBase64(Base64.getEncoder().encodeToString(Files.readAllBytes(imagePath)));
-            }
-        } catch (IOException ignored) {
-            item.setImageBase64(null);
-        }
+        ItemImageService.attachImageData(item);
+        AutoBidEnricher.attach(item, user, auctionManager);
     }
 
     private String saveItemImage(String itemId, String imageFileName, String imageBase64) throws IOException {

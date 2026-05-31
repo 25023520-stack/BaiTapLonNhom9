@@ -69,10 +69,6 @@ public class AuctionManager {
         return INSTANCE;
     }
 
-    public synchronized void register(User user) {
-        registerUser(user);
-    }
-
     public synchronized void registerUser(User user) {
         authManager.registerUser(user);
     }
