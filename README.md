@@ -218,8 +218,13 @@ mvn javafx:run
 Nếu client kết nối tới server khác máy:
 
 ```bash
-mvn javafx:run -Dauction.server.host=192.168.1.10 -Dauction.server.port=5050
+mvn javafx:run -Dauction.server.host=<IP_SERVER> -Dauction.server.port=5050
 ```
+
+> **Cách kiểm tra IP của máy chạy server:**
+>
+> - **Windows:** mở Command Prompt → gõ `ipconfig` → lấy giá trị **IPv4 Address** (ví dụ `192.168.1.x`)
+> - **Linux/macOS:** mở Terminal → gõ `ip addr` hoặc `ifconfig` → lấy giá trị `inet` của card mạng đang dùng
 
 ## 9. Kiểm thử và chất lượng mã
 
@@ -250,7 +255,7 @@ Các test chính nằm ở:
 
 - Báo cáo PDF: [Bao_cao_BTL_He_thong_dau_gia_truc_tuyen_Nhom9.pdf](./Bao_cao_BTL_He_thong_dau_gia_truc_tuyen_Nhom9.pdf)
 - Bản nội dung báo cáo: `REPORT.md`
-- Video demo: cập nhật link khi nộp.
+- Video demo: cập nhật https://drive.google.com/file/d/1Ch7bDouZ-cmvBTbT2NKqYSHM4-F9IuFc/view.
 
 ## 11. Lưu ý phát triển
 
