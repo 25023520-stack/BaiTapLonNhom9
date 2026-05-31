@@ -78,7 +78,7 @@ public class ProfileDAO extends BaseDAO {
                 JOIN items i ON i.id = a.item_id
                 LEFT JOIN users seller ON seller.id = i.seller_id
                 WHERE a.winner_id = ?
-                  AND a.status IN ('FINISHED', 'PAID')
+                  AND a.status = 'PAID'
                 ORDER BY a.end_time DESC
                 LIMIT ?
                 """;
@@ -168,7 +168,7 @@ public class ProfileDAO extends BaseDAO {
                 LEFT JOIN auctions a ON a.item_id = i.id
                 LEFT JOIN users winner ON winner.id = a.winner_id
                 WHERE i.seller_id = ?
-                  AND i.status IN ('FINISHED', 'PAID', 'CANCELED')
+                  AND i.status = 'PAID'
                 ORDER BY COALESCE(i.end_time, a.end_time) DESC, i.name ASC
                 LIMIT ?
                 """;

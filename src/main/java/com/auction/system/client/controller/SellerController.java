@@ -933,6 +933,12 @@ public class SellerController {
         sellerBalanceLabel.setText(String.format("Seller: %s\nSố dư: %,.0f VND", username, balance));
     }
 
+    private boolean isPendingPayment(Item item){
+        return item != null
+                && item.getStatus() == AuctionStatus.FINISHED
+                && !safeTrim(item.getHighestBidderId()).isEmpty();
+    }
+
     private void updateEditorState(Item picked) {
         boolean approved = currentSeller != null && currentSeller.isApproved();
         boolean hasSelection = picked != null;
@@ -942,7 +948,7 @@ public class SellerController {
 
         boolean canEdit = hasSelection
                 && picked.getStatus() != AuctionStatus.RUNNING
-                && picked.getStatus() != AuctionStatus.FINISHED
+                && !isPendingPayment(picked)
                 && picked.getStatus() != AuctionStatus.PAID
                 && !pendingApproval
                 && !approvedWaitingStart;
@@ -970,7 +976,8 @@ public class SellerController {
         boolean canRemove = hasSelection
                 && picked.getStatus() != AuctionStatus.RUNNING
                 && !pendingApproval
-                && !approvedWaitingStart;
+                && !approvedWaitingStart
+                && !isPendingPayment(picked);
 
         updateButton.setDisable(!approved || !canEdit);
         removeButton.setDisable(!approved || !canRemove);
@@ -1011,7 +1018,9 @@ public class SellerController {
         if (item.getStatus() == AuctionStatus.PAID) return "Da thanh toan";
         if (hasPendingAuctionApproval(item)) return "Cho admin duyet";
         if (hasApprovedScheduledAuction(item)) return "Da duyet, cho den gio bat dau";
-        if (item.getStatus() == AuctionStatus.FINISHED) return "Da ket thuc";
+        if (item.getStatus() == AuctionStatus.FINISHED) {
+            return safeTrim(item.getHighestBidderId()).isEmpty() ? "Da ket thuc" : "Cho thanh toan";
+        }
         return "Chua gui duyet";
     }
 

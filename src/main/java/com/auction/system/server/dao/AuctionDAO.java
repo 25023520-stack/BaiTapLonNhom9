@@ -236,4 +236,25 @@ public class AuctionDAO extends BaseDAO {
             return pstm.executeUpdate() > 0;
         }
     }
+
+    public List<String> findUnpaidFinishedItemIdsOlderThan(int minutes) throws SQLException {
+        String sql = """
+                SELECT item_id FROM auctions
+                WHERE status = 'FINISHED'
+                  AND winner_id IS NOT NULL
+                  AND end_time < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                """;
+
+        List<String> result = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setInt(1, minutes);
+            try (ResultSet rs = pstm.executeQuery()) {
+                while (rs.next()) {
+                    result.add(rs.getString("item_id"));
+                }
+            }
+        }
+        return result;
+    }
 }

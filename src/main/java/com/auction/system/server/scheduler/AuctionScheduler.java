@@ -62,5 +62,6 @@ public class AuctionScheduler {
         } catch (SQLException e) {
             LOGGER.error("Scheduler failed to query expired auctions: {}", e.getMessage());
         }
+        auctionManager.cancelExpiredUnpaidAuctions(20);
     }
 }

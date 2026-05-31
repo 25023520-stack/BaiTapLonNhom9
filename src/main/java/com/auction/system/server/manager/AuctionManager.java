@@ -625,6 +625,26 @@ public class AuctionManager {
         }
     }
 
+    public void cancelExpiredUnpaidAuctions(int minutes) {
+        try {
+            for (String itemId : auctionDAO.findUnpaidFinishedItemIdsOlderThan(minutes)) {
+                try {
+                    Item item = requireItem(itemId);
+                    String winnerId = item.getHighestBidderId();
+                    if (item.getStatus() == AuctionStatus.FINISHED
+                            && winnerId != null
+                            && !winnerId.isBlank()) {
+                        winnerDecline(itemId, winnerId);
+                    }
+                } catch (RuntimeException exception) {
+                    LOGGER.warn("Cannot cancel unpaid auction {}: {}", itemId, exception.getMessage());
+                }
+            }
+        } catch (SQLException exception) {
+            LOGGER.error("Cannot query expired unpaid auctions: {}", exception.getMessage());
+        }
+    }
+
     public void cancelAuction(String itemId) {
         if (itemId == null || itemId.isBlank()) {
             throw new IllegalArgumentException("Item id must not be empty");
