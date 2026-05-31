@@ -18,11 +18,7 @@ public class Seller extends User {
         return "SELLER";
     }
 
-    // lấy danh sách item mà seller đang bán
-    public List<Item> getItemForSale() {
-        return itemForSale;
-    }
-/* thêm item vào danh sách itemForSale của seller
+    /* thêm item vào danh sách itemForSale của seller
 * ném IllegalArgumentException nếu item không tồn tại
 * ném IllegalArgumentException nếu item không thuộc về seller
 */

@@ -215,7 +215,7 @@ class ModelTest {
         Seller seller = new Seller("S-3", "Seller", "seller3", "s3@e.com", "pass");
         Item item = new Item("I-11", "Name", "Desc", 100, "S-3");
         seller.addItemForSale(item);
-        assertEquals(1, seller.getItemForSale().size());
+        assertEquals(1, seller.getItemsForSale().size());
         assertEquals(1, seller.getItemsForSale().size());
         assertEquals(1, seller.getItems().size());
     }
@@ -239,7 +239,7 @@ class ModelTest {
         Item item = new Item("I-13", "Name", "Desc", 100, "S-6");
         seller.addItemForSale(item);
         seller.removeItemForSale(item);
-        assertTrue(seller.getItemForSale().isEmpty());
+        assertTrue(seller.getItemsForSale().isEmpty());
     }
 
     @Test
@@ -251,7 +251,7 @@ class ModelTest {
         Item updated = new Item("I-14", "Updated Name", "New Desc", 200, 200, AuctionStatus.OPEN);
         seller.updateItem(updated);
 
-        assertEquals("Updated Name", seller.getItemForSale().get(0).getName());
+        assertEquals("Updated Name", seller.getItemsForSale().get(0).getName());
     }
 
     // ---- ItemFactory ----
