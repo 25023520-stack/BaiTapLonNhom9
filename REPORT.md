@@ -24,7 +24,7 @@ Ngoài phạm vi: cổng thanh toán thật (dùng ví số dư nội bộ).
 ## 2. Kiến trúc tổng thể
 
 Hệ thống gồm **nhiều client JavaFX** kết nối tới **một server TCP** dùng chung một
-**cơ sở dữ liệu** (MySQL khi triển khai, H2 khi chạy nhanh).
+**cơ sở dữ liệu** MySQL.
 
 ```text
  ┌───────────────┐        ┌───────────────┐        ┌───────────────┐
@@ -51,7 +51,7 @@ Hệ thống gồm **nhiều client JavaFX** kết nối tới **một server TC
                         │   DAO + HikariCP   │
                         └─────────┬──────────┘
                         ┌─────────▼──────────┐
-                        │   MySQL / H2 DB    │  + file ảnh sản phẩm
+                        │     MySQL DB       │  + file ảnh sản phẩm
                         └────────────────────┘
 ```
 
@@ -68,7 +68,7 @@ Hệ thống gồm **nhiều client JavaFX** kết nối tới **một server TC
    khóa **`ReentrantLock` theo từng item** + **transaction DB** để đảm bảo an toàn
    khi nhiều bidder cùng đặt giá. `AuctionScheduler` chạy nền, tự kết thúc phiên hết giờ.
 5. **Tầng truy cập dữ liệu (DAO):** tách riêng từng bảng, dùng `HikariCP` pool.
-6. **Tầng dữ liệu:** MySQL (thật) hoặc H2 (nhúng, lưu `data/`); ảnh sản phẩm lưu file.
+6. **Tầng dữ liệu:** MySQL; ảnh sản phẩm lưu file.
 
 **Cập nhật realtime** theo mẫu **Observer**: mỗi `ClientHandler` là một
 `AuctionObserver` đăng ký với `AuctionSubject` (server). Khi giá/trạng thái/số dư
@@ -91,7 +91,7 @@ Electronics/Art/Vehicle), Observer (realtime), DAO, MVC (client).
 | **Tự kết thúc phiên & chọn người thắng** | `AuctionScheduler` quét định kỳ 10s, đóng phiên hết giờ | Không phụ thuộc thao tác tay; tự phục hồi phiên hết giờ khi server vừa bật |
 | **Cập nhật realtime** | Observer: server đẩy update tới mọi client | Người dùng thấy giá/số dư đổi ngay, không cần refresh |
 | **Ví & thanh toán** | Bidder nạp tiền (Admin duyệt); trừ tiền bidder, cộng tiền seller khi thanh toán | Mô phỏng dòng tiền khép kín mà không cần cổng thật |
-| **Lưu trữ bền vững** | DAO + HikariCP trên MySQL/H2; ảnh lưu file | Dữ liệu không mất khi tắt server; pool để chịu tải đồng thời |
+| **Lưu trữ bền vững** | DAO + HikariCP trên MySQL; ảnh lưu file | Dữ liệu không mất khi tắt server; pool để chịu tải đồng thời |
 | **Cô lập lỗi** | Mỗi request bọc try/catch, trả lỗi thay vì rớt kết nối | Một request hỏng không đẩy client sang màn "mất kết nối" |
 | **Chất lượng mã** | Checkstyle + JaCoCo tích hợp Maven | Đảm bảo coding convention và đo độ phủ test |
 
