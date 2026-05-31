@@ -1,211 +1,260 @@
-# Hệ thống đấu giá trực tuyến (Online Auction System) — Nhóm 9
+# Hệ thống đấu giá trực tuyến (Online Auction System) - Nhóm 9
 
-Ứng dụng đấu giá trực tuyến theo mô hình **client–server**: nhiều người dùng kết nối
-đồng thời tới một máy chủ trung tâm để đăng sản phẩm, đặt giá và theo dõi phiên đấu
-giá theo thời gian thực.
+Ứng dụng đấu giá trực tuyến theo mô hình **client-server**. Nhiều người dùng có thể kết nối đồng thời tới một server trung tâm để đăng sản phẩm, gửi yêu cầu mở phiên, đặt giá, bật auto-bid và theo dõi phiên đấu giá theo thời gian thực.
 
 ## 1. Bài toán và phạm vi
 
-- **Bài toán:** xây dựng sàn đấu giá nhiều người dùng, hỗ trợ 3 vai trò **Admin / Seller / Bidder**.
-- **Phạm vi:**
-  - Seller đăng sản phẩm và gửi yêu cầu mở phiên đấu giá (có lịch bắt đầu/kết thúc).
-  - Admin duyệt tài khoản seller, duyệt phiên đấu giá, duyệt yêu cầu nạp tiền của bidder.
-  - Bidder nạp tiền, đặt giá thủ công hoặc bật **đấu giá tự động (auto-bid)**, thanh toán khi thắng.
-  - Máy chủ tự động bắt đầu/kết thúc phiên theo lịch và quyết định người thắng.
-  - Cập nhật **realtime** tới mọi client đang xem (giá mới, người giữ giá cao nhất, số dư).
-- **Ngoài phạm vi:** thanh toán qua cổng thật (số dư là ví nội bộ trong hệ thống).
+**Bài toán:** xây dựng sàn đấu giá nhiều người dùng, hỗ trợ 3 vai trò chính: **Admin**, **Seller**, **Bidder**.
 
-## 2. Công nghệ, môi trường và yêu cầu cài đặt
+**Phạm vi thực hiện:**
+
+- Seller đăng, sửa, xóa sản phẩm và gửi yêu cầu mở phiên đấu giá kèm lịch bắt đầu/kết thúc.
+- Admin duyệt tài khoản seller, duyệt phiên đấu giá và duyệt yêu cầu nạp tiền của bidder.
+- Bidder gửi yêu cầu nạp tiền, đặt giá thủ công, bật/tắt **auto-bid**, thanh toán khi thắng hoặc từ chối nhận hàng.
+- Server tự động kiểm tra lịch để đóng phiên hết hạn, xác định người thắng và cập nhật trạng thái.
+- Hệ thống cập nhật realtime tới các client đang kết nối: giá mới, người giữ giá cao nhất, số dư, trạng thái phiên.
+- Có xử lý đồng thời khi nhiều bidder đặt giá cùng lúc.
+- Có chức năng nâng cao: **auto-bidding** và **anti-sniping**.
+
+**Ngoài phạm vi:** chưa tích hợp cổng thanh toán thật; số dư là ví nội bộ trong hệ thống.
+
+## 2. Công nghệ sử dụng
 
 | Thành phần | Lựa chọn |
 |---|---|
-| Ngôn ngữ | Java 25 (tương thích build với JDK 21 LTS) |
-| Giao diện | JavaFX 21 + FXML (mô hình MVC) |
-| Giao tiếp | TCP socket, giao thức JSON dòng-lệnh (Gson) |
-| Cơ sở dữ liệu | MySQL 8 (chạy thật) / H2 (mặc định khi chạy nhanh, lưu ở `data/`) |
-| Connection pool | HikariCP |
+| Ngôn ngữ | Java 25 |
+| Giao diện | JavaFX 21 + FXML |
+| Kiến trúc UI | MVC |
+| Giao tiếp | TCP Socket, JSON line protocol, Gson |
+| Cơ sở dữ liệu | MySQL 8 qua HikariCP |
+| Đóng gói | Maven + maven-shade-plugin |
 | Logging | SLF4J + Logback |
-| Test | JUnit 5 |
-| Chất lượng mã | Checkstyle + JaCoCo (coverage) tích hợp trong Maven |
-| Đóng gói | Maven + maven-shade-plugin (fat JAR) |
-| Triển khai | Docker / Docker Compose (tùy chọn) |
+| Kiểm thử | JUnit 5, JaCoCo |
+| Coding convention | Checkstyle, Qodana |
+| Triển khai | Docker / Docker Compose |
 
 **Yêu cầu cài đặt:**
-- JDK 21 (LTS) hoặc JDK 25 — phải khớp với phiên bản dùng để build.
-- Maven 3.8+ (chỉ cần trên máy build).
-- (Tùy chọn) Docker Desktop / Docker Engine nếu chạy server bằng Compose.
-- `client.jar` đã đóng gói sẵn JavaFX native cho **Windows, Linux, macOS** nên client chỉ cần JDK, không cần cài thêm.
 
-## 3. Cấu trúc source code
+- JDK 25 hoặc JDK tương thích với cấu hình Maven hiện tại.
+- Maven 3.8+.
+- MySQL 8 nếu chạy server trực tiếp.
+- Docker Desktop / Docker Engine nếu chạy bằng Docker Compose.
+
+## 3. Kiến trúc tổng thể
+
+Hệ thống được tổ chức theo kiến trúc phân tầng:
+
+1. **Client JavaFX:** gồm các màn hình FXML và controller cho Login, Register, Bidder, Seller, Admin, Auction.
+2. **Tầng giao tiếp:** `AuctionClient` gửi `Payload` JSON qua TCP socket tới server và nhận `ResponsePayload`.
+3. **Server TCP:** `AuctionServer` lắng nghe port `5050`, mỗi client được xử lý bởi một `ClientHandler` riêng.
+4. **Server controller:** `AuthController`, `AuctionController`, `AdminController`, `ProfileController` đọc request và gọi manager tương ứng.
+5. **Business layer:** `AuthManager`, `ItemManager`, `AuctionManager`, `AdminManager`, `ProfileManager` chứa logic nghiệp vụ.
+6. **DAO layer:** `UserDAO`, `ItemDAO`, `AuctionDAO`, `BidDAO`, `AutoBidDAO`, `DepositRequestDAO`, `ProfileDAO` thao tác database.
+7. **Database và file storage:** MySQL lưu dữ liệu nghiệp vụ; ảnh sản phẩm lưu trong `data/uploads/items`.
+
+Realtime update được triển khai bằng Observer Pattern: server phát sự kiện đấu giá/số dư tới các client đang kết nối thông qua `AuctionSubject` và `AuctionObserver`.
+
+## 4. Cấu trúc source code
 
 ```text
 src/
   main/
     java/com/auction/system/
-      client/                       # Frontend JavaFX (MVC)
-        App.java                    # entry point client
-        Launcher.java               # bootstrap JavaFX
-        context/AppContext.java     # session, socket, user hiện tại
-        network/AuctionClient.java  # TCP client tới server
-        controller/                 # Login, Register, Auction, Bidder, Seller, Admin, ServerDown
-      server/                       # Backend
-        ServerMain.java             # entry point server
-        network/                    # AuctionServer (TCP), ClientHandler
-        controller/                 # Auth, Auction, Admin controller
-        manager/                    # Auth, User, Item, Auction, Admin manager (nghiệp vụ)
-        dao/                        # UserDAO, ItemDAO, AuctionDAO, BidDAO, AutoBidDAO, DepositRequestDAO
-        observer/                   # AuctionSubject, AuctionObserver (realtime)
-        scheduler/AuctionScheduler  # tự động bắt đầu/kết thúc phiên theo lịch
-        database/Database.java      # khởi tạo & kết nối DB
-      model/                        # entity dùng chung
-        user/                       # User, Admin, Seller, Bidder, DepositRequest
-        item/                       # Item, Electronics, Art, Vehicle
-        auction/                    # Auction, Bid, AutoBid, AuctionStatus
-      common/payload/               # giao thức Payload/ResponsePayload client-server
-      common/json/GsonProvider.java
-      factory/ItemFactory.java      # Factory Method tạo item theo loại
-      exception/                    # custom exception nghiệp vụ
-    resources/com/auction/system/client/view/   # *.fxml, Styles.css, assets
-  test/java/com/auction/system/...               # JUnit test cho tầng nghiệp vụ
-config/checkstyle/checkstyle.xml                  # cấu hình Checkstyle
+      client/                         # JavaFX client
+        App.java
+        Launcher.java
+        context/AppContext.java
+        network/AuctionClient.java
+        controller/                   # Login, Register, Auction, Bidder, Seller, Admin, ServerDown
+      server/                         # TCP server + backend
+        ServerMain.java
+        network/                      # AuctionServer, ClientHandler
+        controller/                   # Auth, Auction, Admin, Profile controller
+        manager/                      # Auth, User, Item, Auction, Admin, Profile manager
+        dao/                          # User, Item, Auction, Bid, AutoBid, DepositRequest, Profile DAO
+        database/Database.java        # HikariCP + schema initialization
+        observer/                     # AuctionSubject, AuctionObserver
+        scheduler/AuctionScheduler.java
+        util/                         # AutoBidEnricher, ItemImageService
+      model/
+        user/                         # User, Admin, Seller, Bidder
+        item/                         # Item, Electronics, Art, Vehicle, Book, Fashion, Home, Collectible
+        auction/                      # Auction, Bid, AutoBid, AuctionStatus
+        payment/DepositRequest.java
+      factory/                        # ItemFactory + ItemCreator theo từng category
+      common/
+        payload/                      # PayloadType, Payload, ResponsePayload, BidPayload, AutoBidPayload, UserProfilePayload
+        json/GsonProvider.java
+        money/Money.java
+      exception/                      # Custom exceptions
+    resources/com/auction/system/client/view/
+      *.fxml, Styles.css, assets/
+  test/java/com/auction/system/...    # JUnit tests
+config/checkstyle/checkstyle.xml
+.github/workflows/                   # CI + Qodana
 ```
 
-**Mẫu thiết kế đã áp dụng:** Singleton (các Manager), Factory Method (`ItemFactory`),
-Observer (`AuctionSubject`/`AuctionObserver` cho cập nhật realtime), DAO (tách truy cập DB), MVC (client JavaFX).
+## 5. Design patterns và kỹ thuật chính
 
-## 4. Vị trí các file .jar
-
-Sau khi build, JAR nằm trong thư mục `target/`:
-
-```text
-target/
-  server.jar   # chạy trên máy chủ   (main: com.auction.system.server.ServerMain)
-  client.jar   # phân phối cho client (main: com.auction.system.client.App)
-```
-
-- `mvn -DskipTests package` → `client.jar` chứa JavaFX native của **đúng OS đang build**.
-- `mvn -Pdist -DskipTests package` → `client.jar` **đa nền tảng** (gói sẵn native cho
-  Windows + Linux + macOS Intel/ARM), build 1 lần chạy được trên cả 3 hệ điều hành.
-
-## 5. Hướng dẫn chạy theo thứ tự
-
-### Bước 1 — Build (trên máy có Maven)
-
-```bash
-# client.jar đa nền tảng (khuyến nghị khi phân phối cho nhiều máy/OS khác nhau)
-mvn -Pdist -DskipTests package
-
-# hoặc build nhanh cho riêng OS hiện tại
-mvn -DskipTests package
-```
-
-### Bước 2 — Chạy **Server trước**
-
-Chọn một trong các cách sau tùy hệ điều hành máy chủ:
-
-```bash
-# Cách A — chạy trực tiếp (H2 nhúng, không cần cài DB)
-java -jar target/server.jar
-
-# Cách B — chạy bằng Docker Compose (kèm MySQL)
-cp .env.example .env        # sửa ADMIN_BOOTSTRAP_PASSWORD trong .env trước khi chạy
-docker compose -f docker.yml up --build
-```
-
-> **Tài khoản admin:** server không hardcode admin. Đặt biến môi trường
-> `ADMIN_BOOTSTRAP_PASSWORD` (và tùy chọn `ADMIN_BOOTSTRAP_USERNAME`,
-> `ADMIN_BOOTSTRAP_FULL_NAME`, `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_ID`) để
-> tự tạo/đồng bộ tài khoản admin khi khởi động. Mẫu có sẵn trong `.env.example`.
-
-Server lắng nghe ở **port 5050**. Log khởi động in ra IP nội bộ của máy chủ.
-
-### Bước 3 — Chạy **Client sau** (mở nhiều client để test nhiều người dùng)
-
-```bash
-java -jar client.jar
-```
-
-Mở **nhiều terminal** và chạy lại lệnh trên để mô phỏng nhiều người dùng đồng thời.
-Trong màn hình đăng nhập, ô **"Địa chỉ máy chủ"**:
-
-| Trường hợp | Nhập |
-|---|---|
-| Client cùng máy với server | `127.0.0.1` (mặc định) |
-| Client khác máy, cùng mạng LAN | IP máy chủ, ví dụ `192.168.1.10` |
-
-> Nếu firewall chặn, mở port `5050/tcp` trên máy chủ (ufw/firewalld trên Linux,
-> "Allow access" trên Windows Firewall, hoặc cho phép khi macOS hỏi).
-
-### Chạy client JavaFX từ source (cho phát triển)
-
-Chạy được trực tiếp trên **Windows / Linux / macOS** (POM tự chọn JavaFX native theo
-OS qua profile, nên không bị lỗi đồ họa kiểu "module javafx.graphics trùng" hay thiếu
-native):
-
-```bash
-mvn javafx:run
-
-# trỏ tới server khác máy:
-mvn javafx:run -Dauction.server.host=192.168.1.10 -Dauction.server.port=5050
-```
-
-> **Lưu ý môi trường (Linux):** trên desktop dùng **Wayland**, nếu cửa sổ không hiện
-> hoặc lỗi GTK, chạy với `GDK_BACKEND=x11 mvn javafx:run`. Trên máy ảo/không có GPU,
-> ép render phần mềm bằng `mvn javafx:run -Dprism.order=sw`.
+- **Singleton:** các manager và `Database` có điểm truy cập thống nhất.
+- **Factory Method:** `ItemFactory` phối hợp các `ItemCreator` để tạo item theo category như `Electronics`, `Art`, `Vehicle`, `Book`, `Fashion`, `Home`, `Collectible`, `Other`.
+- **Observer:** `AuctionSubject`/`AuctionObserver` dùng cho realtime update từ server tới client.
+- **DAO:** tách truy cập database khỏi logic nghiệp vụ.
+- **MVC:** JavaFX client tách FXML view, controller và model/payload.
+- **Concurrency control:** `AuctionManager` dùng `ReentrantLock` theo từng item và transaction DB để tránh race condition khi nhiều bidder đặt giá đồng thời.
 
 ## 6. Chức năng đã hoàn thành
 
-**Tài khoản & phân quyền**
-- Đăng ký / đăng nhập; 3 vai trò Admin, Seller, Bidder.
-- Admin duyệt tài khoản Seller trước khi seller được phép hoạt động.
+### Tài khoản và phân quyền
 
-**Seller**
-- Đăng / sửa / xóa sản phẩm (Electronics, Art, Vehicle qua Factory Method).
-- Gửi yêu cầu mở phiên đấu giá kèm lịch bắt đầu/kết thúc.
-- Xem người đang giữ giá cao nhất; nhận tiền vào số dư khi sản phẩm bán được.
-- Sản phẩm không có ai đặt giá khi hết giờ sẽ tự reset để gửi duyệt lại.
+- Đăng ký, đăng nhập.
+- 3 vai trò: Admin, Seller, Bidder.
+- Admin duyệt tài khoản seller trước khi seller được hoạt động.
+- Bidder/Seller có màn hình hồ sơ, thống kê và lịch sử liên quan.
 
-**Bidder**
-- Gửi yêu cầu nạp tiền; Admin duyệt để cộng số dư.
-- Đặt giá thủ công (kiểm tra giá hợp lệ, không tự đấu sản phẩm của mình).
-- **Đấu giá tự động (auto-bid):** đặt giá tối đa + bước giá, hệ thống tự nâng giá theo độ ưu tiên.
-- Thanh toán khi thắng; hoặc từ chối nhận hàng (hủy phiên).
+### Seller
 
-**Admin**
-- Dashboard tổng quan; duyệt seller, duyệt phiên đấu giá, duyệt yêu cầu nạp tiền.
+- Đăng, sửa, xóa sản phẩm.
+- Chọn loại sản phẩm qua Factory Method.
+- Upload ảnh sản phẩm.
+- Gửi yêu cầu mở phiên đấu giá kèm thời gian bắt đầu/kết thúc.
+- Xem tình trạng phiên, người giữ giá cao nhất và kết quả bán hàng.
+- Relist/gửi duyệt lại phiên phù hợp với trạng thái item.
 
-**Hệ thống**
-- Server tự động bắt đầu/kết thúc phiên theo lịch (`AuctionScheduler`), tự quyết định người thắng.
-- Cập nhật **realtime** qua Observer: giá mới, người giữ giá cao nhất, số dư, trạng thái phiên đẩy tới mọi client.
-- **Xử lý đồng thời (concurrency):** khóa theo từng item (`ReentrantLock`) + giao dịch DB để chống race khi nhiều bidder cùng đặt giá.
-- Cô lập lỗi từng request: một request lỗi không làm rớt kết nối của client.
-- Lưu trữ bền vững xuống DB (MySQL/H2); ảnh sản phẩm lưu ra file.
+### Bidder
 
-**Chất lượng mã**
-- Checkstyle tích hợp Maven (`config/checkstyle/checkstyle.xml`).
-- Báo cáo độ phủ test bằng JaCoCo (xem mục dưới).
+- Gửi yêu cầu nạp tiền.
+- Đặt giá thủ công với kiểm tra hợp lệ.
+- Bật/tắt auto-bid theo giá tối đa và bước giá.
+- Xem lịch sử bid, danh sách item đã thắng và thông tin hồ sơ.
+- Thanh toán khi thắng hoặc từ chối nhận hàng.
 
-## 7. Kiểm thử & độ phủ (coverage)
+### Admin
 
-```bash
-mvn test                      # chạy JUnit + sinh báo cáo JaCoCo
-# Báo cáo HTML: target/site/jacoco/index.html
+- Dashboard tổng quan.
+- Duyệt seller.
+- Duyệt hoặc từ chối yêu cầu mở phiên đấu giá.
+- Duyệt yêu cầu nạp tiền cho bidder.
 
-mvn verify                    # chạy test + kiểm tra ngưỡng coverage + Checkstyle
-mvn checkstyle:check          # chỉ chạy Checkstyle
+### Hệ thống đấu giá
+
+- Tự động đóng phiên hết hạn bằng `AuctionScheduler`.
+- Xác định người thắng dựa trên highest bidder.
+- Nếu phiên hết hạn không có bid, hệ thống reset để seller có thể gửi duyệt lại.
+- Auto-bid tự nâng giá theo max bid, increment và thời điểm tạo.
+- Anti-sniping: nếu bid xuất hiện trong 60 giây cuối, hệ thống gia hạn phiên thêm 60 giây.
+- Realtime update qua Observer/Socket.
+- Lưu dữ liệu bền vững xuống MySQL; ảnh sản phẩm lưu trong `data/uploads/items`.
+
+## 7. Vị trí các file `.jar`
+
+Project dùng `maven-shade-plugin` để đóng gói executable fat JAR. Sau khi build thành công, các file chạy nằm trong thư mục `target/`:
+
+```text
+target/
+  server.jar   # chạy server, main class: com.auction.system.server.ServerMain
+  client.jar   # chạy client JavaFX, main class: com.auction.system.client.App
 ```
 
-Coverage được đo trên **tầng nghiệp vụ** (`manager`, `dao`, `model`, `factory`, `scheduler`);
-tầng giao diện JavaFX và entry point được kiểm thử thủ công nên loại khỏi phép đo.
-Bộ test tập trung vào `AuctionManager` (đặt giá, auto-bid, đồng thời).
+Lệnh build:
 
-## 8. Báo cáo & video demo
+```bash
+mvn -DskipTests package
+```
 
-- **Báo cáo PDF:** _(cập nhật link)_ — nội dung trong `REPORT.md`.
-- **Video demo (≤ 3 phút):** _(cập nhật link)_
+Nếu muốn build client JAR đa nền tảng có JavaFX native cho nhiều hệ điều hành:
 
-## 9. Lưu ý về cấu trúc
+```bash
+mvn -Pdist -DskipTests package
+```
 
-- Không để file IDE trong `src/`.
-- Logic đấu giá nằm ở `server/manager/`; UI chỉ gọi request qua `client/network/`.
-- Không để file env/cấu hình riêng của IDE trong `src/main/resources/.../view/`.
+## 8. Hướng dẫn chạy Server/Client theo thứ tự
+
+### Cách A: chạy bằng Docker Compose
+
+```bash
+docker compose -f docker.yml up --build
+```
+
+Docker Compose sẽ chạy:
+
+- MySQL 8.4 tại port `3306`.
+- Server tại port `5050`.
+
+Có thể đặt tài khoản admin bootstrap bằng biến môi trường trong file `.env`:
+
+```env
+ADMIN_BOOTSTRAP_USERNAME=admin
+ADMIN_BOOTSTRAP_PASSWORD=your_password
+ADMIN_BOOTSTRAP_FULL_NAME=System Admin
+ADMIN_BOOTSTRAP_EMAIL=admin@example.com
+```
+
+Sau đó mở client từ JAR đã build:
+
+```bash
+java -jar target/client.jar
+```
+
+### Cách B: chạy trực tiếp bằng JAR
+
+```bash
+mvn -DskipTests package
+java -jar target/server.jar
+```
+
+Sau khi server chạy, mở client:
+
+```bash
+java -jar target/client.jar
+```
+
+Chạy client trực tiếp từ source:
+
+```bash
+mvn javafx:run
+```
+
+Nếu client kết nối tới server khác máy:
+
+```bash
+mvn javafx:run -Dauction.server.host=192.168.1.10 -Dauction.server.port=5050
+```
+
+## 9. Kiểm thử và chất lượng mã
+
+```bash
+mvn test
+mvn verify
+mvn checkstyle:check
+```
+
+- `mvn test`: chạy JUnit và sinh báo cáo JaCoCo.
+- `mvn verify`: chạy test, coverage check và Checkstyle.
+- Báo cáo coverage HTML: `target/site/jacoco/index.html`.
+- CI cấu hình trong `.github/workflows/ci.yml`.
+- Qodana cấu hình trong `.github/workflows/qodana_code_quality.yml`.
+
+Các test chính nằm ở:
+
+- `AuctionManagerTest`
+- `AuctionManagerAutoBidTest`
+- `AuctionManagerConcurrencyTest`
+- `AuctionManagerExtendedTest`
+- `AuthManagerTest`
+- `AdminManagerTest`
+- `ModelTest`
+- `TestDatabase`, `TestItemDAO`
+
+## 10. Báo cáo và demo
+
+- Báo cáo PDF: [Bao_cao_BTL_He_thong_dau_gia_truc_tuyen_Nhom9.pdf](./Bao_cao_BTL_He_thong_dau_gia_truc_tuyen_Nhom9.pdf)
+- Bản nội dung báo cáo: `REPORT.md`
+- Video demo: cập nhật link khi nộp.
+
+## 11. Lưu ý phát triển
+
+- Logic nghiệp vụ đấu giá nằm ở `server/manager`, đặc biệt là `AuctionManager`.
+- UI JavaFX chỉ gửi request qua `AuctionClient`, không tự xử lý luật đấu giá.
+- Khi sửa chức năng đặt giá, auto-bid, anti-sniping hoặc thanh toán, cần chạy lại các test trong nhóm `AuctionManager*Test`.
+- Không commit file database local như `data/*.db`, log hoặc file IDE nếu không cần thiết.
