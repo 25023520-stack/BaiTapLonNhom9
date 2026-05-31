@@ -273,12 +273,13 @@
                             <content>
                                 <HBox spacing="18.0" styleClass="auction-detail-content">
                                     <children>
-                                        <VBox prefWidth="300.0" minWidth="260.0" spacing="12.0" styleClass="auction-image-panel">
+                                        <VBox prefWidth="300.0" minWidth="300.0" maxWidth="300.0" spacing="12.0" styleClass="auction-image-panel">
                                             <children>
-                                                <StackPane minHeight="225.0" prefHeight="245.0" styleClass="auction-detail-image-frame">
+                                                <StackPane minHeight="225.0" prefHeight="245.0" prefWidth="260.0" maxWidth="260.0"
+                                                           styleClass="auction-detail-image-frame">
                                                     <children>
                                                         <Label fx:id="sellerImagePlaceholder" styleClass="image-placeholder-text" text="Chưa có ảnh" />
-                                                        <ImageView fx:id="imagePreview" fitHeight="220.0" fitWidth="260.0"
+                                                        <ImageView fx:id="imagePreview" fitHeight="205.0" fitWidth="240.0"
                                                                    onMouseClicked="#showSelectedSellerImagePreview"
                                                                    pickOnBounds="true" preserveRatio="true" smooth="true" />
                                                     </children>

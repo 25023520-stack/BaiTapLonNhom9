@@ -465,7 +465,7 @@ public class SellerController {
 
         selectedImageFile = file;
         imageNameLabel.setText(file.getName());
-        imagePreview.setImage(new Image(file.toURI().toString(), 260, 220, true, true));
+        imagePreview.setImage(new Image(file.toURI().toString(), 240, 205, true, true));
         updateSellerImagePlaceholder();
         updateImageValidationLabel(null);
     }
@@ -903,7 +903,7 @@ public class SellerController {
 
         try {
             byte[] bytes = Base64.getDecoder().decode(imageBase64);
-            imagePreview.setImage(new Image(new ByteArrayInputStream(bytes), 260, 220, true, true));
+            imagePreview.setImage(new Image(new ByteArrayInputStream(bytes), 240, 205, true, true));
         } catch (IllegalArgumentException exception) {
             imagePreview.setImage(null);
         }
