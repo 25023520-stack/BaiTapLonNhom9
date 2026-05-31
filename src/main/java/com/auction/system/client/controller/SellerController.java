@@ -90,7 +90,6 @@ public class SellerController {
     @FXML private Button removeButton;
     @FXML private Button refreshButton;
     @FXML private Button startAuctionButton;
-    @FXML private Button relistButton;
     @FXML private Button newItemButton;
     @FXML private Button chooseImageButton;
     @FXML private ImageView imagePreview;
@@ -191,7 +190,6 @@ public class SellerController {
         updateButton.setDisable(true);
         removeButton.setDisable(true);
         startAuctionButton.setDisable(true);
-        relistButton.setDisable(true);
         addButton.setDisable(false);
         configureCategoryComboBox();
         configureSellerCatalogFilters();
@@ -408,43 +406,6 @@ public class SellerController {
                 showSellerCatalog();
             } else {
                 showError("Khong mo duoc phien", resp.getMessage());
-            }
-        });
-    }
-
-    @FXML
-    private void setRelistAuctionButton() {
-        Item selected = sellerItemList.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            return;
-        }
-        if (selected.getStatus() != AuctionStatus.CANCELED) {
-            showError("Khong dang lai duoc", "Chi phien da huy moi co the dang lai.");
-            return;
-        }
-
-        AuctionSchedule schedule = readValidatedAuctionSchedule();
-        if (schedule == null) {
-            return;
-        }
-
-        Payload req = new Payload(PayloadType.RELIST_AUCTION);
-        req.put("id", selected.getId());
-        req.put("startTime", schedule.startTime().toString());
-        req.put("endTime", schedule.endTime().toString());
-
-        runAsync(req, resp -> {
-            if (resp.isSuccess()) {
-                Item updatedItem = toItem(resp.getBody().get("item"));
-                if (updatedItem != null) {
-                    replaceOrAddSellerItem(updatedItem);
-                    sellerItemList.getSelectionModel().select(updatedItem);
-                    setChangeButton(updatedItem);
-                }
-                showInfo("Da dang lai phien dau gia: " + selected.getName());
-                showSellerCatalog();
-            } else {
-                showError("Khong dang lai duoc", resp.getMessage());
             }
         });
     }
@@ -944,7 +905,6 @@ public class SellerController {
         boolean hasSelection = picked != null;
         boolean pendingApproval = hasPendingAuctionApproval(picked);
         boolean approvedWaitingStart = hasApprovedScheduledAuction(picked);
-        boolean canRelist = approved && hasSelection && picked.getStatus() == AuctionStatus.CANCELED;
 
         boolean canEdit = hasSelection
                 && picked.getStatus() != AuctionStatus.RUNNING
@@ -965,7 +925,7 @@ public class SellerController {
                 && picked.getStatus() == AuctionStatus.OPEN
                 && !pendingApproval
                 && !approvedWaitingStart;
-        boolean canEditSchedule = canEditExistingSchedule || canRelist;
+        boolean canEditSchedule = canEditExistingSchedule;
         durationHoursSpinner.setDisable(!canEditSchedule);
         durationMinutesSpinner.setDisable(!canEditSchedule);
         setScheduleInputsDisabled(!canEditSchedule);
@@ -982,7 +942,6 @@ public class SellerController {
         updateButton.setDisable(!approved || !canEdit);
         removeButton.setDisable(!approved || !canRemove);
         startAuctionButton.setDisable(!canEditExistingSchedule);
-        relistButton.setDisable(!canRelist);
     }
 
     private void updateAuctionApprovalLabel(Item item) {

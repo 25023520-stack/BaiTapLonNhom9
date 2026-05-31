@@ -222,6 +222,10 @@ public class Item implements Serializable {
         bidHistory.add(bid);
     }
 
+    public void clearBidHistory() {
+        bidHistory.clear();
+    }
+
     public boolean isCurrentUserAutoBidActive() {
         return currentUserAutoBidActive;
     }

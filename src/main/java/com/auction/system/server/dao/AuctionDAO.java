@@ -1,9 +1,7 @@
 package com.auction.system.server.dao;
 
 import com.auction.system.common.money.Money;
-import com.auction.system.model.auction.Auction;
 import com.auction.system.model.auction.AuctionStatus;
-import com.auction.system.model.item.Item;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -13,8 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AuctionDAO extends BaseDAO {
-    private ItemDAO itemDAO = new ItemDAO();
-
     public boolean insertAuction(
             Connection conn,
             String auctionId,
@@ -115,7 +111,15 @@ public class AuctionDAO extends BaseDAO {
     ) throws SQLException {
         String sql = """
                 UPDATE auctions 
-                SET status = ? WHERE item_id = ?
+                SET status = ?
+                WHERE id = (
+                    SELECT id FROM (
+                        SELECT id FROM auctions
+                        WHERE item_id = ?
+                        ORDER BY start_time DESC, id DESC
+                        LIMIT 1
+                    ) latest_auction
+                )
                 """;
 
         try(PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -131,8 +135,15 @@ public class AuctionDAO extends BaseDAO {
         String sql = """
                 UPDATE auctions
                 SET end_time = ?
-                WHERE item_id = ?
-                  AND status = 'RUNNING'
+                WHERE id = (
+                    SELECT id FROM (
+                        SELECT id FROM auctions
+                        WHERE item_id = ?
+                          AND status = 'RUNNING'
+                        ORDER BY start_time DESC, id DESC
+                        LIMIT 1
+                    ) running_auction
+                )
                 """;
 
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -150,7 +161,14 @@ public class AuctionDAO extends BaseDAO {
     ) throws SQLException {
         String sql = """
                 UPDATE auctions SET status = ?, winner_id = ?, final_price = ? 
-                WHERE item_id = ?
+                WHERE id = (
+                    SELECT id FROM (
+                        SELECT id FROM auctions
+                        WHERE item_id = ?
+                        ORDER BY start_time DESC, id DESC
+                        LIMIT 1
+                    ) latest_auction
+                )
                 """;
 
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
@@ -170,6 +188,32 @@ public class AuctionDAO extends BaseDAO {
         String sql = """
                 SELECT id FROM auctions
                 WHERE item_id = ?
+                  AND status = 'RUNNING'
+                ORDER BY start_time DESC, id DESC
+                LIMIT 1
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, itemId);
+
+            try (ResultSet rs = pstm.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("id");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public String findLatestAuctionByItemId(
+            Connection conn,
+            String itemId
+    ) throws SQLException {
+        String sql = """
+                SELECT id FROM auctions
+                WHERE item_id = ?
+                ORDER BY start_time DESC, id DESC
                 LIMIT 1
                 """;
 
@@ -227,7 +271,14 @@ public class AuctionDAO extends BaseDAO {
         String sql = """
                 UPDATE auctions
                 SET status = ?, winner_id = NULL, final_price = 0
-                WHERE item_id = ?
+                WHERE id = (
+                    SELECT id FROM (
+                        SELECT id FROM auctions
+                        WHERE item_id = ?
+                        ORDER BY start_time DESC, id DESC
+                        LIMIT 1
+                    ) latest_auction
+                )
                 """;
 
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {

@@ -9,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,7 @@ public class Database {
             + "&serverTimezone=" + APP_TIMEZONE;
 
     private static final String DB_USER = System.getenv().getOrDefault("DB_USER", "auction_user");
-    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "Auction123");
+    private static final String DB_PASSWORD = System.getenv().getOrDefault("DB_PASSWORD", "Auction@123456");
     private static final String ADMIN_BOOTSTRAP_ID = getEnvOrDefault("ADMIN_BOOTSTRAP_ID", "ADMIN-DEFAULT");
     private static final String ADMIN_BOOTSTRAP_FULL_NAME = getEnvOrDefault("ADMIN_BOOTSTRAP_FULL_NAME", "System Admin");
     private static final String ADMIN_BOOTSTRAP_USERNAME = getEnvOrDefault("ADMIN_BOOTSTRAP_USERNAME", "admin");
@@ -129,7 +131,7 @@ public class Database {
             String createAuctionsTable = """
                     CREATE TABLE IF NOT EXISTS auctions (
                     id VARCHAR(100) PRIMARY KEY,
-                    item_id VARCHAR(100) UNIQUE NOT NULL,
+                    item_id VARCHAR(100) NOT NULL,
                     start_time TIMESTAMP NOT NULL,
                     end_time TIMESTAMP NOT NULL,
                     status VARCHAR(20) NOT NULL DEFAULT 'OPEN' CHECK ( status IN ('OPEN', 'RUNNING', 'FINISHED', 'PAID', 'CANCELED')),
@@ -213,6 +215,7 @@ public class Database {
             ensureColumn(connection1, "users", "balance", "DECIMAL(15,2) NOT NULL DEFAULT 0");
             ensureColumn(connection1, "items", "auction_approved", "BOOLEAN NOT NULL DEFAULT FALSE");
             ensureColumn(connection1, "items", "category", "VARCHAR(30) NOT NULL DEFAULT 'OTHER'");
+            ensureAuctionsAllowMultiplePerItem(connection1);
             backfillItemCategoryData(connection1);
             backfillApprovalData(connection1);
             ensureDefaultAdmin(connection1);
@@ -245,6 +248,51 @@ public class Database {
             statement.executeUpdate(
                     "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition
             );
+        }
+    }
+
+    private void ensureAuctionsAllowMultiplePerItem(Connection connection) throws SQLException {
+        DatabaseMetaData metaData = connection.getMetaData();
+        ensureIndex(connection, metaData, "auctions", "idx_auctions_item_id", "item_id");
+
+        List<String> uniqueItemIndexes = new ArrayList<>();
+        try (ResultSet indexes = metaData.getIndexInfo(connection.getCatalog(), null, "auctions", true, false)) {
+            while (indexes.next()) {
+                String indexName = indexes.getString("INDEX_NAME");
+                String columnName = indexes.getString("COLUMN_NAME");
+                if (indexName == null || "PRIMARY".equalsIgnoreCase(indexName)) {
+                    continue;
+                }
+                if ("item_id".equalsIgnoreCase(columnName) && !uniqueItemIndexes.contains(indexName)) {
+                    uniqueItemIndexes.add(indexName);
+                }
+            }
+        }
+
+        for (String indexName : uniqueItemIndexes) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE auctions DROP INDEX `" + indexName.replace("`", "``") + "`");
+            }
+        }
+    }
+
+    private void ensureIndex(
+            Connection connection,
+            DatabaseMetaData metaData,
+            String tableName,
+            String indexName,
+            String columnName
+    ) throws SQLException {
+        try (ResultSet indexes = metaData.getIndexInfo(connection.getCatalog(), null, tableName, false, false)) {
+            while (indexes.next()) {
+                if (indexName.equalsIgnoreCase(indexes.getString("INDEX_NAME"))) {
+                    return;
+                }
+            }
+        }
+
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("CREATE INDEX " + indexName + " ON " + tableName + " (" + columnName + ")");
         }
     }
 

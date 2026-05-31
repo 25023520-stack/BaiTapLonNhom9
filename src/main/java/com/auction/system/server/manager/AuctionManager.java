@@ -134,6 +134,8 @@ public class AuctionManager {
             refreshedItem.setHighestBidderId(null);
             refreshedItem.setHighestBidderUsername(null);
             itemDAO.clearAuctionRequest(refreshedItem.getId());
+            refreshedItem.clearBidHistory();
+            autoBidDAO.deactivateByItemId(refreshedItem.getId());
             auctionsById.remove(refreshedItem.getId());
         }
         Item updatedItem = requireItem(item.getId());
@@ -185,7 +187,7 @@ public class AuctionManager {
                 throw new IllegalArgumentException("Auction end time must be after start time");
             }
 
-            String auctionId = "AUC-" + itemId;
+            String auctionId = "AUC-" + itemId + "-" + UUID.randomUUID();
             LocalDateTime now = LocalDateTime.now();
             AuctionStatus initialStatus = startTime.isAfter(now)
                     ? AuctionStatus.OPEN
@@ -207,26 +209,14 @@ public class AuctionManager {
                         throw new SQLException("Cannot update item auction info");
                     }
 
-                    boolean auctionSaved;
-
-                    if (auctionDAO.existsByItemId(conn, itemId)) {
-                        auctionSaved = auctionDAO.updateAuctionTimeAndStatus(
-                                conn,
-                                itemId,
-                                startTime,
-                                endTime,
-                                initialStatus
-                        );
-                    } else {
-                        auctionSaved = auctionDAO.insertAuction(
-                                conn,
-                                auctionId,
-                                itemId,
-                                startTime,
-                                endTime,
-                                initialStatus
-                        );
-                    }
+                    boolean auctionSaved = auctionDAO.insertAuction(
+                            conn,
+                            auctionId,
+                            itemId,
+                            startTime,
+                            endTime,
+                            initialStatus
+                    );
 
                     if (!auctionSaved) {
                         throw new SQLException("Cannot save auction");
@@ -291,7 +281,7 @@ public class AuctionManager {
                 throw new IllegalStateException("Only CANCELED auctions can be relisted");
             }
 
-            String auctionId = "AUC-" + itemId;
+            String auctionId = "AUC-" + itemId + "-" + UUID.randomUUID();
             AuctionStatus initialStatus = startTime.isAfter(LocalDateTime.now())
                     ? AuctionStatus.OPEN
                     : AuctionStatus.RUNNING;
@@ -311,9 +301,14 @@ public class AuctionManager {
                         throw new SQLException("Cannot relist item");
                     }
 
-                    boolean auctionSaved = auctionDAO.existsByItemId(conn, itemId)
-                            ? auctionDAO.relistAuction(conn, itemId, startTime, endTime, initialStatus)
-                            : auctionDAO.insertAuction(conn, auctionId, itemId, startTime, endTime, initialStatus);
+                    boolean auctionSaved = auctionDAO.insertAuction(
+                            conn,
+                            auctionId,
+                            itemId,
+                            startTime,
+                            endTime,
+                            initialStatus
+                    );
                     if (!auctionSaved) {
                         throw new SQLException("Cannot save relisted auction");
                     }
@@ -327,6 +322,7 @@ public class AuctionManager {
                     item.setCurrentPrice(item.getStartPrice());
                     item.setHighestBidderId(null);
                     item.setHighestBidderUsername(null);
+                    item.clearBidHistory();
                     autoBidDAO.deactivateByItemId(itemId);
 
                     Auction auction = auctionsById.get(itemId);

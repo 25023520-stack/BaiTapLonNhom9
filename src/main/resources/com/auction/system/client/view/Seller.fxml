@@ -444,9 +444,6 @@
                                                 <Button fx:id="startAuctionButton" maxWidth="1.7976931348623157E308"
                                                         mnemonicParsing="false" onAction="#setStartAuctionButton"
                                                         styleClass="secondary-button" text="Gửi duyệt phiên" />
-                                                <Button fx:id="relistButton" maxWidth="1.7976931348623157E308"
-                                                        mnemonicParsing="false" onAction="#setRelistAuctionButton"
-                                                        styleClass="secondary-button" text="Đăng lại phiên" />
                                                 <Button fx:id="removeButton" maxWidth="1.7976931348623157E308"
                                                         mnemonicParsing="false" onAction="#setRemoveButton"
                                                         styleClass="danger-button" text="Xóa sản phẩm" />

@@ -16,6 +16,7 @@ import java.util.List;
 
 public class ItemDAO extends BaseDAO {
     private final BidDAO bidDAO = new BidDAO();
+    private final AuctionDAO auctionDAO = new AuctionDAO();
     private final UserDAO userDAO = new UserDAO();
 
     public boolean insertItem(Item item) {
@@ -142,11 +143,27 @@ public class ItemDAO extends BaseDAO {
         item.setAuctionApproved(rs.getBoolean("auction_approved"));
         item.setStartTime(toLocalDateTime(rs.getTimestamp("start_time")));
         item.setEndTime(toLocalDateTime(rs.getTimestamp("end_time")));
-        for (com.auction.system.model.auction.Bid bid : bidDAO.findByItemId(id)) {
-            item.addBid(bid);
-        }
+        loadCurrentAuctionBids(item);
 
      return item;
+    }
+
+    private void loadCurrentAuctionBids(Item item) {
+        if (item.getStatus() == AuctionStatus.OPEN && !item.isAuctionApproved()) {
+            return;
+        }
+
+        try (Connection conn = getConnection()) {
+            String auctionId = auctionDAO.findLatestAuctionByItemId(conn, item.getId());
+            if (auctionId == null) {
+                return;
+            }
+            for (com.auction.system.model.auction.Bid bid : bidDAO.findByAuctionId(auctionId)) {
+                item.addBid(bid);
+            }
+        } catch (SQLException e) {
+            System.err.println("Loi lay bid cua phien hien tai: " + e.getMessage());
+        }
     }
 
     public boolean updateItem(Item item) {
