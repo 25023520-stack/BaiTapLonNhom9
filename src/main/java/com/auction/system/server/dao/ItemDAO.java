@@ -1,6 +1,7 @@
 package com.auction.system.server.dao;
 
 import com.auction.system.factory.ItemFactory;
+import com.auction.system.common.money.Money;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.User;
@@ -44,8 +45,8 @@ public class ItemDAO extends BaseDAO {
             pstm.setString(4, item.getCategory());
             pstm.setString(5, item.getImagePath());
 
-            pstm.setBigDecimal(6, java.math.BigDecimal.valueOf(item.getStartPrice()));
-            pstm.setBigDecimal(7, java.math.BigDecimal.valueOf(currentPrice));
+            pstm.setBigDecimal(6, Money.toDatabaseAmount(item.getStartPrice()));
+            pstm.setBigDecimal(7, Money.toDatabaseAmount(currentPrice));
 
             pstm.setString(8, status.name());
             pstm.setBoolean(9, item.isAuctionApproved());
@@ -168,8 +169,8 @@ public class ItemDAO extends BaseDAO {
             pstm.setString(2, item.getDescription());
             pstm.setString(3, item.getImagePath());
             pstm.setString(4, item.getCategory());
-            pstm.setBigDecimal(5, BigDecimal.valueOf(item.getStartPrice()));
-            pstm.setBigDecimal(6, BigDecimal.valueOf(currentPrice));
+            pstm.setBigDecimal(5, Money.toDatabaseAmount(item.getStartPrice()));
+            pstm.setBigDecimal(6, Money.toDatabaseAmount(currentPrice));
             pstm.setString(7, item.getId());  // Sử dụng item ID để tìm item cần cập nhật
 
             // Thực thi câu SQL UPDATE
@@ -253,6 +254,33 @@ public class ItemDAO extends BaseDAO {
 
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
             pstm.setString(1, AuctionStatus.OPEN.name());
+            pstm.setTimestamp(2, toTimestamp(startTime));
+            pstm.setTimestamp(3, toTimestamp(endTime));
+            pstm.setString(4, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
+    public boolean relistAuction(
+            Connection conn,
+            String itemId,
+            AuctionStatus status,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    ) throws SQLException {
+        String sql = """
+                UPDATE items
+                SET status = ?,
+                    current_price = start_price,
+                    highest_bidder_id = NULL,
+                    start_time = ?,
+                    end_time = ?,
+                    auction_approved = TRUE
+                WHERE id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setString(1, status.name());
             pstm.setTimestamp(2, toTimestamp(startTime));
             pstm.setTimestamp(3, toTimestamp(endTime));
             pstm.setString(4, itemId);

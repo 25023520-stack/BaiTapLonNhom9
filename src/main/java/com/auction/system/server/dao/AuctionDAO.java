@@ -1,5 +1,6 @@
 package com.auction.system.server.dao;
 
+import com.auction.system.common.money.Money;
 import com.auction.system.model.auction.Auction;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.model.item.Item;
@@ -81,6 +82,32 @@ public class AuctionDAO extends BaseDAO {
         }
     }
 
+    public boolean relistAuction(
+            Connection conn,
+            String itemId,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            AuctionStatus status
+    ) throws SQLException {
+        String sql = """
+                UPDATE auctions
+                SET start_time = ?,
+                    end_time = ?,
+                    status = ?,
+                    winner_id = NULL,
+                    final_price = 0
+                WHERE item_id = ?
+                """;
+
+        try (PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setTimestamp(1, Timestamp.valueOf(startTime));
+            pstm.setTimestamp(2, Timestamp.valueOf(endTime));
+            pstm.setString(3, status.name());
+            pstm.setString(4, itemId);
+            return pstm.executeUpdate() > 0;
+        }
+    }
+
     public boolean updateStatus(
             Connection conn,
             String itemId,
@@ -129,7 +156,7 @@ public class AuctionDAO extends BaseDAO {
         try (PreparedStatement pstm = conn.prepareStatement(sql)) {
             pstm.setString(1, AuctionStatus.FINISHED.name());
             pstm.setString(2, winnerId);
-            pstm.setBigDecimal(3, BigDecimal.valueOf(finalPrice));
+            pstm.setBigDecimal(3, Money.toDatabaseAmount(finalPrice));
             pstm.setString(4, itemId);
 
             return pstm.executeUpdate() > 0;
@@ -208,5 +235,26 @@ public class AuctionDAO extends BaseDAO {
             pstm.setString(2, itemId);
             return pstm.executeUpdate() > 0;
         }
+    }
+
+    public List<String> findUnpaidFinishedItemIdsOlderThan(int minutes) throws SQLException {
+        String sql = """
+                SELECT item_id FROM auctions
+                WHERE status = 'FINISHED'
+                  AND winner_id IS NOT NULL
+                  AND end_time < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                """;
+
+        List<String> result = new ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement pstm = conn.prepareStatement(sql)) {
+            pstm.setInt(1, minutes);
+            try (ResultSet rs = pstm.executeQuery()) {
+                while (rs.next()) {
+                    result.add(rs.getString("item_id"));
+                }
+            }
+        }
+        return result;
     }
 }

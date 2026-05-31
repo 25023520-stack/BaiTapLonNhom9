@@ -1,24 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ComboBox?>
-<?import javafx.scene.control.DatePicker?>
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.Spinner?>
-<?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.layout.VBox?>
-<?import javafx.scene.shape.Circle?>
-<?import javafx.scene.shape.Rectangle?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
 
-<BorderPane minHeight="600.0" minWidth="900.0" prefHeight="700.0" prefWidth="1120.0" styleClass="main-background" stylesheets="@Styles.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.system.client.controller.SellerController">
+<BorderPane minHeight="600.0" minWidth="900.0" prefHeight="700.0" prefWidth="1120.0"
+            styleClass="main-background" stylesheets="@Styles.css"
+            xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.auction.system.client.controller.SellerController">
 
     <top>
         <VBox spacing="0.0" styleClass="seller-header">
@@ -47,6 +37,7 @@
                                 <Label styleClass="seller-status-text" text="Seller Workspace" />
                             </children>
                         </HBox>
+                        <Button mnemonicParsing="false" onAction="#showSellerProfile" styleClass="secondary-button" text="Hồ sơ" />
                         <Button mnemonicParsing="false" onAction="#handleLogout" styleClass="logout-button" text="Đăng xuất" />
                     </children>
                 </HBox>
@@ -55,177 +46,419 @@
         </VBox>
     </top>
 
-    <left>
-        <VBox prefWidth="330.0" spacing="16.0" styleClass="seller-sidebar">
-            <children>
-                <VBox spacing="5.0">
-                    <children>
-                        <Label styleClass="seller-section-title" text="Sản phẩm của tôi" />
-                        <Label styleClass="seller-section-subtitle" text="Chọn một sản phẩm để sửa thông tin hoặc xóa khỏi danh sách." wrapText="true" />
-                    </children>
-                </VBox>
-                <Button fx:id="refreshButton" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#onRefreshClick" styleClass="secondary-button" text="Làm mới danh sách" />
-                <ListView fx:id="sellerItemList" styleClass="auction-list-view" VBox.vgrow="ALWAYS" />
-                <Button fx:id="newItemButton" mnemonicParsing="false" onAction="#clearFormForNew" styleClass="secondary-button" text="Sản phẩm mới" />
-            </children>
-        </VBox>
-    </left>
-
     <center>
-        <VBox spacing="18.0" styleClass="seller-center">
+        <StackPane styleClass="bidder-workspace">
             <children>
-                <HBox alignment="TOP_LEFT" spacing="18.0">
-                    <children>
-                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                <BorderPane fx:id="sellerCatalogView" styleClass="bidder-main-view">
+                    <top>
+                        <VBox spacing="12.0" styleClass="bidder-toolbar">
                             <children>
-                                <Label styleClass="seller-page-title" text="Thông tin sản phẩm" />
-                                <Label styleClass="seller-page-subtitle" text="Nhập thông tin cần thiết trước khi thêm mới hoặc cập nhật sản phẩm." />
-                                <Label fx:id="accountStatusLabel" styleClass="seller-inline-status" text="Trang thai tai khoan seller" wrapText="true" />
-                            </children>
-                        </VBox>
-                        <Region minWidth="24.0" HBox.hgrow="ALWAYS" />
-                        <Label fx:id="sellerBalanceLabel" alignment="CENTER" minWidth="250.0" styleClass="seller-balance-card" text="Seller: ...&#10;Số dư: 0 VND" textAlignment="CENTER" wrapText="true" />
-                    </children>
-                </HBox>
-
-                <VBox spacing="16.0" styleClass="seller-form-card">
-                    <children>
-                        <VBox spacing="8.0">
-                            <children>
-                                <Label styleClass="input-label" text="Tên sản phẩm" />
-                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                <HBox alignment="TOP_LEFT" spacing="16.0">
                                     <children>
-                                        <Label styleClass="input-icon" text="\@" />
-                                        <TextField fx:id="nameField" promptText="Nhập tên sản phẩm" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="seller-page-title" text="Sản phẩm của tôi" />
+                                                <Label styleClass="seller-page-subtitle" text="Theo dõi sản phẩm, trạng thái duyệt và hiệu quả đấu giá." />
+                                                <Label fx:id="accountStatusLabel" styleClass="seller-inline-status" text="Trạng thái tài khoản seller" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <Label fx:id="sellerBalanceLabel" alignment="CENTER" minWidth="245.0"
+                                               styleClass="seller-balance-card" text="Seller: ...&#10;Số dư: 0 VND"
+                                               textAlignment="CENTER" wrapText="true" />
                                     </children>
                                 </HBox>
-                            </children>
-                        </VBox>
 
-                        <HBox spacing="14.0">
-                            <children>
-                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="seller-dashboard-strip">
                                     <children>
-                                        <Label styleClass="input-label" text="Giá khởi điểm" />
-                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                        <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <Label styleClass="input-icon" text="VNĐ" />
-                                                <TextField fx:id="startPriceField" promptText="Nhập giá khởi điểm" styleClass="input-field" HBox.hgrow="ALWAYS" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </VBox>
-                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
-                                    <children>
-                                        <Label styleClass="input-label" text="Loại sản phẩm" />
-                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
-                                            <children>
-                                                <Label styleClass="input-icon" text="CAT" />
-                                                <ComboBox fx:id="categoryComboBox" maxWidth="1.7976931348623157E308" styleClass="combo-field" HBox.hgrow="ALWAYS" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </VBox>
-                            </children>
-                        </HBox>
-
-                        <VBox spacing="8.0" VBox.vgrow="ALWAYS">
-                            <children>
-                                <Label styleClass="input-label" text="Mô tả" />
-                                <TextArea fx:id="descriptionField" prefRowCount="8" promptText="Nhập mô tả sản phẩm" styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
-                            </children>
-                        </VBox>
-
-                        <HBox alignment="CENTER_LEFT" spacing="14.0">
-                            <children>
-                                <ImageView fx:id="imagePreview" fitHeight="96.0" fitWidth="128.0" preserveRatio="true" styleClass="seller-image-preview" />
-                                <VBox maxWidth="420.0" prefWidth="360.0" spacing="8.0">
-                                    <children>
-                                        <Label styleClass="input-label" text="Ảnh sản phẩm" />
-                                        <Label fx:id="imageNameLabel" styleClass="seller-page-subtitle" text="Chưa chọn ảnh" wrapText="true" />
-                                        <Button fx:id="chooseImageButton" mnemonicParsing="false" onAction="#chooseImage" styleClass="secondary-button" text="Chọn ảnh" />
-                                    </children>
-                                </VBox>
-                                <HBox fx:id="auctionInfoBox" alignment="CENTER_LEFT" managed="false" spacing="38.0" translateX="50.0" translateY="42.0" visible="false">
-                                    <children>
-                                        <VBox spacing="4.0">
-                                            <children>
-                                                <Label styleClass="input-label" text="Thời gian còn lại" />
-                                                <Label fx:id="timeRemainingLabel" styleClass="seller-inline-status" text="—" />
+                                                <Label styleClass="bidder-eyebrow" text="Tổng sản phẩm" />
+                                                <Label fx:id="sellerTotalCountLabel" styleClass="seller-stat-value" text="0" />
                                             </children>
                                         </VBox>
-                                        <VBox spacing="4.0">
+                                        <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <Label styleClass="input-label" text="Người bid cao nhất" />
-                                                <Label fx:id="highestBidderLabel" styleClass="seller-inline-status" text="Chua co" />
+                                                <Label styleClass="bidder-eyebrow" text="Đang đấu giá" />
+                                                <Label fx:id="sellerRunningCountLabel" styleClass="seller-stat-value" text="0" />
                                             </children>
                                         </VBox>
-                                        <VBox spacing="4.0">
+                                        <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <Label styleClass="input-label" text="Giá cao nhất hiện tại" />
-                                                <Label fx:id="currentBidLabel" styleClass="seller-inline-status" text="—" />
+                                                <Label styleClass="bidder-eyebrow" text="Chờ duyệt" />
+                                                <Label fx:id="sellerPendingCountLabel" styleClass="seller-stat-value" text="0" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <Label styleClass="bidder-eyebrow" text="Đã bán" />
+                                                <Label fx:id="sellerSoldCountLabel" styleClass="seller-stat-value" text="0" />
                                             </children>
                                         </VBox>
                                     </children>
                                 </HBox>
-                            </children>
-                        </HBox>
 
-                        <HBox alignment="CENTER_LEFT" spacing="14.0">
-                            <children>
-                                <Label styleClass="input-label" text="Thời lượng phiên" />
-                                <Spinner fx:id="durationHoursSpinner" editable="true" prefWidth="120.0" styleClass="combo-field" />
-                                <Label styleClass="seller-page-subtitle" text="giờ" />
-                            </children>
-                        </HBox>
-
-                        <HBox alignment="CENTER_LEFT" spacing="14.0">
-                            <children>
-                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="bidder-filter-strip">
                                     <children>
-                                        <Label styleClass="input-label" text="Thời điểm bắt đầu" />
-                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                        <VBox spacing="6.0" HBox.hgrow="ALWAYS">
                                             <children>
-                                                <DatePicker fx:id="startDatePicker" prefWidth="145.0" styleClass="combo-field" />
-                                                <Spinner fx:id="startHourSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
-                                                <Label styleClass="seller-page-subtitle" text="giờ" />
-                                                <Spinner fx:id="startMinuteSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
-                                                <Label styleClass="seller-page-subtitle" text="phút" />
+                                                <Label styleClass="input-label" text="Tìm sản phẩm" />
+                                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                                    <children>
+                                                        <Label styleClass="input-icon" text="S" />
+                                                        <TextField fx:id="sellerSearchField" promptText="Nhập tên sản phẩm" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
                                             </children>
-                                        </HBox>
+                                        </VBox>
+                                        <VBox prefWidth="210.0" spacing="6.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Loại sản phẩm" />
+                                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                                    <children>
+                                                        <Label styleClass="input-icon" text="CAT" />
+                                                        <ComboBox fx:id="sellerCategoryFilterComboBox" maxWidth="1.7976931348623157E308" styleClass="combo-field" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </VBox>
+                                        <VBox prefWidth="210.0" spacing="6.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Trạng thái" />
+                                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                                    <children>
+                                                        <Label styleClass="input-icon" text="ST" />
+                                                        <ComboBox fx:id="sellerStatusFilterComboBox" maxWidth="1.7976931348623157E308" styleClass="combo-field" HBox.hgrow="ALWAYS" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="8.0">
+                                            <children>
+                                                <Label styleClass="input-label" text="Thao tác" />
+                                                <HBox spacing="8.0">
+                                                    <children>
+                                                        <Button fx:id="refreshButton" mnemonicParsing="false" onAction="#onRefreshClick" styleClass="secondary-button" text="Làm mới" />
+                                                        <Button fx:id="newItemButton" mnemonicParsing="false" onAction="#clearFormForNew" styleClass="primary-button" text="+ Sản phẩm" />
+                                                    </children>
+                                                </HBox>
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                    </top>
+
+                    <center>
+                        <StackPane styleClass="product-grid-shell">
+                            <children>
+                                <ScrollPane fitToWidth="true" styleClass="auction-scroll-pane">
+                                    <content>
+                                        <FlowPane fx:id="sellerProductGridPane" hgap="18.0" prefWrapLength="880.0" vgap="18.0" styleClass="product-grid" />
+                                    </content>
+                                </ScrollPane>
+                                <Label fx:id="emptySellerCatalogLabel" managed="false" styleClass="empty-catalog-label"
+                                       text="Không có sản phẩm phù hợp." visible="false" />
+                                <ListView fx:id="sellerItemList" managed="false" visible="false" />
+                            </children>
+                        </StackPane>
+                    </center>
+                </BorderPane>
+
+                <BorderPane fx:id="sellerProfileView" managed="false" styleClass="auction-detail-view" visible="false">
+                    <top>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="auction-detail-topbar">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#showSellerCatalog" styleClass="secondary-button" text="← Quay lại" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="seller-page-title" text="Hồ sơ seller" />
+                                        <Label styleClass="seller-page-subtitle" text="Thông tin tài khoản, doanh thu và lịch sử kết quả bán." />
                                     </children>
                                 </VBox>
+                            </children>
+                        </HBox>
+                    </top>
 
-                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                    <center>
+                        <ScrollPane fitToWidth="true" styleClass="auction-scroll-pane">
+                            <content>
+                                <VBox spacing="14.0" styleClass="profile-content">
                                     <children>
-                                        <Label styleClass="input-label" text="Thời điểm kết thúc" />
-                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                        <HBox spacing="14.0">
                                             <children>
-                                                <DatePicker fx:id="endDatePicker" prefWidth="145.0" styleClass="combo-field" />
-                                                <Spinner fx:id="endHourSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
-                                                <Label styleClass="seller-page-subtitle" text="giờ" />
-                                                <Spinner fx:id="endMinuteSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
-                                                <Label styleClass="seller-page-subtitle" text="phút" />
+                                                <VBox spacing="5.0" styleClass="auction-info-panel" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Tài khoản" />
+                                                        <Label fx:id="sellerProfileNameLabel" styleClass="bidder-item-name" text="-" wrapText="true" />
+                                                        <Label fx:id="sellerProfileUsernameLabel" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                        <Label fx:id="sellerProfileEmailLabel" styleClass="auction-info-value" text="-" wrapText="true" />
+                                                        <Label fx:id="sellerProfileApprovalLabel" styleClass="seller-inline-status" text="-" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox minWidth="260.0" spacing="5.0" styleClass="bidder-main-wallet">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Số dư" />
+                                                        <Label fx:id="sellerProfileBalanceLabel" styleClass="bidder-price-value" text="-" wrapText="true" />
+                                                    </children>
+                                                </VBox>
                                             </children>
                                         </HBox>
+
+                                        <HBox spacing="12.0" styleClass="profile-metric-strip">
+                                            <children>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Doanh thu" />
+                                                        <Label fx:id="sellerProfileRevenueLabel" styleClass="seller-stat-value" text="0 VND" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Đã bán" />
+                                                        <Label fx:id="sellerProfileSoldItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Chờ thanh toán" />
+                                                        <Label fx:id="sellerProfileFinishedItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Bị hủy" />
+                                                        <Label fx:id="sellerProfileCanceledItemsLabel" styleClass="seller-stat-value" text="0" />
+                                                    </children>
+                                                </VBox>
+                                                <VBox spacing="3.0" styleClass="seller-stat-card" HBox.hgrow="ALWAYS">
+                                                    <children>
+                                                        <Label styleClass="bidder-eyebrow" text="Tỷ lệ thanh toán" />
+                                                        <Label fx:id="sellerProfileSuccessRateLabel" styleClass="seller-stat-value" text="0%" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </HBox>
+
+                                        <VBox spacing="8.0" styleClass="auction-info-panel">
+                                            <children>
+                                                <Label styleClass="bidder-panel-title" text="Lịch sử kết quả bán" />
+                                                <TextArea fx:id="sellerProfileResultArea" editable="false" prefRowCount="13" styleClass="auction-textarea" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </center>
+                </BorderPane>
+
+                <BorderPane fx:id="sellerDetailView" managed="false" styleClass="auction-detail-view" visible="false">
+                    <top>
+                        <HBox alignment="CENTER_LEFT" spacing="12.0" styleClass="auction-detail-topbar">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#showSellerCatalog" styleClass="secondary-button" text="← Quay lại" />
+                                <VBox spacing="2.0" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label styleClass="seller-page-title" text="Thông tin sản phẩm" />
+                                        <Label styleClass="seller-page-subtitle" text="Thêm, cập nhật hoặc gửi duyệt phiên đấu giá." />
                                     </children>
                                 </VBox>
                             </children>
                         </HBox>
+                    </top>
 
-                        <Label fx:id="auctionApprovalLabel" styleClass="seller-inline-status" text="Trang thai phien" wrapText="true" />
+                    <center>
+                        <ScrollPane fitToWidth="true" styleClass="auction-scroll-pane">
+                            <content>
+                                <HBox spacing="18.0" styleClass="auction-detail-content">
+                                    <children>
+                                        <VBox prefWidth="300.0" minWidth="300.0" maxWidth="300.0" spacing="12.0" styleClass="auction-image-panel">
+                                            <children>
+                                                <StackPane minHeight="225.0" prefHeight="245.0" prefWidth="260.0" maxWidth="260.0"
+                                                           styleClass="auction-detail-image-frame">
+                                                    <children>
+                                                        <Label fx:id="sellerImagePlaceholder" styleClass="image-placeholder-text" text="Chưa có ảnh" />
+                                                        <ImageView fx:id="imagePreview" fitHeight="205.0" fitWidth="240.0"
+                                                                   onMouseClicked="#showSelectedSellerImagePreview"
+                                                                   pickOnBounds="true" preserveRatio="true" smooth="true" />
+                                                    </children>
+                                                </StackPane>
+                                                <Button fx:id="chooseImageButton" maxWidth="1.7976931348623157E308"
+                                                        mnemonicParsing="false" onAction="#chooseImage"
+                                                        styleClass="secondary-button" text="Chọn ảnh" />
+                                                <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false"
+                                                        onAction="#showSelectedSellerImagePreview" styleClass="secondary-button"
+                                                        text="Xem ảnh lớn" />
+                                                <Label fx:id="imageNameLabel" styleClass="seller-page-subtitle" text="Chưa chọn ảnh" wrapText="true" />
+                                                <Label fx:id="imageValidationLabel" managed="false" styleClass="seller-validation-label"
+                                                       text="" visible="false" wrapText="true" />
+                                            </children>
+                                        </VBox>
 
-                        <HBox alignment="CENTER_RIGHT" spacing="10.0">
-                            <children>
-                                <Button fx:id="removeButton" mnemonicParsing="false" onAction="#setRemoveButton" styleClass="danger-button" text="Xóa" />
-                                <Button fx:id="updateButton" mnemonicParsing="false" onAction="#setUpdateButton" styleClass="secondary-button" text="Cập nhật" />
-                                <Button fx:id="startAuctionButton" mnemonicParsing="false" onAction="#setStartAuctionButton" styleClass="secondary-button" text="Gửi duyệt" />
-                                <Button fx:id="addButton" defaultButton="true" mnemonicParsing="false" onAction="#setAddButton" styleClass="primary-button" text="Thêm sản phẩm" />
-                            </children>
-                        </HBox>
-                    </children>
-                </VBox>
+                                        <VBox spacing="14.0" HBox.hgrow="ALWAYS">
+                                            <children>
+                                                <VBox spacing="14.0" styleClass="auction-info-panel">
+                                                    <children>
+                                                        <VBox spacing="8.0">
+                                                            <children>
+                                                                <Label styleClass="input-label" text="Tên sản phẩm" />
+                                                                <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                                                    <children>
+                                                                        <Label styleClass="input-icon" text="\@" />
+                                                                        <TextField fx:id="nameField" promptText="Nhập tên sản phẩm" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                                                    </children>
+                                                                </HBox>
+                                                            </children>
+                                                        </VBox>
+
+                                                        <HBox spacing="14.0">
+                                                            <children>
+                                                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                                                    <children>
+                                                                        <Label styleClass="input-label" text="Giá khởi điểm" />
+                                                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                                                            <children>
+                                                                                <Label styleClass="input-icon" text="VND" />
+                                                                                <TextField fx:id="startPriceField" promptText="Nhập giá khởi điểm" styleClass="input-field" HBox.hgrow="ALWAYS" />
+                                                                            </children>
+                                                                        </HBox>
+                                                                    </children>
+                                                                </VBox>
+                                                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                                                    <children>
+                                                                        <Label styleClass="input-label" text="Loại sản phẩm" />
+                                                                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="input-wrapper">
+                                                                            <children>
+                                                                                <Label styleClass="input-icon" text="CAT" />
+                                                                                <ComboBox fx:id="categoryComboBox" maxWidth="1.7976931348623157E308" styleClass="combo-field" HBox.hgrow="ALWAYS" />
+                                                                            </children>
+                                                                        </HBox>
+                                                                    </children>
+                                                                </VBox>
+                                                            </children>
+                                                        </HBox>
+
+                                                        <VBox spacing="8.0" VBox.vgrow="ALWAYS">
+                                                            <children>
+                                                                <Label styleClass="input-label" text="Mô tả" />
+                                                                <TextArea fx:id="descriptionField" prefRowCount="9" promptText="Nhập mô tả sản phẩm"
+                                                                          styleClass="auction-textarea" wrapText="true" VBox.vgrow="ALWAYS" />
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </VBox>
+
+                                                <VBox spacing="12.0" styleClass="auction-info-panel">
+                                                    <children>
+                                                        <Label styleClass="bidder-panel-title" text="Lịch đấu giá" />
+                                                        <HBox alignment="CENTER_LEFT" spacing="14.0">
+                                                            <children>
+                                                                <Label styleClass="input-label" text="Thời lượng" />
+                                                                <Spinner fx:id="durationHoursSpinner" editable="true" prefWidth="82.0" styleClass="combo-field" />
+                                                                <Label styleClass="seller-page-subtitle" text="giờ" />
+                                                                <Spinner fx:id="durationMinutesSpinner" editable="true" prefWidth="82.0" styleClass="combo-field" />
+                                                                <Label styleClass="seller-page-subtitle" text="phút" />
+                                                            </children>
+                                                        </HBox>
+
+                                                        <VBox spacing="12.0">
+                                                            <children>
+                                                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                                                    <children>
+                                                                        <Label styleClass="input-label" text="Thời điểm bắt đầu" />
+                                                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                                                            <children>
+                                                                                <DatePicker fx:id="startDatePicker" prefWidth="145.0" styleClass="combo-field" />
+                                                                                <Spinner fx:id="startHourSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                                                <Label styleClass="seller-page-subtitle" text="giờ" />
+                                                                                <Spinner fx:id="startMinuteSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                                                <Label styleClass="seller-page-subtitle" text="phút" />
+                                                                            </children>
+                                                                        </HBox>
+                                                                    </children>
+                                                                </VBox>
+                                                                <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                                                                    <children>
+                                                                        <Label styleClass="input-label" text="Thời điểm kết thúc" />
+                                                                        <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                                                            <children>
+                                                                                <DatePicker fx:id="endDatePicker" prefWidth="145.0" styleClass="combo-field" />
+                                                                                <Spinner fx:id="endHourSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                                                <Label styleClass="seller-page-subtitle" text="giờ" />
+                                                                                <Spinner fx:id="endMinuteSpinner" editable="true" prefWidth="72.0" styleClass="combo-field" />
+                                                                                <Label styleClass="seller-page-subtitle" text="phút" />
+                                                                            </children>
+                                                                        </HBox>
+                                                                    </children>
+                                                                </VBox>
+                                                            </children>
+                                                        </VBox>
+                                                        <Label fx:id="auctionApprovalLabel" styleClass="seller-inline-status" text="Trạng thái phiên" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+                                            </children>
+                                        </VBox>
+
+                                        <VBox prefWidth="315.0" minWidth="285.0" spacing="14.0" styleClass="auction-action-panel">
+                                            <children>
+                                                <VBox spacing="5.0">
+                                                    <children>
+                                                        <Label styleClass="bidder-action-title" text="Quản lý phiên" />
+                                                        <Label styleClass="seller-page-subtitle" text="Các thao tác được khóa tự động khi phiên đang chạy." wrapText="true" />
+                                                    </children>
+                                                </VBox>
+
+                                                <HBox fx:id="auctionInfoBox" alignment="CENTER_LEFT" managed="false" spacing="10.0" visible="false">
+                                                    <children>
+                                                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                                            <children>
+                                                                <Label styleClass="input-label" text="Thời gian còn lại" />
+                                                                <Label fx:id="timeRemainingLabel" styleClass="seller-inline-status" text="—" />
+                                                            </children>
+                                                        </VBox>
+                                                        <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                                            <children>
+                                                                <Label styleClass="input-label" text="Giá cao nhất" />
+                                                                <Label fx:id="currentBidLabel" styleClass="seller-inline-status" text="—" />
+                                                            </children>
+                                                        </VBox>
+                                                    </children>
+                                                </HBox>
+
+                                                <VBox spacing="4.0">
+                                                    <children>
+                                                        <Label styleClass="input-label" text="Người bid cao nhất" />
+                                                        <Label fx:id="highestBidderLabel" styleClass="seller-inline-status" text="Chưa có" wrapText="true" />
+                                                    </children>
+                                                </VBox>
+
+                                                <Region VBox.vgrow="ALWAYS" />
+
+                                                <Button fx:id="addButton" maxWidth="1.7976931348623157E308"
+                                                        mnemonicParsing="false" onAction="#setAddButton"
+                                                        styleClass="primary-button" text="Thêm sản phẩm" />
+                                                <Button fx:id="updateButton" maxWidth="1.7976931348623157E308"
+                                                        mnemonicParsing="false" onAction="#setUpdateButton"
+                                                        styleClass="secondary-button" text="Cập nhật sản phẩm" />
+                                                <Button fx:id="startAuctionButton" maxWidth="1.7976931348623157E308"
+                                                        mnemonicParsing="false" onAction="#setStartAuctionButton"
+                                                        styleClass="secondary-button" text="Gửi duyệt phiên" />
+                                                <Button fx:id="relistButton" maxWidth="1.7976931348623157E308"
+                                                        mnemonicParsing="false" onAction="#setRelistAuctionButton"
+                                                        styleClass="secondary-button" text="Đăng lại phiên" />
+                                                <Button fx:id="removeButton" maxWidth="1.7976931348623157E308"
+                                                        mnemonicParsing="false" onAction="#setRemoveButton"
+                                                        styleClass="danger-button" text="Xóa sản phẩm" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                            </content>
+                        </ScrollPane>
+                    </center>
+                </BorderPane>
             </children>
-        </VBox>
+        </StackPane>
     </center>
 </BorderPane>

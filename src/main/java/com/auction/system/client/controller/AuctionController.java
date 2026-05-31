@@ -89,6 +89,9 @@ public class AuctionController {
     private Node auctionDetailView;
 
     @FXML
+    private Node profileView;
+
+    @FXML
     private GridPane productGridPane;
 
     @FXML
@@ -380,6 +383,7 @@ public class AuctionController {
     protected void showMainCatalog() {
         setViewVisible(mainCatalogView, true);
         setViewVisible(auctionDetailView, false);
+        setViewVisible(profileView, false);
         requestProductGridResize();
         refreshProductCardSummaries();
     }
@@ -387,10 +391,17 @@ public class AuctionController {
     protected void showAuctionDetail() {
         setViewVisible(mainCatalogView, false);
         setViewVisible(auctionDetailView, true);
+        setViewVisible(profileView, false);
         Platform.runLater(() -> {
             resizeAuctionDetailColumns();
             setItemImage(getSelectedItem());
         });
+    }
+
+    protected void showProfileView() {
+        setViewVisible(mainCatalogView, false);
+        setViewVisible(auctionDetailView, false);
+        setViewVisible(profileView, true);
     }
 
     private void setViewVisible(Node node, boolean visible) {

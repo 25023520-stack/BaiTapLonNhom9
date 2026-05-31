@@ -1,6 +1,7 @@
 package com.auction.system.model.item;
 
 import com.auction.system.model.auction.Bid;
+import com.auction.system.common.money.Money;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -59,7 +60,7 @@ public class Item implements Serializable {
         this.id = id;
         this.name = name; 
         this.description = description;
-        this.startPrice = startingPrice;
+        setStartPrice(startingPrice);
         this.sellerId = sellerId;
         setCategory(DEFAULT_CATEGORY);
     }
@@ -73,8 +74,8 @@ public class Item implements Serializable {
         this.id = id;
         this.name = name;
         this.description = description;
-        this.startPrice = startPrice;
-        this.currentPrice = currentPrice > 0 ? currentPrice : startPrice;
+        setStartPrice(startPrice);
+        setCurrentPrice(currentPrice > 0 ? currentPrice : startPrice);
         this.status = status != null ? status : AuctionStatus.OPEN;
         setCategory(DEFAULT_CATEGORY);
     }
@@ -118,7 +119,7 @@ public class Item implements Serializable {
     }
 
     public void setCurrentPrice(double currentPrice) {
-        this.currentPrice = currentPrice;
+        this.currentPrice = Money.normalize(currentPrice);
     }
 
     public double getStartPrice() {
@@ -126,7 +127,7 @@ public class Item implements Serializable {
     }
 
     public void setStartPrice(double startPrice) {
-        this.startPrice = startPrice;
+        this.startPrice = Money.normalize(startPrice);
     }
 
     public String getDescription() {
@@ -234,7 +235,7 @@ public class Item implements Serializable {
     }
 
     public void setCurrentUserAutoBidMaxBid(double currentUserAutoBidMaxBid) {
-        this.currentUserAutoBidMaxBid = currentUserAutoBidMaxBid;
+        this.currentUserAutoBidMaxBid = Money.normalize(currentUserAutoBidMaxBid);
     }
 
     public double getCurrentUserAutoBidIncrementAmount() {
@@ -242,7 +243,7 @@ public class Item implements Serializable {
     }
 
     public void setCurrentUserAutoBidIncrementAmount(double currentUserAutoBidIncrementAmount) {
-        this.currentUserAutoBidIncrementAmount = currentUserAutoBidIncrementAmount;
+        this.currentUserAutoBidIncrementAmount = Money.normalize(currentUserAutoBidIncrementAmount);
     }
 
     public String getSellerUsername() {

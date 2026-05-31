@@ -138,6 +138,37 @@ public class AuctionController {
         }
     }
 
+    public ResponsePayload relistAuction(Payload payload, User user) {
+        if (!(user instanceof Seller seller)) {
+            return ResponsePayload.error("Only sellers can relist auctions");
+        }
+
+        String itemId = payload.getString("id");
+        String startTimeText = payload.getString("startTime");
+        String endTimeText = payload.getString("endTime");
+        if (itemId == null || startTimeText == null || endTimeText == null) {
+            return ResponsePayload.error("id, startTime, endTime are required");
+        }
+
+        try {
+            auctionManager.relistAuction(
+                    itemId,
+                    seller,
+                    LocalDateTime.parse(startTimeText),
+                    LocalDateTime.parse(endTimeText)
+            );
+            Item updatedItem = auctionManager.findItemById(itemId)
+                    .orElseThrow(() -> new IllegalArgumentException("Item does not exist"));
+            attachImageData(updatedItem);
+
+            ResponsePayload response = ResponsePayload.ok("Auction relisted successfully");
+            response.put("item", updatedItem);
+            return response;
+        } catch (RuntimeException exception) {
+            return ResponsePayload.error(exception.getMessage());
+        }
+    }
+
     public ResponsePayload listItemsBySeller(Payload payload, User user) {
         if (!(user instanceof Seller)) {
             return ResponsePayload.error("Only sellers can list their items");

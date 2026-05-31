@@ -226,6 +226,28 @@ class AuctionManagerTest {
         assertEquals(AuctionStatus.FINISHED, storedItem.getStatus());
     }
 
+    @Test
+    void relistAuctionRestartsCanceledAuctionWithoutAdminApproval() {
+        prepareRunningAuction();
+
+        manager.placeBid(itemId, bidder, 650);
+        manager.finishAuction(itemId);
+        manager.winnerDecline(itemId, bidderId);
+
+        LocalDateTime relistStart = LocalDateTime.now().minusMinutes(1);
+        LocalDateTime relistEnd = LocalDateTime.now().plusMinutes(15);
+        manager.relistAuction(itemId, seller, relistStart, relistEnd);
+
+        Item storedItem = manager.findItemById(itemId).orElseThrow();
+
+        assertEquals(AuctionStatus.RUNNING, storedItem.getStatus());
+        assertTrue(storedItem.isAuctionApproved());
+        assertEquals(item.getStartPrice(), storedItem.getCurrentPrice());
+        assertNull(storedItem.getHighestBidderId());
+        assertEquals(relistStart, storedItem.getStartTime());
+        assertEquals(relistEnd, storedItem.getEndTime());
+    }
+
     private void prepareItemOnly() {
         manager.registerUser(seller);
         manager.registerUser(bidder);

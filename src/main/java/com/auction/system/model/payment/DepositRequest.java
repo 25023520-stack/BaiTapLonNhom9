@@ -1,4 +1,6 @@
-package com.auction.system.model.user;
+package com.auction.system.model.payment;
+
+import com.auction.system.common.money.Money;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -23,7 +25,7 @@ public class DepositRequest implements Serializable {
         this.id = id;
         this.bidderId = bidderId;
         this.bidderName = bidderName;
-        this.amount = amount;
+        this.amount = Money.normalize(amount);
         this.status = status;
         this.createdAt = createdAt;
         this.reviewedAt = reviewedAt;

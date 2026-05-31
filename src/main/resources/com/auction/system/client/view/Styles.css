@@ -558,6 +558,18 @@
     -fx-padding: 10 10 10 10;
 }
 
+.profile-content {
+    -fx-padding: 18 0 24 0;
+}
+
+.profile-metric-strip {
+    -fx-background-color: #F8FCFF;
+    -fx-background-radius: 12;
+    -fx-border-color: #D6E8F2;
+    -fx-border-radius: 12;
+    -fx-padding: 10 10 10 10;
+}
+
 .seller-stat-card {
     -fx-background-color: #FFFFFF;
     -fx-background-radius: 10;

@@ -1,5 +1,7 @@
 package com.auction.system.model.auction;
 
+import com.auction.system.common.money.Money;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -25,8 +27,8 @@ public class AutoBid implements Serializable {
         this.itemId = itemId;
         this.bidderId = bidderId;
         this.bidderUsername = bidderUsername;
-        this.maxBid = maxBid;
-        this.incrementAmount = incrementAmount;
+        setMaxBid(maxBid);
+        setIncrementAmount(incrementAmount);
         this.createdAt = LocalDateTime.now();
         this.active = true;
     }
@@ -68,7 +70,7 @@ public class AutoBid implements Serializable {
     }
 
     public void setMaxBid(double maxBid) {
-        this.maxBid = maxBid;
+        this.maxBid = Money.normalize(maxBid);
     }
 
     public double getIncrementAmount() {
@@ -76,7 +78,7 @@ public class AutoBid implements Serializable {
     }
 
     public void setIncrementAmount(double incrementAmount) {
-        this.incrementAmount = incrementAmount;
+        this.incrementAmount = Money.normalize(incrementAmount);
     }
 
     public LocalDateTime getCreatedAt() {

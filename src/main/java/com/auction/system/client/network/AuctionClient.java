@@ -3,6 +3,7 @@ package com.auction.system.client.network;
 import com.auction.system.common.json.GsonProvider;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
+import com.auction.system.common.payload.ResponsePayload;
 import com.google.gson.Gson;
 
 import java.io.BufferedReader;
@@ -22,6 +23,7 @@ public class AuctionClient implements Closeable {
     private static final Gson GSON = GsonProvider.get();
 
     private final BlockingQueue<Payload> responseQueue = new LinkedBlockingQueue<>();
+    private final Object requestLock = new Object();
 
     private Socket socket;
     private Thread readerThread;
@@ -56,9 +58,19 @@ public class AuctionClient implements Closeable {
         writer.println(GSON.toJson(payload));
     }
 
-    public synchronized Payload request(Payload payload) throws IOException {
-        send(payload);
-        return read();
+    public Payload request(Payload payload) throws IOException {
+        synchronized (requestLock) {
+            send(payload);
+            return read();
+        }
+    }
+
+    public ResponsePayload requestResponse(Payload payload) throws IOException {
+        Payload raw = request(payload);
+        ResponsePayload response = new ResponsePayload();
+        response.setType(raw.getType());
+        raw.getBody().forEach(response::put);
+        return response;
     }
 
     public synchronized void startListening(Consumer<Payload> onMessage, Consumer<Exception> onError) {

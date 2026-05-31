@@ -1,5 +1,7 @@
 package com.auction.system.model.user;
 
+import com.auction.system.common.money.Money;
+
 import java.io.Serializable;
 
 public abstract class User implements Serializable {
@@ -78,7 +80,7 @@ public abstract class User implements Serializable {
     }
 
     public void setBalance(double balance) {
-        this.balance = balance;
+        this.balance = Money.normalize(balance);
     }
 
     public abstract String getRole();

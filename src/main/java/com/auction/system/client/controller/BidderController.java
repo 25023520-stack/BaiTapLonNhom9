@@ -2,15 +2,18 @@ package com.auction.system.client.controller;
 
 import com.auction.system.client.context.AppContext;
 import com.auction.system.client.network.AuctionClient;
+import com.auction.system.common.json.GsonProvider;
 import com.auction.system.common.payload.BidPayload;
 import com.auction.system.common.payload.Payload;
 import com.auction.system.common.payload.PayloadType;
 import com.auction.system.common.payload.ResponsePayload;
+import com.auction.system.common.payload.UserProfilePayload;
 import com.auction.system.model.auction.AuctionStatus;
 import com.auction.system.common.payload.AutoBidPayload;
 import com.auction.system.model.item.Item;
 import com.auction.system.model.user.Bidder;
 import com.auction.system.model.user.User;
+import com.google.gson.Gson;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -21,12 +24,18 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class BidderController extends AuctionController {
+    private static final Gson GSON = GsonProvider.get();
+    private static final DateTimeFormatter PROFILE_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
     private final ObservableList<Bidder> bidders = FXCollections.observableArrayList();
 
     @FXML
@@ -64,6 +73,42 @@ public class BidderController extends AuctionController {
 
     @FXML
     private Button depositButton;
+
+    @FXML
+    private Label profileNameLabel;
+
+    @FXML
+    private Label profileUsernameLabel;
+
+    @FXML
+    private Label profileEmailLabel;
+
+    @FXML
+    private Label profileBalanceLabel;
+
+    @FXML
+    private Label profileTotalBidsLabel;
+
+    @FXML
+    private Label profileParticipatedItemsLabel;
+
+    @FXML
+    private Label profileLeadingItemsLabel;
+
+    @FXML
+    private Label profilePendingWinsLabel;
+
+    @FXML
+    private Label profilePaidItemsLabel;
+
+    @FXML
+    private Label profileTotalPaidLabel;
+
+    @FXML
+    private TextArea profileWonItemsArea;
+
+    @FXML
+    private TextArea profileBidHistoryArea;
 
     @FXML
     @Override
@@ -171,6 +216,144 @@ public class BidderController extends AuctionController {
         } finally {
             depositButton.setDisable(false);
         }
+    }
+
+    @FXML
+    public void showBidderProfile() {
+        showProfileView();
+        loadBidderProfile();
+    }
+
+    private void loadBidderProfile() {
+        try {
+            AuctionClient client = AppContext.getAuctionClient();
+            client.send(new Payload(PayloadType.GET_USER_PROFILE));
+            ResponsePayload response = readResponse(client);
+            if (!response.isSuccess()) {
+                showAlert(Alert.AlertType.ERROR, response.getMessage());
+                return;
+            }
+
+            UserProfilePayload profile = toProfile(response.getBody().get("profile"));
+            if (profile == null) {
+                showAlert(Alert.AlertType.ERROR, "Du lieu ho so khong hop le.");
+                return;
+            }
+            renderBidderProfile(profile);
+        } catch (IOException exception) {
+            showAlert(Alert.AlertType.ERROR, "Khong the ket noi toi server.");
+        }
+    }
+
+    private UserProfilePayload toProfile(Object rawProfile) {
+        if (rawProfile == null) {
+            return null;
+        }
+        if (rawProfile instanceof UserProfilePayload profile) {
+            return profile;
+        }
+        try {
+            return GSON.fromJson(GSON.toJson(rawProfile), UserProfilePayload.class);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private void renderBidderProfile(UserProfilePayload profile) {
+        setText(profileNameLabel, emptyToDash(profile.getFullName()));
+        setText(profileUsernameLabel, "@" + emptyToDash(profile.getUsername()));
+        setText(profileEmailLabel, emptyToDash(profile.getEmail()));
+        setText(profileBalanceLabel, formatCurrency(profile.getBalance()));
+
+        User currentUser = AppContext.getCurrentUser();
+        if (currentUser != null && currentUser.getId().equals(profile.getUserId())) {
+            currentUser.setBalance(profile.getBalance());
+            updateBalanceLabels(profile.getBalance());
+        }
+
+        UserProfilePayload.BidderStats stats = profile.getBidderStats();
+        setText(profileTotalBidsLabel, String.valueOf(stats == null ? 0 : stats.getTotalBids()));
+        setText(profileParticipatedItemsLabel, String.valueOf(stats == null ? 0 : stats.getParticipatedItems()));
+        setText(profileLeadingItemsLabel, String.valueOf(stats == null ? 0 : stats.getLeadingItems()));
+        setText(profilePendingWinsLabel, String.valueOf(stats == null ? 0 : stats.getPendingPaymentItems()));
+        setText(profilePaidItemsLabel, String.valueOf(stats == null ? 0 : stats.getPaidItems()));
+        setText(profileTotalPaidLabel, formatCurrency(stats == null ? 0 : stats.getTotalPaid()));
+
+        if (profileWonItemsArea != null) {
+            profileWonItemsArea.setText(formatWonItems(profile.getWonItems()));
+        }
+        if (profileBidHistoryArea != null) {
+            profileBidHistoryArea.setText(formatBidHistory(profile.getBidHistory()));
+        }
+    }
+
+    private String formatWonItems(List<UserProfilePayload.WonItemEntry> wonItems) {
+        if (wonItems == null || wonItems.isEmpty()) {
+            return "Chua co item thang.";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (UserProfilePayload.WonItemEntry entry : wonItems) {
+            builder.append(emptyToDash(entry.getItemName()))
+                    .append(" | ")
+                    .append(formatCurrency(entry.getFinalPrice()))
+                    .append(" | ")
+                    .append(statusText(entry.getStatus()))
+                    .append(" | Seller: @")
+                    .append(emptyToDash(entry.getSellerUsername()))
+                    .append(" | Ket thuc: ")
+                    .append(formatProfileDate(entry.getEndTime()))
+                    .append(System.lineSeparator());
+        }
+        return builder.toString();
+    }
+
+    private String formatBidHistory(List<UserProfilePayload.BidHistoryEntry> bidHistory) {
+        if (bidHistory == null || bidHistory.isEmpty()) {
+            return "Chua co lich su bid.";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (UserProfilePayload.BidHistoryEntry entry : bidHistory) {
+            builder.append(formatProfileDate(entry.getBidTime()))
+                    .append(" | ")
+                    .append(emptyToDash(entry.getItemName()))
+                    .append(" | ")
+                    .append(formatCurrency(entry.getAmount()))
+                    .append(entry.isHighestBid() ? " | Dang dan gia" : "")
+                    .append(" | ")
+                    .append(statusText(entry.getItemStatus()))
+                    .append(System.lineSeparator());
+        }
+        return builder.toString();
+    }
+
+    private String formatProfileDate(LocalDateTime value) {
+        return value == null ? "-" : PROFILE_DATE_FORMATTER.format(value);
+    }
+
+    private String statusText(String status) {
+        if (status == null || status.isBlank()) {
+            return "-";
+        }
+        return switch (status) {
+            case "RUNNING" -> "Dang dau gia";
+            case "FINISHED" -> "Cho thanh toan";
+            case "PAID" -> "Da thanh toan";
+            case "CANCELED" -> "Da huy";
+            case "OPEN" -> "Chua mo";
+            default -> status;
+        };
+    }
+
+    private void setText(Label label, String value) {
+        if (label != null) {
+            label.setText(value);
+        }
+    }
+
+    private String emptyToDash(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 
     @FXML
