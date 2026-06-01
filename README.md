@@ -196,10 +196,50 @@ Sau đó mở client từ JAR đã build:
 java -jar target/client.jar
 ```
 
-### Cách B: chạy trực tiếp bằng JAR
+### Cách B: chạy trực tiếp bằng JAR (mỗi người tự cài MySQL trên máy mình)
+
+#### B.1. Khởi tạo MySQL bằng MySQL Workbench
+
+Yêu cầu: đã cài **MySQL Server** và **MySQL Workbench** trên máy đang chạy server.
+
+1. Mở **MySQL Workbench** → kết nối vào MySQL local (mặc định `localhost:3306`, user `root`).
+2. Mở tab **Query** và chạy lần lượt các lệnh sau:
+
+```sql
+CREATE DATABASE IF NOT EXISTS auction_db
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+CREATE USER IF NOT EXISTS 'auction_user'@'%' IDENTIFIED BY 'Auction123';
+
+GRANT ALL PRIVILEGES ON auction_db.* TO 'auction_user'@'%';
+
+FLUSH PRIVILEGES;
+```
+
+> Không cần tạo bảng thủ công — server tự tạo toàn bộ schema khi khởi động lần đầu.
+
+#### B.2. Chạy server và client
 
 ```bash
 mvn -DskipTests package
+```
+
+Lần đầu chạy, cần tạo tài khoản admin bằng cách set biến môi trường trước khi khởi động server:
+
+**Windows (PowerShell):**
+```powershell
+$env:ADMIN_BOOTSTRAP_USERNAME="admin"
+$env:ADMIN_BOOTSTRAP_PASSWORD="matkhaucuaban"
+$env:ADMIN_BOOTSTRAP_FULL_NAME="System Admin"
+java -jar target/server.jar
+```
+
+Server tự tạo tài khoản admin vào database khi khởi động. Các lần chạy sau không cần set lại.
+
+Nếu đã có tài khoản admin trong database:
+
+```bash
 java -jar target/server.jar
 ```
 
@@ -209,22 +249,24 @@ Sau khi server chạy, mở client:
 java -jar target/client.jar
 ```
 
-Chạy client trực tiếp từ source:
-
-```bash
-mvn javafx:run
-```
-
 Nếu client kết nối tới server khác máy:
 
 ```bash
-mvn javafx:run -Dauction.server.host=<IP_SERVER> -Dauction.server.port=5050
+java "-Dauction.server.host=<IP>" -jar target/client.jar
 ```
 
 > **Cách kiểm tra IP của máy chạy server:**
 >
 > - **Windows:** mở Command Prompt → gõ `ipconfig` → lấy giá trị **IPv4 Address** (ví dụ `192.168.1.x`)
 > - **Linux/macOS:** mở Terminal → gõ `ip addr` hoặc `ifconfig` → lấy giá trị `inet` của card mạng đang dùng
+Chạy client trực tiếp từ source:
+
+```bash
+mvn javafx:run
+```
+
+
+
 
 ## 9. Kiểm thử và chất lượng mã
 
